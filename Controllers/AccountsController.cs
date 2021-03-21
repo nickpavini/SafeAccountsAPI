@@ -2,49 +2,42 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
-namespace SafeAccountsAPI
+namespace SafeAccountsAPI.Controllers
 {
-    [ApiController]
     [Route("[controller]")]
-    public class AccountsController : Controller
+    [ApiController]
+    public class AccountsController : ControllerBase
     {
-        // GET: api/<controller>
+        // GET: api/Accounts
         [HttpGet]
-        public IEnumerable<Account> Get()
+        public IEnumerable<string> Get()
         {
-            return Enumerable.Range(1, 5).Select(index => new Account
-            {
-                name = "Bob",
-                age = 37,
-                gender = "male"
-            })
-           .ToArray();
+            return new string[] { "value1", "value2" };
         }
 
-        // GET api/<controller>/5
-        [HttpGet("{id}")]
-        public Account Get(int id)
+        // GET: api/Accounts/5
+        [HttpGet("{id}", Name = "Get")]
+        public string Get(int id)
         {
-            return new Account();
+            return "value";
         }
 
-        // POST api/<controller>
+        // POST: api/Accounts
         [HttpPost]
-        public void Post([FromBody]string value)
+        public void Post([FromBody] string value)
         {
         }
 
-        // PUT api/<controller>/5
+        // PUT: api/Accounts/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody]string value)
+        public void Put(int id, [FromBody] string value)
         {
         }
 
-        // DELETE api/<controller>/5
+        // DELETE: api/ApiWithActions/5
         [HttpDelete("{id}")]
         public void Delete(int id)
         {
