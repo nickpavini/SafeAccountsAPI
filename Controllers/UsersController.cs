@@ -15,13 +15,7 @@ namespace SafeAccountsAPI.Controllers
         [HttpGet]
         public IEnumerable<User> Get()
         {
-            return Enumerable.Range(1, 5).Select(index => new User
-            {
-                name = "Bob",
-                age = 37,
-                gender = "male"
-            })
-           .ToArray();
+            return Enumerable.Range(1, 5).Select(index => new User()).ToArray();
         }
 
         // GET api/<controller>/5

@@ -7,11 +7,11 @@ namespace SafeAccountsAPI.Models
 {
     public class Account
     {
-        public int id { get; set; }
-        public string userId { get; set; }
-        public string title { get; set; }
-        public string login { get; set; }
-        public string password { get; set; }
-        public string description { get; set; }
+        public int ID { get; set; }
+        public string UserID { get; set; }
+        public string Title { get; set; }
+        public string Login { get; set; }
+        public string Password { get; set; }
+        public string Description { get; set; }
     }
 }
