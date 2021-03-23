@@ -55,10 +55,12 @@ namespace SafeAccountsAPI.Controllers
             _context.SaveChanges();
         }
 
-        [HttpGet("{username}/firstname")]
-        public string User_GetFirstName(string username)
+        // get all users accounts
+        [HttpGet("{username}/accounts")]
+        public IEnumerable<Account> User_GetAccounts(string username)
         {
-            return _context.Users.Where(a => a.User_Name == username).Single().First_Name;
+            int user_id = _context.Users.Where(a => a.User_Name == username).Single().ID;
+            return _context.Accounts.Where(a => a.UserID == user_id);
         }
     }
 }

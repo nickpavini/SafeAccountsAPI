@@ -13,14 +13,15 @@ namespace SafeAccountsAPI.Controllers
     {
         // GET: api/Accounts
         [HttpGet]
-        public IEnumerable<string> Get()
+        public IEnumerable<string> GetAllAccounts()
         {
             return new string[] { "value1", "value2" };
         }
 
         // GET: api/Accounts/5
-        [HttpGet("{id}", Name = "Get")]
-        public string Get(int id)
+        // get account by primary key
+        [HttpGet("{id:int}")]
+        public string GetAccount(int id)
         {
             return "value";
         }
