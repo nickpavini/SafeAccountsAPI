@@ -37,7 +37,7 @@ namespace SafeAccountsAPI.Controllers
 
         // POST /<controller>
         [HttpPost]
-        public void AddUser([FromBody]string value)
+        public void AddUser([FromBody]string user)
         {
         }
 
@@ -61,6 +61,13 @@ namespace SafeAccountsAPI.Controllers
         {
             int user_id = _context.Users.Where(a => a.User_Name == username).Single().ID;
             return _context.Accounts.Where(a => a.UserID == user_id);
+        }
+
+        // add account.. input format is json
+        [HttpPost("{username}/accounts")]
+        public Account User_AddAccount([FromBody]string acc) 
+        {
+            return new Account();
         }
     }
 }

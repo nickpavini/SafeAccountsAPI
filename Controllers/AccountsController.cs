@@ -28,19 +28,19 @@ namespace SafeAccountsAPI.Controllers
 
         // POST: api/Accounts
         [HttpPost]
-        public void Post([FromBody] string value)
+        public void AddAccount([FromBody] string value)
         {
         }
 
         // PUT: api/Accounts/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        public void EditAccount(int id, [FromBody] string value)
         {
         }
 
         // DELETE: api/ApiWithActions/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public void DeleteAccuont(int id)
         {
         }
     }
