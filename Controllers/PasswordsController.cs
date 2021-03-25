@@ -16,25 +16,33 @@ namespace SafeAccountsAPI.Controllers
     {
         // GET: api/Passwords
         // generate a single password with the potential of applying regex standards in body
-        [HttpGet("generate")]
-        public string GeneratePassword()
-        {
-            string options = @"{""regex"":""[a-zA-Z0-9]"",""minLength"":8,""maxLength"":12}"; // default options for a secure password that will fit any site.. 8-12 characters, capitals and numbers allowed
-            return Generate(options);
-        }
+        //[HttpGet("generate")]
+        //public string GeneratePassword()
+        //{
+        //    string options = @"{""regex"":""[a-zA-Z0-9]"",""minLength"":8,""maxLength"":12}"; // default options for a secure password that will fit any site.. 8-12 characters, capitals and numbers allowed
+        //    return Generate(options);
+        //}
 
         //// generate a password based on specific allowed characters in regex format
-        [HttpGet("generate/{regex}")]
-        public string GeneratePassword(string options)
+        [HttpGet("generate")]
+        public string GeneratePassword([FromBody]string options = "")
         {
             /*
              * validate regex string here
              */
+             if (options == "")
+                options = @"{""regex"":""[a-zA-Z0-9]"",""minLength"":8,""maxLength"":12}"; // default options for a secure password that will fit any site.. 8-12 characters, capitals and numbers allowed
 
             return Generate(options);
         }
 
         // private function to generate passwords based on allowed expression
+        /*
+         *  Json Parameters (in any order):
+         *      regex: string // use to specify formatting of string
+         *      minLength: int
+         *      maxLength: int
+         */
         private string Generate(string options)
         {
             Regex regex = null;
@@ -51,7 +59,6 @@ namespace SafeAccountsAPI.Controllers
             string allChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789~`!@#$%^&*()_-+={[}]|\\:;\"'<,>.?/"; // string containing all possible chars
             
             // subtract 2000 date from current date and use as seed for better psuedo random numbers
-            DateTime baseDate = new DateTime(2000, 1, 1);
             int seed = (DateTime.Now.Hour * 60 * 60 + DateTime.Now.Minute * 60 + DateTime.Now.Second) * 1000 + DateTime.Now.Millisecond; // get current milliseconds from midnight for seeding.. makes it much more random but still could be better
 
             Random randomNumGenerator = new Random(seed);
