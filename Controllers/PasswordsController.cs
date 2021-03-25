@@ -55,7 +55,7 @@ namespace SafeAccountsAPI.Controllers
             int seed = (DateTime.Now.Hour * 60 * 60 + DateTime.Now.Minute * 60 + DateTime.Now.Second) * 1000 + DateTime.Now.Millisecond; // get current milliseconds from midnight for seeding.. makes it much more random but still could be better
 
             Random randomNumGenerator = new Random(seed);
-            int len = randomNumGenerator.Next(json["minLength"].ToObject<int>(), json["maxLength"].ToObject<int>());
+            int len = randomNumGenerator.Next(json["minLength"].ToObject<int>(), json["maxLength"].ToObject<int>() + 1);
             string password = @"{""password"":"""; //empty password
             for(int i=0; i<len; ++i)
             {
