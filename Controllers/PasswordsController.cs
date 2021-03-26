@@ -50,11 +50,17 @@ namespace SafeAccountsAPI.Controllers
 
             // might want Json verification as own function since all will do it.. we will see
             try { json = JObject.Parse(options); }
-            catch (Exception ex) { return @"{""error"":""Invalid Json. Input: " + options + " Message: " + ex.ToString() + @"""}"; }
+            catch (Exception ex) {
+                ErrorMessage error = new ErrorMessage("Invalid Json", options, ex.Message);
+                return JObject.FromObject(error).ToString(); 
+            }
 
             // check that the provided regex string was good
             try { regex = new Regex(json["regex"].ToString()); } // try to create regex from the string
-            catch (Exception ex) { return @"{""error"":""Invalid regex string. Input: " + json["regex"].ToString() + " Message: " + ex.ToString() + @"""}"; }
+            catch (Exception ex) {
+                ErrorMessage error = new ErrorMessage("Invalid Json", json["regex"].ToString(), ex.Message);
+                return JObject.FromObject(error).ToString();
+            }
 
             string allChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789~`!@#$%^&*()_-+={[}]|\\:;\"'<,>.?/"; // string containing all possible chars
             

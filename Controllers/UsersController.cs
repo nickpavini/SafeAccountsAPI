@@ -2,9 +2,10 @@
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.EntityFrameworkCore;
 using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Models;
+using Newtonsoft.Json.Linq;
+using System;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -29,27 +30,64 @@ namespace SafeAccountsAPI.Controllers
         // GET /<controller>/5
         // Get a specific user.. later we will need to learn about the authentications and such
         [HttpGet("{username}")]
-        public User GetUser(string username)
+        public User User_GetUser(string username)
         {
             return _context.Users.Where(a => a.User_Name == username).Single();
-            //return new User();
         }
 
         // POST /<controller>
         [HttpPost]
-        public void AddUser([FromBody]string user)
+        public string User_AddUser([FromBody]string userJson)
         {
+            JObject json = null;
+
+            // might want Json verification as own function since all will do it.. we will see
+            try { json = JObject.Parse(userJson); }
+            catch (Exception ex) {
+                ErrorMessage error = new ErrorMessage("Invalid Json", userJson, ex.Message);
+                return JObject.FromObject(error).ToString();
+            }
+
+            return "";
         }
 
-        // PUT /<controller>/5
-        [HttpPut("{username}")]
-        public void EditUser(string username, [FromBody]string value)
+        [HttpGet("{username}/firstname")]
+        public string User_GetFirstName(string username, [FromBody]string firstname)
         {
+            return _context.Users.Where(a => a.User_Name == username).Single().First_Name;
         }
+
+        [HttpPut("{username}/firstname")]
+        public string User_EditFirstName(string username, [FromBody]string firstname)
+        {
+            try
+            {
+                _context.Users.Where(a => a.User_Name == username).Single().First_Name = firstname;
+                _context.SaveChanges();
+            }
+            catch(Exception ex) {
+                ErrorMessage error = new ErrorMessage("Failed to update first name.", "Username: "+username+" First Name: "+firstname, ex.Message);
+                return JObject.FromObject(error).ToString();
+            }
+            return @"{""result"":1}"; //result 1 or 0 if good
+        }
+
+        //// PUT /<controller>/5
+        //[HttpPut("{username}")]
+        //public string EditUser(string username, [FromBody]string userJson)
+        //{
+        //     JObject json = null;
+
+        //    // might want Json verification as own function since all will do it.. we will see
+        //    try { json = JObject.Parse(userJson); }
+        //    catch (Exception ex) { return @"{""error"":""Invalid Json. Input: " + userJson + " Message: " + ex.ToString() + @"""}"; }
+
+        //    return "";
+        //}
 
         // DELETE api/<controller>/5
         [HttpDelete("{username}")]
-        public void DeleteUser(string username)
+        public void User_DeleteUser(string username)
         {
             _context.Users.Remove(_context.Users.Where(a => a.User_Name == username).Single());
             _context.SaveChanges();
