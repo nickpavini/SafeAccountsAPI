@@ -19,11 +19,11 @@ namespace SafeAccountsAPI.Data
                 // add base users if data base not populated
                 var users = new User[]
                 {
-                    new User { User_Name="johndoe", First_Name="John", Last_Name="Doe", Email="john@doe.com", Password="useless", NumAccs=2 },
-                    new User { User_Name="edwinmay", First_Name="Edwin", Last_Name="May", Email="edwin@may.com", Password="useless", NumAccs=2 },
-                    new User { User_Name="lucyvale", First_Name="Lucy", Last_Name="Vale", Email="lucy@vale.com", Password="useless", NumAccs=2 },
-                    new User { User_Name="pamwillis", First_Name="Pam", Last_Name="Willis", Email="pam@willis.com", Password="useless", NumAccs=2 },
-                    new User { User_Name="gamestonk", First_Name="Game", Last_Name="Stonk", Email="game@stonk.com", Password="useless", NumAccs=2}
+                    new User { First_Name="John", Last_Name="Doe", Email="john@doe.com", Password="useless", NumAccs=2 },
+                    new User { First_Name="Edwin", Last_Name="May", Email="edwin@may.com", Password="useless", NumAccs=2 },
+                    new User { First_Name="Lucy", Last_Name="Vale", Email="lucy@vale.com", Password="useless", NumAccs=2 },
+                    new User { First_Name="Pam", Last_Name="Willis", Email="pam@willis.com", Password="useless", NumAccs=2 },
+                    new User { First_Name="Game", Last_Name="Stonk", Email="game@stonk.com", Password="useless", NumAccs=2}
                 };
 
                 foreach (User person in users) { context.Users.Add(person); } // add each user to the table

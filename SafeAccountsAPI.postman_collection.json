@@ -6,7 +6,7 @@
 	},
 	"item": [
 		{
-			"name": "Users",
+			"name": "users",
 			"request": {
 				"method": "GET",
 				"header": [],
@@ -51,6 +51,26 @@
 					"path": [
 						"passwords",
 						"generate"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "users/id/",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://localhost:44366/users/4",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "44366",
+					"path": [
+						"users",
+						"4"
 					]
 				}
 			},

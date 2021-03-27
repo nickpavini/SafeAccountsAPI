@@ -29,10 +29,10 @@ namespace SafeAccountsAPI.Controllers
 
         // GET /<controller>/5
         // Get a specific user.. later we will need to learn about the authentications and such
-        [HttpGet("{username}")]
-        public User User_GetUser(string username)
+        [HttpGet("{id:int}")]
+        public User User_GetUser(int id)
         {
-            return _context.Users.Where(a => a.User_Name == username).Single();
+            return _context.Users.Where(a => a.ID == id).Single();
         }
 
         // POST /<controller>
@@ -51,22 +51,22 @@ namespace SafeAccountsAPI.Controllers
             return "";
         }
 
-        [HttpGet("{username}/firstname")]
-        public string User_GetFirstName(string username, [FromBody]string firstname)
+        [HttpGet("{id:int}/firstname")]
+        public string User_GetFirstName(int id, [FromBody]string firstname)
         {
-            return _context.Users.Where(a => a.User_Name == username).Single().First_Name;
+            return _context.Users.Where(a => a.ID == id).Single().First_Name;
         }
 
-        [HttpPut("{username}/firstname")]
-        public string User_EditFirstName(string username, [FromBody]string firstname)
+        [HttpPut("{id:int}/firstname")]
+        public string User_EditFirstName(int id, [FromBody]string firstname)
         {
             try
             {
-                _context.Users.Where(a => a.User_Name == username).Single().First_Name = firstname;
+                _context.Users.Where(a => a.ID == id).Single().First_Name = firstname;
                 _context.SaveChanges();
             }
             catch(Exception ex) {
-                ErrorMessage error = new ErrorMessage("Failed to update first name.", "Username: "+username+" First Name: "+firstname, ex.Message);
+                ErrorMessage error = new ErrorMessage("Failed to update first name.", "ID: "+id.ToString()+" First Name: "+firstname, ex.Message);
                 return JObject.FromObject(error).ToString();
             }
             return @"{""result"":1}"; //result 1 or 0 if good
@@ -86,23 +86,23 @@ namespace SafeAccountsAPI.Controllers
         //}
 
         // DELETE api/<controller>/5
-        [HttpDelete("{username}")]
-        public void User_DeleteUser(string username)
+        [HttpDelete("{id:int}")]
+        public void User_DeleteUser(int id)
         {
-            _context.Users.Remove(_context.Users.Where(a => a.User_Name == username).Single());
+            _context.Users.Remove(_context.Users.Where(a => a.ID == id).Single());
             _context.SaveChanges();
         }
 
         // get all users accounts
-        [HttpGet("{username}/accounts")]
-        public IEnumerable<Account> User_GetAccounts(string username)
+        [HttpGet("{id:int}/accounts")]
+        public IEnumerable<Account> User_GetAccounts(int id)
         {
-            int user_id = _context.Users.Where(a => a.User_Name == username).Single().ID;
+            int user_id = _context.Users.Where(a => a.ID == id).Single().ID;
             return _context.Accounts.Where(a => a.UserID == user_id);
         }
 
         // add account.. input format is json
-        [HttpPost("{username}/accounts")]
+        [HttpPost("{id:int}/accounts")]
         public Account User_AddAccount([FromBody]string acc) 
         {
             return new Account();

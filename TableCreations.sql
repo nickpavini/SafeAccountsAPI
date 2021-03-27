@@ -4,10 +4,9 @@ Go
 Create Table Users
 (
 	ID int IDENTITY(1,1) primary key,
-	User_Name nvarchar(20) unique,
 	First_Name nvarchar(20),
 	Last_Name nvarchar(30),
-	Email nvarchar(50),
+	Email nvarchar(50) unique,
 	Password nvarchar(50),
 	NumAccs int
 )
