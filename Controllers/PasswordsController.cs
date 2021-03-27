@@ -69,7 +69,7 @@ namespace SafeAccountsAPI.Controllers
 
             Random randomNumGenerator = new Random(seed);
             int len = randomNumGenerator.Next(json["minLength"].ToObject<int>(), json["maxLength"].ToObject<int>() + 1);
-            string password = @"{""password"":"""; //empty password
+            string password = ""; //empty password
             for(int i=0; i<len; ++i)
             {
                 // keep generating characters until they are within the regex specifications.. this logic works if we do not want them to specify placement or substrings
@@ -82,8 +82,10 @@ namespace SafeAccountsAPI.Controllers
                 password += chr.ToString();
             }
 
-            password += @"""}"; // keep json formatting
-            return password;
+            // format success response.. maybe could be done better but not sure yet
+            JObject message = JObject.Parse(SuccessMessage._result);
+            message.Add(new JProperty("password", password));
+            return message.ToString();
         }
     }
 }
