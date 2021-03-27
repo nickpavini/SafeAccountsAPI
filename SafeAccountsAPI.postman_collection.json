@@ -34,7 +34,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "\"\"",
+					"raw": "\"{\\\"regex\\\":\\\"[a-zA-Z0-9]\\\",\\\"minLength\\\":8,\\\"maxLength\\\":12}\"",
 					"options": {
 						"raw": {
 							"language": "json"
