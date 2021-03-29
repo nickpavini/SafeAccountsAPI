@@ -20,8 +20,15 @@ namespace SafeAccountsAPI.Controllers
 
         public UsersController(APIContext context) { _context = context; } // get an instance of a database handle
 
+        [HttpGet("login")]
+        public string User_Login([FromBody]string credentials)
+        {
+            return SuccessMessage._result;
+        }
+
         // GET: /<controller>
         // Get all available users.. might change later as it might not make sense to grab all accounts if there are tons
+        // More of an admin functionality
         [HttpGet]
         public string GetAllUsers()
         {

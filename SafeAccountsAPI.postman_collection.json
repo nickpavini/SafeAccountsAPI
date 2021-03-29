@@ -114,6 +114,15 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "users/login",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": null
+			},
+			"response": []
 		}
 	]
 }
