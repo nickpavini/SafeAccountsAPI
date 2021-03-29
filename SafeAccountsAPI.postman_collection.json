@@ -75,6 +75,45 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "users/id/",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": null
+			},
+			"response": []
+		},
+		{
+			"name": "users/id/firstname",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "\"Lucy2\"",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://localhost:44366/users/3/firstname",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "44366",
+					"path": [
+						"users",
+						"3",
+						"firstname"
+					]
+				}
+			},
+			"response": []
 		}
 	]
 }

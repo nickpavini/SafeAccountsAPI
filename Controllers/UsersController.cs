@@ -6,6 +6,7 @@ using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Models;
 using Newtonsoft.Json.Linq;
 using System;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -22,17 +23,26 @@ namespace SafeAccountsAPI.Controllers
         // GET: /<controller>
         // Get all available users.. might change later as it might not make sense to grab all accounts if there are tons
         [HttpGet]
-        public IEnumerable<User> GetAllUsers()
+        public string GetAllUsers()
         {
-            return _context.Users.ToArray();
+            // format success response.. maybe could be done better but not sure yet
+            JObject message = JObject.Parse(SuccessMessage._result);
+            JArray users = new JArray();
+            foreach (User user in _context.Users.ToArray()) {
+                users.Add(JToken.FromObject(user));
+            }
+            message.Add(new JProperty("users", users));
+            return message.ToString();
         }
 
         // GET /<controller>/5
         // Get a specific user.. later we will need to learn about the authentications and such
         [HttpGet("{id:int}")]
-        public User User_GetUser(int id)
+        public string User_GetUser(int id)
         {
-            return _context.Users.Where(a => a.ID == id).Single();
+            JObject message = JObject.Parse(SuccessMessage._result);
+            message.Add(new JProperty("user", JToken.FromObject(_context.Users.Where(a => a.ID == id).Single())));
+            return message.ToString();
         }
 
         // POST /<controller>
@@ -52,9 +62,11 @@ namespace SafeAccountsAPI.Controllers
         }
 
         [HttpGet("{id:int}/firstname")]
-        public string User_GetFirstName(int id, [FromBody]string firstname)
+        public string User_GetFirstName(int id)
         {
-            return _context.Users.Where(a => a.ID == id).Single().First_Name;
+            JObject message = JObject.Parse(SuccessMessage._result);
+            message.Add(new JProperty("firstname", _context.Users.Where(a => a.ID == id).Single().First_Name));
+            return message.ToString();
         }
 
         [HttpPut("{id:int}/firstname")]
@@ -69,7 +81,37 @@ namespace SafeAccountsAPI.Controllers
                 ErrorMessage error = new ErrorMessage("Failed to update first name.", "ID: "+id.ToString()+" First Name: "+firstname, ex.Message);
                 return JObject.FromObject(error).ToString();
             }
-            return @"{""result"":1}"; //result 1 or 0 if good
+
+            JObject message = JObject.Parse(SuccessMessage._result);
+            message.Add(new JProperty("new_firstname", _context.Users.Where(a => a.ID == id).Single().First_Name)); // this part re-affirms that in the database we have a new firstname
+            return message.ToString();
+        }
+
+        [HttpGet("{id:int}/lastname")]
+        public string User_GetLastName(int id)
+        {
+            JObject message = JObject.Parse(SuccessMessage._result);
+            message.Add(new JProperty("lastname", _context.Users.Where(a => a.ID == id).Single().Last_Name));
+            return message.ToString();
+        }
+
+        [HttpPut("{id:int}/lastname")]
+        public string User_EditLastName(int id, [FromBody]string lastname)
+        {
+            try
+            {
+                _context.Users.Where(a => a.ID == id).Single().Last_Name = lastname;
+                _context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Failed to update last name.", "ID: " + id.ToString() + " Last Name: " + lastname, ex.Message);
+                return JObject.FromObject(error).ToString();
+            }
+
+            JObject message = JObject.Parse(SuccessMessage._result);
+            message.Add(new JProperty("new_lastname", _context.Users.Where(a => a.ID == id).Single().Last_Name)); // this part re-affirms that in the database we have a new firstname
+            return message.ToString();
         }
 
         //// PUT /<controller>/5
@@ -87,25 +129,46 @@ namespace SafeAccountsAPI.Controllers
 
         // DELETE api/<controller>/5
         [HttpDelete("{id:int}")]
-        public void User_DeleteUser(int id)
+        public string User_DeleteUser(int id)
         {
-            _context.Users.Remove(_context.Users.Where(a => a.ID == id).Single());
-            _context.SaveChanges();
+            try
+            {
+                _context.Users.Remove(_context.Users.Single(a => a.ID == id));
+                _context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Failed to delete user.", "ID: " + id.ToString(), ex.Message);
+                return JObject.FromObject(error).ToString();
+            }
+
+            JObject message = JObject.Parse(SuccessMessage._result);
+            return message.ToString();
         }
 
         // get all users accounts
         [HttpGet("{id:int}/accounts")]
-        public IEnumerable<Account> User_GetAccounts(int id)
+        public string User_GetAccounts(int id)
         {
-            int user_id = _context.Users.Where(a => a.ID == id).Single().ID;
-            return _context.Accounts.Where(a => a.UserID == user_id);
+            //int user_id = _context.Users.Where(a => a.ID == id).Single().ID;
+            
+            // format success response.. maybe could be done better but not sure yet
+            JObject message = JObject.Parse(SuccessMessage._result);
+            message.Add(new JProperty("user", JToken.FromObject(_context.Users.Single(a => a.ID == id))));
+            JArray accs = new JArray();
+            foreach (Account acc in _context.Accounts.Where(a => a.UserID == id))
+            {
+                accs.Add(JToken.FromObject(acc));
+            }
+            message.Add(new JProperty("accounts", accs));
+            return message.ToString();
         }
 
         // add account.. input format is json
         [HttpPost("{id:int}/accounts")]
-        public Account User_AddAccount([FromBody]string acc) 
+        public string User_AddAccount([FromBody]string acc) 
         {
-            return new Account();
+            return SuccessMessage._result;
         }
     }
 }
