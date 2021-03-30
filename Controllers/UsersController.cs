@@ -36,7 +36,8 @@ namespace SafeAccountsAPI.Controllers
             JObject message = JObject.Parse(SuccessMessage._result);
             JArray users = new JArray();
             foreach (User user in _context.Users.ToArray()) {
-                users.Add(JToken.FromObject(user));
+               ReturnableUser retUser = new ReturnableUser(user);
+               users.Add(JToken.FromObject(retUser));
             }
             message.Add(new JProperty("users", users));
             return message.ToString();
@@ -48,7 +49,8 @@ namespace SafeAccountsAPI.Controllers
         public string User_GetUser(int id)
         {
             JObject message = JObject.Parse(SuccessMessage._result);
-            message.Add(new JProperty("user", JToken.FromObject(_context.Users.Where(a => a.ID == id).Single())));
+            ReturnableUser retUser = new ReturnableUser(_context.Users.Where(a => a.ID == id).Single()); // strips out private data that is never to be sent back
+            message.Add(new JProperty("user", JToken.FromObject(retUser)));
             return message.ToString();
         }
 
