@@ -24,12 +24,13 @@ namespace SafeAccountsAPI.Controllers
     public class UsersController : Controller
     {
         private readonly APIContext _context; // database handle
-        private readonly IHttpContextAccessor _httpContextAccessor = null;
+        private readonly IHttpContextAccessor _httpContextAccessor = null; // handle to all http information.. used for authorization
 
+        // get an instance of a database and http handle
         public UsersController(APIContext context, IHttpContextAccessor httpContextAccessor) { 
             _context = context;
             _httpContextAccessor = httpContextAccessor;
-        } // get an instance of a database handle
+        }
 
         [HttpPost("login")]
         public string User_Login([FromBody]string credentials)
@@ -44,8 +45,9 @@ namespace SafeAccountsAPI.Controllers
 
             try
             {
-                string userPass = _context.Users.Single(a => a.Email == json["email"].ToString()).Password;
-                int userId = _context.Users.Single(a => a.Email == json["email"].ToString()).ID;
+                User user = _context.Users.Single(a => a.Email == json["email"].ToString());
+                string userPass = user.Password;
+                int userId = user.ID;
 
                 if (userPass == json["password"].ToString()) // successful sign in
                 {
@@ -55,7 +57,7 @@ namespace SafeAccountsAPI.Controllers
                     var tokeOptions = new JwtSecurityToken(
                         issuer: "http://localhost:5000",
                         audience: "http://localhost:5000",
-                        claims: new List<Claim> { new Claim(ClaimTypes.Role, UserRoles.User), new Claim(ClaimTypes.Email, json["email"].ToString()) },
+                        claims: new List<Claim> { new Claim(ClaimTypes.Role, user.Role), new Claim(ClaimTypes.Email, user.Email) },
                         expires: DateTime.Now.AddMinutes(30),
                         signingCredentials: signinCredentials
                     );
