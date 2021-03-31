@@ -87,7 +87,6 @@ namespace SafeAccountsAPI.Controllers
         [HttpGet, Authorize]
         public string GetAllUsers()
         {
-            //return _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Role).Value; //use this to authorize
             string callerRole = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Role).Value;
             if (callerRole != UserRoles.Admin)
                 return JObject.FromObject(new ErrorMessage("Invalid Role", "Caller's Role: " + callerRole, "Caller must have admin role.")).ToString();
@@ -109,8 +108,9 @@ namespace SafeAccountsAPI.Controllers
         public string User_GetUser(int id)
         {
             // Get email from the token and compare it with the email of the user they are trying to access
-            string callerEmail = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Email).Value;
-            string callerRole = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Role).Value;
+            ClaimsPrincipal claims = _httpContextAccessor.HttpContext.User;
+            string callerEmail = claims.FindFirst(ClaimTypes.Email).Value;
+            string callerRole = claims.FindFirst(ClaimTypes.Role).Value;
 
             if (callerEmail != _context.Users.Single(a => a.ID == id).Email && callerRole != UserRoles.Admin)
                 return JObject.FromObject(new ErrorMessage("Invalid User", "Caller's Email: " + callerEmail + " Caller's Role: " + callerRole, "Caller can only access their information.")).ToString();
