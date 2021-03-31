@@ -9,7 +9,7 @@ Create Table Users
 	Email nvarchar(50) unique,
 	Password nvarchar(50),
 	NumAccs int,
-	Role nvarchar(25)
+	Role nvarchar(25),
 )
 
 Create Table Accounts
@@ -20,4 +20,12 @@ Create Table Accounts
 	Login nvarchar(50),
 	Password nvarchar(50),
 	Description nvarchar(250)
+)
+
+Create Table RefreshTokens
+(
+	ID int IDENTITY(1,1) primary key,
+	UserID int foreign key references Users(ID),
+	Token nvarchar(100),
+	Expiration nvarchar(150)
 )

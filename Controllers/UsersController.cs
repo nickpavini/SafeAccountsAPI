@@ -1,19 +1,14 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Models;
 using Newtonsoft.Json.Linq;
 using System;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Http;
+using System.Collections.Generic;
+using System.Security.Claims;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -47,26 +42,13 @@ namespace SafeAccountsAPI.Controllers
             {
                 User user = _context.Users.Single(a => a.Email == json["email"].ToString());
                 string userPass = user.Password;
-                int userId = user.ID;
 
-                if (userPass == json["password"].ToString()) // successful sign in
+                // successful login
+                if (userPass == json["password"].ToString())
                 {
-                    var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("KeyForSignInSecret@1234"));
-                    var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
-
-                    var tokeOptions = new JwtSecurityToken(
-                        issuer: "http://localhost:5000",
-                        audience: "http://localhost:5000",
-                        claims: new List<Claim> { new Claim(ClaimTypes.Role, user.Role), new Claim(ClaimTypes.Email, user.Email) },
-                        expires: DateTime.Now.AddMinutes(30),
-                        signingCredentials: signinCredentials
-                    );
-
-                    var tokenString = new JwtSecurityTokenHandler().WriteToken(tokeOptions);
-                    JObject message = JObject.Parse(SuccessMessage._result);
-                    message.Add(new JProperty("token", tokenString));
-                    message.Add(new JProperty("id", userId));
-                    return message.ToString();
+                    var tokenString = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email);
+                    RefreshToken refToken = HelperMethods.GenerateRefreshToken(user, _context);
+                    return HelperMethods.GenerateLoginResponse(tokenString, refToken, user.ID);
                 }
                 else
                 {
@@ -232,11 +214,11 @@ namespace SafeAccountsAPI.Controllers
             
             // format success response.. maybe could be done better but not sure yet
             JObject message = JObject.Parse(SuccessMessage._result);
-            message.Add(new JProperty("user", JToken.FromObject(_context.Users.Single(a => a.ID == id))));
+            message.Add(new JProperty("user", JToken.FromObject(new ReturnableUser(_context.Users.Single(a => a.ID == id)))));
             JArray accs = new JArray();
             foreach (Account acc in _context.Accounts.Where(a => a.UserID == id))
             {
-                accs.Add(JToken.FromObject(acc));
+                accs.Add(JToken.FromObject(new ReturnableAccount(acc)));
             }
             message.Add(new JProperty("accounts", accs));
             return message.ToString();
@@ -244,9 +226,9 @@ namespace SafeAccountsAPI.Controllers
 
         // add account.. input format is json
         [HttpPost("{id:int}/accounts")]
-        public string User_AddAccount([FromBody]string acc) 
+        public List<Account> User_AddAccount(int id, [FromBody]string acc) 
         {
-            return SuccessMessage._result;
+            return _context.Users.Single(a => a.ID == id).Accounts;
         }
     }
 }
