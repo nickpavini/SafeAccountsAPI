@@ -29,6 +29,7 @@ namespace SafeAccountsAPI.Models
             ID = user.ID;
             First_Name = user.First_Name;
             Last_Name = user.Last_Name;
+            Email = user.Email;
             NumAccs = user.NumAccs;
             Role = user.Role;
         }
