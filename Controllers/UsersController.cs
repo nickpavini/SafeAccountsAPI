@@ -104,7 +104,7 @@ namespace SafeAccountsAPI.Controllers
 
         // GET /<controller>/5
         // Get a specific user.. later we will need to learn about the authentications and such
-        [HttpGet("{id:int}")]
+        [HttpGet("{id:int}"), Authorize]
         public string User_GetUser(int id)
         {
             // Get email from the token and compare it with the email of the user they are trying to access
@@ -112,9 +112,11 @@ namespace SafeAccountsAPI.Controllers
             string callerEmail = claims.FindFirst(ClaimTypes.Email).Value;
             string callerRole = claims.FindFirst(ClaimTypes.Role).Value;
 
+            // verify that the user is either admin or is requesting their own data
             if (callerEmail != _context.Users.Single(a => a.ID == id).Email && callerRole != UserRoles.Admin)
                 return JObject.FromObject(new ErrorMessage("Invalid User", "Caller's Email: " + callerEmail + " Caller's Role: " + callerRole, "Caller can only access their information.")).ToString();
 
+            //format response
             JObject message = JObject.Parse(SuccessMessage._result);
             ReturnableUser retUser = new ReturnableUser(_context.Users.Where(a => a.ID == id).Single()); // strips out private data that is never to be sent back
             message.Add(new JProperty("user", JToken.FromObject(retUser)));
