@@ -45,6 +45,8 @@ namespace SafeAccountsAPI.Controllers
             try
             {
                 string userPass = _context.Users.Single(a => a.Email == json["email"].ToString()).Password;
+                int userId = _context.Users.Single(a => a.Email == json["email"].ToString()).ID;
+
                 if (userPass == json["password"].ToString()) // successful sign in
                 {
                     var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("KeyForSignInSecret@1234"));
@@ -61,6 +63,7 @@ namespace SafeAccountsAPI.Controllers
                     var tokenString = new JwtSecurityTokenHandler().WriteToken(tokeOptions);
                     JObject message = JObject.Parse(SuccessMessage._result);
                     message.Add(new JProperty("token", tokenString));
+                    message.Add(new JProperty("id", userId));
                     return message.ToString();
                 }
                 else
@@ -83,6 +86,9 @@ namespace SafeAccountsAPI.Controllers
         public string GetAllUsers()
         {
             //return _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Role).Value; //use this to authorize
+            string callerRole = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Role).Value;
+            if (callerRole != UserRoles.Admin)
+                return JObject.FromObject(new ErrorMessage("Invalid Role", "Caller's Role: " + callerRole, "Caller must have admin role.")).ToString();
 
             // format success response.. maybe could be done better but not sure yet
             JObject message = JObject.Parse(SuccessMessage._result);
@@ -100,6 +106,13 @@ namespace SafeAccountsAPI.Controllers
         [HttpGet("{id:int}")]
         public string User_GetUser(int id)
         {
+            // Get email from the token and compare it with the email of the user they are trying to access
+            string callerEmail = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Email).Value;
+            string callerRole = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Role).Value;
+
+            if (callerEmail != _context.Users.Single(a => a.ID == id).Email && callerRole != UserRoles.Admin)
+                return JObject.FromObject(new ErrorMessage("Invalid User", "Caller's Email: " + callerEmail + " Caller's Role: " + callerRole, "Caller can only access their information.")).ToString();
+
             JObject message = JObject.Parse(SuccessMessage._result);
             ReturnableUser retUser = new ReturnableUser(_context.Users.Where(a => a.ID == id).Single()); // strips out private data that is never to be sent back
             message.Add(new JProperty("user", JToken.FromObject(retUser)));
