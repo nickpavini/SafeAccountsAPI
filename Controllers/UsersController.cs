@@ -12,6 +12,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -22,8 +24,12 @@ namespace SafeAccountsAPI.Controllers
     public class UsersController : Controller
     {
         private readonly APIContext _context; // database handle
+        private readonly IHttpContextAccessor _httpContextAccessor = null;
 
-        public UsersController(APIContext context) { _context = context; } // get an instance of a database handle
+        public UsersController(APIContext context, IHttpContextAccessor httpContextAccessor) { 
+            _context = context;
+            _httpContextAccessor = httpContextAccessor;
+        } // get an instance of a database handle
 
         [HttpPost("login")]
         public IActionResult User_Login([FromBody]string credentials)
@@ -44,7 +50,7 @@ namespace SafeAccountsAPI.Controllers
                 var tokeOptions = new JwtSecurityToken(
                     issuer: "http://localhost:5000",
                     audience: "http://localhost:5000",
-                    claims: new List<Claim>(),
+                    claims: new List<Claim> { new Claim(ClaimTypes.Role, "user"), new Claim(ClaimTypes.Email, json["email"].ToString())},
                     expires: DateTime.Now.AddMinutes(30),
                     signingCredentials: signinCredentials
                 );
@@ -62,9 +68,11 @@ namespace SafeAccountsAPI.Controllers
         // GET: /<controller>
         // Get all available users.. might change later as it might not make sense to grab all accounts if there are tons
         // More of an admin functionality
-        [HttpGet, Authorize]
+        [HttpGet, Authorize()]
         public string GetAllUsers()
         {
+            //return _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Role).Value; //use this to authorize
+
             // format success response.. maybe could be done better but not sure yet
             JObject message = JObject.Parse(SuccessMessage._result);
             JArray users = new JArray();

@@ -44,7 +44,7 @@ namespace SafeAccountsAPI
                };
            });
 
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
+            services.AddHttpContextAccessor();
             services.AddControllers();
         }
 
