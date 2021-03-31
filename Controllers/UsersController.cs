@@ -32,43 +32,54 @@ namespace SafeAccountsAPI.Controllers
         } // get an instance of a database handle
 
         [HttpPost("login")]
-        public IActionResult User_Login([FromBody]string credentials)
+        public string User_Login([FromBody]string credentials)
         {
             JObject json = null;
             try { json = JObject.Parse(credentials); }
             catch (Exception ex)
             {
                 ErrorMessage error = new ErrorMessage("Invalid Json", credentials, ex.Message);
-                return Ok(JObject.FromObject(error).ToString());
+                return JObject.FromObject(error).ToString();
             }
 
-            if (json["email"].ToString() == "johncitizen" && json["password"].ToString() == "abc@123")
+            try
             {
-                var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("KeyForSignInSecret@1234"));
-                var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
+                string userPass = _context.Users.Single(a => a.Email == json["email"].ToString()).Password;
+                if (userPass == json["password"].ToString()) // successful sign in
+                {
+                    var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("KeyForSignInSecret@1234"));
+                    var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
 
-                var tokeOptions = new JwtSecurityToken(
-                    issuer: "http://localhost:5000",
-                    audience: "http://localhost:5000",
-                    claims: new List<Claim> { new Claim(ClaimTypes.Role, "user"), new Claim(ClaimTypes.Email, json["email"].ToString())},
-                    expires: DateTime.Now.AddMinutes(30),
-                    signingCredentials: signinCredentials
-                );
+                    var tokeOptions = new JwtSecurityToken(
+                        issuer: "http://localhost:5000",
+                        audience: "http://localhost:5000",
+                        claims: new List<Claim> { new Claim(ClaimTypes.Role, UserRoles.User), new Claim(ClaimTypes.Email, json["email"].ToString()) },
+                        expires: DateTime.Now.AddMinutes(30),
+                        signingCredentials: signinCredentials
+                    );
 
-                var tokenString = new JwtSecurityTokenHandler().WriteToken(tokeOptions);
-                return Ok(new { Token = tokenString });
+                    var tokenString = new JwtSecurityTokenHandler().WriteToken(tokeOptions);
+                    JObject message = JObject.Parse(SuccessMessage._result);
+                    message.Add(new JProperty("token", tokenString));
+                    return message.ToString();
+                }
+                else
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid Credentials", credentials, Unauthorized().ToString());
+                    return JObject.FromObject(error).ToString();
+                }
             }
-            else
+            catch (Exception ex)
             {
-                return Unauthorized();
+                ErrorMessage error = new ErrorMessage("Error validating credentials", credentials, ex.Message);
+                return JObject.FromObject(error).ToString();
             }
-            //return SuccessMessage._result;
         }
 
         // GET: /<controller>
         // Get all available users.. might change later as it might not make sense to grab all accounts if there are tons
         // More of an admin functionality
-        [HttpGet, Authorize()]
+        [HttpGet, Authorize]
         public string GetAllUsers()
         {
             //return _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Role).Value; //use this to authorize
