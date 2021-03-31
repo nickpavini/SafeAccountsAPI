@@ -7,6 +7,11 @@ using SafeAccountsAPI.Models;
 using Newtonsoft.Json.Linq;
 using System;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -20,16 +25,44 @@ namespace SafeAccountsAPI.Controllers
 
         public UsersController(APIContext context) { _context = context; } // get an instance of a database handle
 
-        [HttpGet("login")]
-        public string User_Login([FromBody]string credentials)
+        [HttpPost("login")]
+        public IActionResult User_Login([FromBody]string credentials)
         {
-            return SuccessMessage._result;
+            JObject json = null;
+            try { json = JObject.Parse(credentials); }
+            catch (Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Invalid Json", credentials, ex.Message);
+                return Ok(JObject.FromObject(error).ToString());
+            }
+
+            if (json["email"].ToString() == "johncitizen" && json["password"].ToString() == "abc@123")
+            {
+                var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("KeyForSignInSecret@1234"));
+                var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
+
+                var tokeOptions = new JwtSecurityToken(
+                    issuer: "http://localhost:5000",
+                    audience: "http://localhost:5000",
+                    claims: new List<Claim>(),
+                    expires: DateTime.Now.AddMinutes(30),
+                    signingCredentials: signinCredentials
+                );
+
+                var tokenString = new JwtSecurityTokenHandler().WriteToken(tokeOptions);
+                return Ok(new { Token = tokenString });
+            }
+            else
+            {
+                return Unauthorized();
+            }
+            //return SuccessMessage._result;
         }
 
         // GET: /<controller>
         // Get all available users.. might change later as it might not make sense to grab all accounts if there are tons
         // More of an admin functionality
-        [HttpGet]
+        [HttpGet, Authorize]
         public string GetAllUsers()
         {
             // format success response.. maybe could be done better but not sure yet
