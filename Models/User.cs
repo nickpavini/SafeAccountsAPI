@@ -10,6 +10,7 @@ namespace SafeAccountsAPI.Models
         public string Email { get; set; }
         public string Password { get; set; }
         public int NumAccs { get; set; }
+        public string Role { get; set; }
     }
 
     // this class exists so we can easily send the needed user data, but have more data server side
@@ -20,6 +21,7 @@ namespace SafeAccountsAPI.Models
         public string Last_Name { get; set; }
         public string Email { get; set; }
         public int NumAccs { get; set; }
+        public string Role { get; set; }
 
         // constructor create a safe returnable user
         public ReturnableUser(User user)
@@ -28,6 +30,13 @@ namespace SafeAccountsAPI.Models
             First_Name = user.First_Name;
             Last_Name = user.Last_Name;
             NumAccs = user.NumAccs;
+            Role = user.Role;
         }
+    }
+
+    public static class UserRoles
+    {
+        public static string User = "user";
+        public static string Admin = "admin";
     }
 }

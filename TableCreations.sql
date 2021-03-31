@@ -8,7 +8,8 @@ Create Table Users
 	Last_Name nvarchar(30),
 	Email nvarchar(50) unique,
 	Password nvarchar(50),
-	NumAccs int
+	NumAccs int,
+	Role nvarchar(25)
 )
 
 Create Table Accounts
