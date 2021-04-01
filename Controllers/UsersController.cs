@@ -84,6 +84,23 @@ namespace SafeAccountsAPI.Controllers
             return message.ToString();
         }
 
+        // register new user
+        [HttpPost] // in progress
+        public string User_AddUser([FromBody]string userJson)
+        {
+            JObject json = null;
+
+            // might want Json verification as own function since all will do it.. we will see
+            try { json = JObject.Parse(userJson); }
+            catch (Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Invalid Json", userJson, ex.Message);
+                return JObject.FromObject(error).ToString();
+            }
+
+            return "";
+        }
+
         // Get a specific user.
         [HttpGet("{id:int}"), Authorize] // working
         public string User_GetUser(int id)
@@ -99,20 +116,29 @@ namespace SafeAccountsAPI.Controllers
             return message.ToString();
         }
 
-        // register new user
-        [HttpPost] // in progress
-        public string User_AddUser([FromBody]string userJson)
+        [HttpDelete("{id:int}"), Authorize] // working
+        public string User_DeleteUser(int id)
         {
-            JObject json = null;
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
 
-            // might want Json verification as own function since all will do it.. we will see
-            try { json = JObject.Parse(userJson); }
-            catch (Exception ex) {
-                ErrorMessage error = new ErrorMessage("Invalid Json", userJson, ex.Message);
+            try
+            {
+                // attempt to remove all data and update changes
+                _context.Accounts.RemoveRange(_context.Accounts.Where(a => a.UserID == id));
+                _context.RefreshTokens.RemoveRange(_context.RefreshTokens.Where(a => a.UserID == id));
+                _context.Users.Remove(_context.Users.Single(a => a.ID == id));
+                _context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Failed to delete user.", "ID: " + id.ToString(), ex.Message);
                 return JObject.FromObject(error).ToString();
             }
 
-            return "";
+            JObject message = JObject.Parse(SuccessMessage._result);
+            return message.ToString();
         }
 
         [HttpGet("{id:int}/firstname"), Authorize] // working
@@ -181,28 +207,6 @@ namespace SafeAccountsAPI.Controllers
 
             JObject message = JObject.Parse(SuccessMessage._result);
             message.Add(new JProperty("new_lastname", _context.Users.Where(a => a.ID == id).Single().Last_Name)); // this part re-affirms that in the database we have a new firstname
-            return message.ToString();
-        }
-
-        [HttpDelete("{id:int}"), Authorize] // working
-        public string User_DeleteUser(int id)
-        {
-            // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-                return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
-
-            try
-            {
-                _context.Users.Remove(_context.Users.Single(a => a.ID == id));
-                _context.SaveChanges();
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage error = new ErrorMessage("Failed to delete user.", "ID: " + id.ToString(), ex.Message);
-                return JObject.FromObject(error).ToString();
-            }
-
-            JObject message = JObject.Parse(SuccessMessage._result);
             return message.ToString();
         }
 
