@@ -85,7 +85,7 @@ namespace SafeAccountsAPI.Controllers
         }
 
         // register new user
-        [HttpPost, AllowAnonymous] // in progress
+        [HttpPost, AllowAnonymous] // Working.. needs password hashing
         public string User_AddUser([FromBody]string userJson)
         {
             JObject json = null;
@@ -98,7 +98,22 @@ namespace SafeAccountsAPI.Controllers
                 return JObject.FromObject(error).ToString();
             }
 
-            return "";
+            // attempt to create new user and add to the database... later we need to implement hashing
+            try
+            {
+                User newUser = new User { First_Name = json["firstname"].ToString(), Last_Name = json["lastname"].ToString(), Email = json["email"].ToString(), Password = json["password"].ToString(), NumAccs = 0, Role = UserRoles.User };
+                _context.Users.Add(newUser);
+                _context.SaveChanges();
+            }
+            catch(Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Failed to create new user", json.ToString(), ex.Message);
+                return JObject.FromObject(error).ToString();
+            }
+
+            JObject message = JObject.Parse(SuccessMessage._result);
+            message.Add(new JProperty("id", _context.Users.Single(a => a.Email == json["email"].ToString()).ID)); // user context to get id since locally created user will not have id set
+            return message.ToString();
         }
 
         // Get a specific user.
