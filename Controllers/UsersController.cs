@@ -207,16 +207,23 @@ namespace SafeAccountsAPI.Controllers
         }
 
         // get all users accounts
-        [HttpPost("{id:int}/accounts")]
+        [HttpGet("{id:int}/accounts"), Authorize]
         public string User_GetAccounts(int id)
         {
-            //int user_id = _context.Users.Where(a => a.ID == id).Single().ID;
-            
+            // Get email from the token and compare it with the email of the user they are trying to access
+            ClaimsPrincipal claims = _httpContextAccessor.HttpContext.User;
+            string callerEmail = claims.FindFirst(ClaimTypes.Email).Value;
+            string callerRole = claims.FindFirst(ClaimTypes.Role).Value;
+
+            // verify that the user is either admin or is requesting their own data
+            if (callerEmail != _context.Users.Single(a => a.ID == id).Email && callerRole != UserRoles.Admin)
+                return JObject.FromObject(new ErrorMessage("Invalid User", "Caller's Email: " + callerEmail + " Caller's Role: " + callerRole, "Caller can only access their information.")).ToString();
+
             // format success response.. maybe could be done better but not sure yet
             JObject message = JObject.Parse(SuccessMessage._result);
-            message.Add(new JProperty("user", JToken.FromObject(new ReturnableUser(_context.Users.Single(a => a.ID == id)))));
+            //message.Add(new JProperty("user", JToken.FromObject(new ReturnableUser(_context.Users.Single(a => a.ID == id)))));
             JArray accs = new JArray();
-            foreach (Account acc in _context.Accounts.Where(a => a.UserID == id))
+            foreach (Account acc in _context.Users.Single(a => a.ID == id).Accounts)
             {
                 accs.Add(JToken.FromObject(new ReturnableAccount(acc)));
             }
@@ -225,16 +232,10 @@ namespace SafeAccountsAPI.Controllers
         }
 
         // add account.. input format is json
-        [HttpGet("{id:int}/accounts")]
-        public List<ReturnableAccount> User_AddAccount(int id, [FromBody]string accJson) 
+        [HttpPost("{id:int}/accounts")]
+        public string User_AddAccount(int id, [FromBody]string accJson) 
         {
-            List<ReturnableAccount> accs = new List<ReturnableAccount>();
-            foreach (Account acc in _context.Users.Single(a => a.ID == id).Accounts)
-            {
-                ReturnableAccount retAcc = new ReturnableAccount(acc);
-                accs.Add(retAcc);
-            }
-            return accs;
+            return "";
         }
     }
 }
