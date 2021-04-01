@@ -8,6 +8,8 @@ Cloud based account manager API (RESTful implementation).
 * **/users**
   * Get - Retrieve all users. Admin users only.
   * Post - Add new user.
+* **/users/login**
+  * Post - Sign in with user credentials and retrieve tokens.
 * **/users/{id}**
   * Get - Retrieve user data. Admin or Authorized user only.
   * Delete - Remove a user and all associated data. Admin or Authorized user only
