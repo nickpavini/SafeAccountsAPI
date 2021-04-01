@@ -15,9 +15,11 @@ namespace SafeAccountsAPI.Controllers
 {
     public static class HelperMethods
     {
+        public static string token_key = "KeyForSignInSecret@1234";
+
         public static string GenerateJWTAccessToken(string role, string email)
         {
-            var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("KeyForSignInSecret@1234"));
+            var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(token_key));
             var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
 
             var tokeOptions = new JwtSecurityToken(

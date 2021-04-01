@@ -64,7 +64,7 @@ namespace SafeAccountsAPI.Controllers
                 ValidAudience = "http://localhost:5000",
                 IssuerSigningKey =
                     new SymmetricSecurityKey(
-                        Encoding.ASCII.GetBytes("KeyForSignInSecret@1234")
+                        Encoding.ASCII.GetBytes(HelperMethods.token_key)
                     )
             };
 
