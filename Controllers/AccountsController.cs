@@ -16,20 +16,20 @@ namespace SafeAccountsAPI.Controllers
     [ApiController]
     public class AccountsController : ControllerBase
     {
-        private bool isAdmin = false;
-        public AccountsController(APIContext context, IHttpContextAccessor httpContextAccessor)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly APIContext _context;
+
+        public AccountsController(APIContext context, IHttpContextAccessor httpContextAccessor) 
         {
-            // all instances must be admin, users manage accounts throught the users API
-            string callerRole = httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Role).Value;
-            if (callerRole == UserRoles.Admin)
-                isAdmin = true;
+            _httpContextAccessor = httpContextAccessor;
+            _context = context;
         }
 
         // GET: api/Accounts
         [HttpGet] // in progress
         public string GetAllAccounts()
         {
-            if (!isAdmin)
+            if (!HelperMethods.ValidateIsAdmin(_httpContextAccessor))
                 return JObject.FromObject(new ErrorMessage("Invalid Role", "n/a", "Caller must have admin role.")).ToString(); // n/a for no args there
 
             return JObject.Parse(SuccessMessage._result).ToString();

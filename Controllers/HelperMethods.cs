@@ -75,13 +75,28 @@ namespace SafeAccountsAPI.Controllers
         // make sure this user is either admin or trying to access something they own
         public static bool ValidateIsUserOrAdmin(IHttpContextAccessor httpContextAccessor, APIContext context, int id)
         {
-            // Get email from the token and compare it with the email of the user they are trying to access
-            ClaimsPrincipal claims = httpContextAccessor.HttpContext.User;
-            string callerEmail = claims.FindFirst(ClaimTypes.Email).Value;
-            string callerRole = claims.FindFirst(ClaimTypes.Role).Value;
-
             // verify that the user is either admin or is requesting their own data
-            if (callerEmail == context.Users.Single(a => a.ID == id).Email || callerRole == UserRoles.Admin)
+            if (ValidateIsUser(httpContextAccessor, context, id) || ValidateIsAdmin(httpContextAccessor))
+                return true;
+            else
+                return false;
+        }
+
+        // validate that this use is an Admin
+        public static bool ValidateIsAdmin(IHttpContextAccessor httpContextAccessor)
+        {
+            string callerRole = httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Role).Value;
+            if (callerRole == UserRoles.Admin)
+                return true;
+            else
+                return false;
+        }
+
+        // validate that the user trying to be accessed is the same as the user making the call
+        public static bool ValidateIsUser(IHttpContextAccessor httpContextAccessor, APIContext context, int id)
+        {
+            string callerEmail = httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Email).Value;
+            if (callerEmail == context.Users.Single(a => a.ID == id).Email)
                 return true;
             else
                 return false;

@@ -14,11 +14,12 @@ using System.Security.Claims;
 namespace SafeAccountsAPI.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("[controller]")]
     public class UsersController : Controller
     {
         private readonly APIContext _context; // database handle
-        private readonly IHttpContextAccessor _httpContextAccessor = null; // handle to all http information.. used for authorization
+        private readonly IHttpContextAccessor _httpContextAccessor; // handle to all http information.. used for authorization
 
         // get an instance of a database and http handle
         public UsersController(APIContext context, IHttpContextAccessor httpContextAccessor) { 
@@ -27,7 +28,7 @@ namespace SafeAccountsAPI.Controllers
         }
 
         // login and get tokens...
-        [HttpPost("login")] //working
+        [HttpPost("login"), AllowAnonymous] //working
         public string User_Login([FromBody]string credentials)
         {
             JObject json = null;
@@ -66,12 +67,11 @@ namespace SafeAccountsAPI.Controllers
         }
 
         // Get all available users.. might change later as it might not make sense to grab all accounts if there are tons
-        [HttpGet, Authorize] //working
+        [HttpGet] //working
         public string GetAllUsers()
         {
-            string callerRole = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Role).Value;
-            if (callerRole != UserRoles.Admin)
-                return JObject.FromObject(new ErrorMessage("Invalid Role", "Caller's Role: " + callerRole, "Caller must have admin role.")).ToString();
+            if (!HelperMethods.ValidateIsAdmin(_httpContextAccessor))
+                return JObject.FromObject(new ErrorMessage("Invalid Role", "n/a", "Caller must have admin role.")).ToString(); // n/a for no args there
 
             // format success response.. maybe could be done better but not sure yet
             JObject message = JObject.Parse(SuccessMessage._result);
@@ -85,7 +85,7 @@ namespace SafeAccountsAPI.Controllers
         }
 
         // register new user
-        [HttpPost] // in progress
+        [HttpPost, AllowAnonymous] // in progress
         public string User_AddUser([FromBody]string userJson)
         {
             JObject json = null;
@@ -102,7 +102,7 @@ namespace SafeAccountsAPI.Controllers
         }
 
         // Get a specific user.
-        [HttpGet("{id:int}"), Authorize] // working
+        [HttpGet("{id:int}")] // working
         public string User_GetUser(int id)
         {
             // verify that the user is either admin or is requesting their own data
@@ -116,7 +116,7 @@ namespace SafeAccountsAPI.Controllers
             return message.ToString();
         }
 
-        [HttpDelete("{id:int}"), Authorize] // working
+        [HttpDelete("{id:int}")] // working
         public string User_DeleteUser(int id)
         {
             // verify that the user is either admin or is requesting their own data
@@ -141,7 +141,7 @@ namespace SafeAccountsAPI.Controllers
             return message.ToString();
         }
 
-        [HttpGet("{id:int}/firstname"), Authorize] // working
+        [HttpGet("{id:int}/firstname")] // working
         public string User_GetFirstName(int id)
         {
             // verify that the user is either admin or is requesting their own data
@@ -153,7 +153,7 @@ namespace SafeAccountsAPI.Controllers
             return message.ToString();
         }
 
-        [HttpPut("{id:int}/firstname"), Authorize] // working
+        [HttpPut("{id:int}/firstname")] // working
         public string User_EditFirstName(int id, [FromBody]string firstname)
         {
             // verify that the user is either admin or is requesting their own data
@@ -175,7 +175,7 @@ namespace SafeAccountsAPI.Controllers
             return message.ToString();
         }
 
-        [HttpGet("{id:int}/lastname"), Authorize] // working
+        [HttpGet("{id:int}/lastname")] // working
         public string User_GetLastName(int id)
         {
             // verify that the user is either admin or is requesting their own data
@@ -187,7 +187,7 @@ namespace SafeAccountsAPI.Controllers
             return message.ToString();
         }
 
-        [HttpPut("{id:int}/lastname"), Authorize] // working
+        [HttpPut("{id:int}/lastname")] // working
         public string User_EditLastName(int id, [FromBody]string lastname)
         {
             // verify that the user is either admin or is requesting their own data
@@ -211,7 +211,7 @@ namespace SafeAccountsAPI.Controllers
         }
 
         // get all of the user's accounts
-        [HttpGet("{id:int}/accounts"), Authorize] // working
+        [HttpGet("{id:int}/accounts")] // working
         public string User_GetAccounts(int id)
         {
             // verify that the user is either admin or is requesting their own data
@@ -227,7 +227,7 @@ namespace SafeAccountsAPI.Controllers
         }
 
         // add account.. input format is json
-        [HttpPost("{id:int}/accounts"), Authorize] // in progress
+        [HttpPost("{id:int}/accounts")] // in progress
         public string User_AddAccount(int id, [FromBody]string accJson) 
         {
             // verify that the user is either admin or is requesting their own data
