@@ -16,7 +16,6 @@ namespace SafeAccountsAPI.Models
 
     public class ReturnableRefreshToken
     {
-        public int UserID { get; set; }
         public string Token { get; set; }
         public string Expiration { get; set; }
 

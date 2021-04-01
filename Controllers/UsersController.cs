@@ -48,7 +48,9 @@ namespace SafeAccountsAPI.Controllers
                 {
                     var tokenString = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email);
                     RefreshToken refToken = HelperMethods.GenerateRefreshToken(user, _context);
-                    return HelperMethods.GenerateLoginResponse(tokenString, refToken, user.ID);
+                    string ret = HelperMethods.GenerateLoginResponse(tokenString, refToken, user.ID);
+                    _context.SaveChanges(); // always last on db to make sure nothing breaks and db has new info
+                    return ret;
                 }
                 else
                 {
@@ -188,9 +190,18 @@ namespace SafeAccountsAPI.Controllers
         //}
 
         // DELETE api/<controller>/5
-        [HttpDelete("{id:int}")]
+        [HttpDelete("{id:int}"), Authorize]
         public string User_DeleteUser(int id)
         {
+            // Get email from the token and compare it with the email of the user they are trying to access
+            ClaimsPrincipal claims = _httpContextAccessor.HttpContext.User;
+            string callerEmail = claims.FindFirst(ClaimTypes.Email).Value;
+            string callerRole = claims.FindFirst(ClaimTypes.Role).Value;
+
+            // verify that the user is either admin or is requesting their own data
+            if (callerEmail != _context.Users.Single(a => a.ID == id).Email && callerRole != UserRoles.Admin)
+                return JObject.FromObject(new ErrorMessage("Invalid User", "Caller's Email: " + callerEmail + " Caller's Role: " + callerRole, "Caller can only access their information.")).ToString();
+
             try
             {
                 _context.Users.Remove(_context.Users.Single(a => a.ID == id));

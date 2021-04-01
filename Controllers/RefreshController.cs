@@ -42,12 +42,13 @@ namespace SafeAccountsAPI.Controllers
             }
 
             // attempt getting user from claims
-            User user = GetUserFromAccessToken(json["accessToken"].ToString());
+            User user = GetUserFromAccessToken(json["access_token"].ToString());
             ValidateRefreshToken(user, json["refresh_token"].ToString()); // make sure this is a valid token for the user
             string newToken = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email);
             RefreshToken newRefresh = HelperMethods.GenerateRefreshToken(user, _context);
-
-            return HelperMethods.GenerateLoginResponse(newToken, newRefresh, user.ID);
+            string ret = HelperMethods.GenerateLoginResponse(newToken, newRefresh, user.ID);
+            _context.SaveChanges(); // save refresh token just before returning string to be safe
+            return ret;
         }
 
         private User GetUserFromAccessToken(string accessToken)
@@ -91,8 +92,7 @@ namespace SafeAccountsAPI.Controllers
         // make sure the refresh token is valid
         private void ValidateRefreshToken(User user, string refreshToken)
         {
-            if (user == null ||
-                !user.RefreshTokens.Exists(rt => rt.Token == refreshToken))
+            if (user == null || !user.RefreshTokens.Exists(rt => rt.Token == refreshToken))
             {
                 throw new SecurityTokenException("Invalid token!");
             }

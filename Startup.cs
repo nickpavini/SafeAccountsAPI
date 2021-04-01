@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
+using System;
 
 namespace SafeAccountsAPI
 {
@@ -37,6 +38,7 @@ namespace SafeAccountsAPI
                    ValidateAudience = true,
                    ValidateLifetime = true,
                    ValidateIssuerSigningKey = true,
+                   ClockSkew = TimeSpan.Zero, // use this to make time accurate when validating
 
                    ValidIssuer = "http://localhost:5000",
                    ValidAudience = "http://localhost:5000",
