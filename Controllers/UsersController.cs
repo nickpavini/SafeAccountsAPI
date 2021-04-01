@@ -207,7 +207,7 @@ namespace SafeAccountsAPI.Controllers
         }
 
         // get all users accounts
-        [HttpGet("{id:int}/accounts")]
+        [HttpPost("{id:int}/accounts")]
         public string User_GetAccounts(int id)
         {
             //int user_id = _context.Users.Where(a => a.ID == id).Single().ID;
@@ -225,10 +225,16 @@ namespace SafeAccountsAPI.Controllers
         }
 
         // add account.. input format is json
-        [HttpPost("{id:int}/accounts")]
-        public List<Account> User_AddAccount(int id, [FromBody]string acc) 
+        [HttpGet("{id:int}/accounts")]
+        public List<ReturnableAccount> User_AddAccount(int id, [FromBody]string accJson) 
         {
-            return _context.Users.Single(a => a.ID == id).Accounts;
+            List<ReturnableAccount> accs = new List<ReturnableAccount>();
+            foreach (Account acc in _context.Users.Single(a => a.ID == id).Accounts)
+            {
+                ReturnableAccount retAcc = new ReturnableAccount(acc);
+                accs.Add(retAcc);
+            }
+            return accs;
         }
     }
 }

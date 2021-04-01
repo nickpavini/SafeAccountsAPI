@@ -5,11 +5,11 @@ namespace SafeAccountsAPI.Models
 {
     public class User
     {
-        public User() {
+        //public User() {
             
-            this.RefreshTokens = new List<RefreshToken>();
-            this.Accounts = new List<Account>();
-        }
+        //    this.RefreshTokens = new List<RefreshToken>();
+        //    this.Accounts = new List<Account>();
+        //}
 
         public int ID { get; set; }
         public string First_Name { get; set; }
