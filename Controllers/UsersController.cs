@@ -7,7 +7,6 @@ using Newtonsoft.Json.Linq;
 using System;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using System.Collections.Generic;
 using System.Security.Claims;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -27,7 +26,8 @@ namespace SafeAccountsAPI.Controllers
             _httpContextAccessor = httpContextAccessor;
         }
 
-        [HttpPost("login")]
+        // login and get tokens...
+        [HttpPost("login")] //working
         public string User_Login([FromBody]string credentials)
         {
             JObject json = null;
@@ -65,10 +65,8 @@ namespace SafeAccountsAPI.Controllers
             }
         }
 
-        // GET: /<controller>
         // Get all available users.. might change later as it might not make sense to grab all accounts if there are tons
-        // More of an admin functionality
-        [HttpGet, Authorize]
+        [HttpGet, Authorize] //working
         public string GetAllUsers()
         {
             string callerRole = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Role).Value;
@@ -86,19 +84,13 @@ namespace SafeAccountsAPI.Controllers
             return message.ToString();
         }
 
-        // GET /<controller>/5
-        // Get a specific user.. later we will need to learn about the authentications and such
-        [HttpGet("{id:int}"), Authorize]
+        // Get a specific user.
+        [HttpGet("{id:int}"), Authorize] // working
         public string User_GetUser(int id)
         {
-            // Get email from the token and compare it with the email of the user they are trying to access
-            ClaimsPrincipal claims = _httpContextAccessor.HttpContext.User;
-            string callerEmail = claims.FindFirst(ClaimTypes.Email).Value;
-            string callerRole = claims.FindFirst(ClaimTypes.Role).Value;
-
             // verify that the user is either admin or is requesting their own data
-            if (callerEmail != _context.Users.Single(a => a.ID == id).Email && callerRole != UserRoles.Admin)
-                return JObject.FromObject(new ErrorMessage("Invalid User", "Caller's Email: " + callerEmail + " Caller's Role: " + callerRole, "Caller can only access their information.")).ToString();
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
 
             //format response
             JObject message = JObject.Parse(SuccessMessage._result);
@@ -107,8 +99,8 @@ namespace SafeAccountsAPI.Controllers
             return message.ToString();
         }
 
-        // POST /<controller>
-        [HttpPost]
+        // register new user
+        [HttpPost] // in progress
         public string User_AddUser([FromBody]string userJson)
         {
             JObject json = null;
@@ -123,17 +115,25 @@ namespace SafeAccountsAPI.Controllers
             return "";
         }
 
-        [HttpGet("{id:int}/firstname")]
+        [HttpGet("{id:int}/firstname"), Authorize] // working
         public string User_GetFirstName(int id)
         {
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+
             JObject message = JObject.Parse(SuccessMessage._result);
             message.Add(new JProperty("firstname", _context.Users.Where(a => a.ID == id).Single().First_Name));
             return message.ToString();
         }
 
-        [HttpPut("{id:int}/firstname")]
+        [HttpPut("{id:int}/firstname"), Authorize] // working
         public string User_EditFirstName(int id, [FromBody]string firstname)
         {
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+
             try
             {
                 _context.Users.Where(a => a.ID == id).Single().First_Name = firstname;
@@ -149,17 +149,25 @@ namespace SafeAccountsAPI.Controllers
             return message.ToString();
         }
 
-        [HttpGet("{id:int}/lastname")]
+        [HttpGet("{id:int}/lastname"), Authorize] // working
         public string User_GetLastName(int id)
         {
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+
             JObject message = JObject.Parse(SuccessMessage._result);
             message.Add(new JProperty("lastname", _context.Users.Where(a => a.ID == id).Single().Last_Name));
             return message.ToString();
         }
 
-        [HttpPut("{id:int}/lastname")]
+        [HttpPut("{id:int}/lastname"), Authorize] // working
         public string User_EditLastName(int id, [FromBody]string lastname)
         {
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+
             try
             {
                 _context.Users.Where(a => a.ID == id).Single().Last_Name = lastname;
@@ -176,31 +184,12 @@ namespace SafeAccountsAPI.Controllers
             return message.ToString();
         }
 
-        //// PUT /<controller>/5
-        //[HttpPut("{username}")]
-        //public string EditUser(string username, [FromBody]string userJson)
-        //{
-        //     JObject json = null;
-
-        //    // might want Json verification as own function since all will do it.. we will see
-        //    try { json = JObject.Parse(userJson); }
-        //    catch (Exception ex) { return @"{""error"":""Invalid Json. Input: " + userJson + " Message: " + ex.ToString() + @"""}"; }
-
-        //    return "";
-        //}
-
-        // DELETE api/<controller>/5
-        [HttpDelete("{id:int}"), Authorize]
+        [HttpDelete("{id:int}"), Authorize] // working
         public string User_DeleteUser(int id)
         {
-            // Get email from the token and compare it with the email of the user they are trying to access
-            ClaimsPrincipal claims = _httpContextAccessor.HttpContext.User;
-            string callerEmail = claims.FindFirst(ClaimTypes.Email).Value;
-            string callerRole = claims.FindFirst(ClaimTypes.Role).Value;
-
             // verify that the user is either admin or is requesting their own data
-            if (callerEmail != _context.Users.Single(a => a.ID == id).Email && callerRole != UserRoles.Admin)
-                return JObject.FromObject(new ErrorMessage("Invalid User", "Caller's Email: " + callerEmail + " Caller's Role: " + callerRole, "Caller can only access their information.")).ToString();
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
 
             try
             {
@@ -217,35 +206,30 @@ namespace SafeAccountsAPI.Controllers
             return message.ToString();
         }
 
-        // get all users accounts
-        [HttpGet("{id:int}/accounts"), Authorize]
+        // get all of the user's accounts
+        [HttpGet("{id:int}/accounts"), Authorize] // working
         public string User_GetAccounts(int id)
         {
-            // Get email from the token and compare it with the email of the user they are trying to access
-            ClaimsPrincipal claims = _httpContextAccessor.HttpContext.User;
-            string callerEmail = claims.FindFirst(ClaimTypes.Email).Value;
-            string callerRole = claims.FindFirst(ClaimTypes.Role).Value;
-
             // verify that the user is either admin or is requesting their own data
-            if (callerEmail != _context.Users.Single(a => a.ID == id).Email && callerRole != UserRoles.Admin)
-                return JObject.FromObject(new ErrorMessage("Invalid User", "Caller's Email: " + callerEmail + " Caller's Role: " + callerRole, "Caller can only access their information.")).ToString();
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
 
             // format success response.. maybe could be done better but not sure yet
             JObject message = JObject.Parse(SuccessMessage._result);
-            //message.Add(new JProperty("user", JToken.FromObject(new ReturnableUser(_context.Users.Single(a => a.ID == id)))));
             JArray accs = new JArray();
-            foreach (Account acc in _context.Users.Single(a => a.ID == id).Accounts)
-            {
-                accs.Add(JToken.FromObject(new ReturnableAccount(acc)));
-            }
+            foreach (Account acc in _context.Users.Single(a => a.ID == id).Accounts) { accs.Add(JToken.FromObject(new ReturnableAccount(acc))); }
             message.Add(new JProperty("accounts", accs));
             return message.ToString();
         }
 
         // add account.. input format is json
-        [HttpPost("{id:int}/accounts")]
+        [HttpPost("{id:int}/accounts"), Authorize] // in progress
         public string User_AddAccount(int id, [FromBody]string accJson) 
         {
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+
             return "";
         }
     }

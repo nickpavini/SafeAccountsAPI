@@ -8,6 +8,8 @@ using System.Text;
 using SafeAccountsAPI.Data;
 using System.Security.Cryptography;
 using Newtonsoft.Json.Linq;
+using Microsoft.AspNetCore.Http;
+using System.Linq;
 
 namespace SafeAccountsAPI.Controllers
 {
@@ -68,6 +70,21 @@ namespace SafeAccountsAPI.Controllers
             message.Add(new JProperty("refresh_token", JToken.FromObject(new ReturnableRefreshToken(rt))));
             message.Add(new JProperty("id", id));
             return message.ToString();
+        }
+
+        // make sure this user is either admin or trying to access something they own
+        public static bool ValidateIsUserOrAdmin(IHttpContextAccessor httpContextAccessor, APIContext context, int id)
+        {
+            // Get email from the token and compare it with the email of the user they are trying to access
+            ClaimsPrincipal claims = httpContextAccessor.HttpContext.User;
+            string callerEmail = claims.FindFirst(ClaimTypes.Email).Value;
+            string callerRole = claims.FindFirst(ClaimTypes.Role).Value;
+
+            // verify that the user is either admin or is requesting their own data
+            if (callerEmail == context.Users.Single(a => a.ID == id).Email || callerRole == UserRoles.Admin)
+                return true;
+            else
+                return false;
         }
     }
 }
