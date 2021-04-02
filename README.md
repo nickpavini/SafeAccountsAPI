@@ -1,6 +1,6 @@
 # SafeAccountsAPI
 The Open Source password manager API in the cloud. (RESTful implementation).<br />
-Live Domain: https://eus-safeaccounts-test.azurewebsites.net
+<ins>Live Domain:</ins> https://eus-safeaccounts-test.azurewebsites.net
 
 CI/CD is setup through Github Actions, so all accepted commits are available through the domain within about a minute, and SafeAccountsAPI is deployed as an Azure App Service that connects to an Azure Database for MySQL server.
 
