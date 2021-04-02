@@ -14,18 +14,29 @@
 						{
 							"name": "users/id",
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJ1c2VyIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoiam9obkBkb2UuY29tIiwiZXhwIjoxNjE3MzY4OTA4LCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjUwMDAiLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDAifQ.MvG6DZOL4Sq5Qp1hSVuy0uy3SKHV_ojo8CM1EKuZ7ho",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "https://localhost:44366/users/4",
+									"raw": "https://eus-safeaccounts-test.azurewebsites.net/users/1",
 									"protocol": "https",
 									"host": [
-										"localhost"
+										"eus-safeaccounts-test",
+										"azurewebsites",
+										"net"
 									],
-									"port": "44366",
 									"path": [
 										"users",
-										"4"
+										"1"
 									]
 								}
 							},
@@ -36,7 +47,19 @@
 							"request": {
 								"method": "DELETE",
 								"header": [],
-								"url": null
+								"url": {
+									"raw": "https://eus-safeaccounts-test.azurewebsites.net/users/4",
+									"protocol": "https",
+									"host": [
+										"eus-safeaccounts-test",
+										"azurewebsites",
+										"net"
+									],
+									"path": [
+										"users",
+										"4"
+									]
+								}
 							},
 							"response": []
 						}
@@ -48,9 +71,32 @@
 						{
 							"name": "user/id/accounts",
 							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJ1c2VyIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoiam9obkBkb2UuY29tIiwiZXhwIjoxNjE3MzY4OTA4LCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjUwMDAiLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDAifQ.MvG6DZOL4Sq5Qp1hSVuy0uy3SKHV_ojo8CM1EKuZ7ho",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
 								"header": [],
-								"url": null
+								"url": {
+									"raw": "https://eus-safeaccounts-test.azurewebsites.net/users/1/accounts",
+									"protocol": "https",
+									"host": [
+										"eus-safeaccounts-test",
+										"azurewebsites",
+										"net"
+									],
+									"path": [
+										"users",
+										"1",
+										"accounts"
+									]
+								}
 							},
 							"response": []
 						},
@@ -59,7 +105,20 @@
 							"request": {
 								"method": "POST",
 								"header": [],
-								"url": null
+								"url": {
+									"raw": "https://eus-safeaccounts-test.azurewebsites.net/users/4/accounts",
+									"protocol": "https",
+									"host": [
+										"eus-safeaccounts-test",
+										"azurewebsites",
+										"net"
+									],
+									"path": [
+										"users",
+										"4",
+										"accounts"
+									]
+								}
 							},
 							"response": []
 						}
@@ -70,16 +129,29 @@
 					"item": [
 						{
 							"name": "users",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
 							"request": {
 								"method": "GET",
 								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "\"{\\\"regex\\\":\\\"[a-zA-Z0-9]\\\",\\\"minLength\\\":8,\\\"maxLength\\\":12}\"",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
 								"url": {
-									"raw": "https://localhost:44366/users",
+									"raw": "https://eus-safeaccounts-test.azurewebsites.net/users",
 									"protocol": "https",
 									"host": [
-										"localhost"
+										"eus-safeaccounts-test",
+										"azurewebsites",
+										"net"
 									],
-									"port": "44366",
 									"path": [
 										"users"
 									]
@@ -94,7 +166,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "\"{\\\"firstname\\\":\\\"John\\\", \\\"lastname\\\":\\\"Doe\\\", \\\"email\\\":\\\"john@doe.com\\\", \\\"password\\\":\\\"useless\\\"}\"",
+									"raw": "\"{\\\"firstname\\\":\\\"Edwin\\\", \\\"lastname\\\":\\\"May\\\", \\\"email\\\":\\\"edwin@may.com\\\", \\\"password\\\":\\\"useless\\\"}\"",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -102,12 +174,13 @@
 									}
 								},
 								"url": {
-									"raw": "https://localhost:44366/users",
+									"raw": "https://eus-safeaccounts-test.azurewebsites.net/users",
 									"protocol": "https",
 									"host": [
-										"localhost"
+										"eus-safeaccounts-test",
+										"azurewebsites",
+										"net"
 									],
-									"port": "44366",
 									"path": [
 										"users"
 									]
@@ -132,12 +205,13 @@
 							}
 						},
 						"url": {
-							"raw": "https://localhost:44366/users/login",
+							"raw": "https://eus-safeaccounts-test.azurewebsites.net/users/login",
 							"protocol": "https",
 							"host": [
-								"localhost"
+								"eus-safeaccounts-test",
+								"azurewebsites",
+								"net"
 							],
-							"port": "44366",
 							"path": [
 								"users",
 								"login"
@@ -161,12 +235,13 @@
 							}
 						},
 						"url": {
-							"raw": "https://localhost:44366/users/3/firstname",
+							"raw": "https://eus-safeaccounts-test.azurewebsites.net/users/3/firstname",
 							"protocol": "https",
 							"host": [
-								"localhost"
+								"eus-safeaccounts-test",
+								"azurewebsites",
+								"net"
 							],
-							"port": "44366",
 							"path": [
 								"users",
 								"3",
@@ -199,12 +274,13 @@
 							}
 						},
 						"url": {
-							"raw": "https://localhost:44366/passwords/generate",
+							"raw": "https://eus-safeaccounts-test.azurewebsites.net/passwords/generate",
 							"protocol": "https",
 							"host": [
-								"localhost"
+								"eus-safeaccounts-test",
+								"azurewebsites",
+								"net"
 							],
-							"port": "44366",
 							"path": [
 								"passwords",
 								"generate"
@@ -233,12 +309,13 @@
 					}
 				},
 				"url": {
-					"raw": "https://localhost:44366/refresh",
+					"raw": "https://eus-safeaccounts-test.azurewebsites.net/refresh",
 					"protocol": "https",
 					"host": [
-						"localhost"
+						"eus-safeaccounts-test",
+						"azurewebsites",
+						"net"
 					],
-					"port": "44366",
 					"path": [
 						"refresh"
 					]
