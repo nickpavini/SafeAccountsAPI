@@ -15,7 +15,8 @@ namespace SafeAccountsAPI.Controllers
 {
     public static class HelperMethods
     {
-        public static string token_key = "KeyForSignInSecret@1234";
+        public static string token_key = "KeyForSignInSecret@1234"; // key for encrypting access tokens
+        public static int salt_length = 12; // length of salts for password storage
 
         public static string GenerateJWTAccessToken(string role, string email)
         {
@@ -102,6 +103,40 @@ namespace SafeAccountsAPI.Controllers
                 return true;
             else
                 return false;
+        }
+        
+        // create a salt for hashing
+        public static byte[] CreateSalt(int size)
+        {
+            //Generate a cryptographic random number.
+            RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
+            byte[] buff = new byte[size];
+            rng.GetBytes(buff);
+
+            // Return a Base64 string representation of the random number.
+            return buff;
+        }
+
+
+        public static byte[] GenerateSaltedHash(byte[] plainText, byte[] salt)
+        {
+            HashAlgorithm algorithm = new SHA256Managed();
+
+
+            byte[] plainTextWithSaltBytes =
+              new byte[plainText.Length + salt.Length];
+
+            // prepend salt
+            for (int i = 0; i < salt.Length; i++)
+            {
+                plainTextWithSaltBytes[plainText.Length + i] = salt[i];
+            }
+            for (int i = 0; i < plainText.Length; i++)
+            {
+                plainTextWithSaltBytes[i] = plainText[i];
+            }
+
+            return algorithm.ComputeHash(plainTextWithSaltBytes);
         }
     }
 }

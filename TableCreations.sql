@@ -7,7 +7,7 @@ Create Table Users
 	First_Name nvarchar(20),
 	Last_Name nvarchar(30),
 	Email nvarchar(50) unique,
-	Password nvarchar(50),
+	Password varbinary(200),
 	NumAccs int,
 	Role nvarchar(25),
 )

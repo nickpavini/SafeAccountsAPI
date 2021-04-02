@@ -8,6 +8,8 @@ using System;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
+using System.Text;
+using System.Security.Cryptography;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -41,11 +43,15 @@ namespace SafeAccountsAPI.Controllers
 
             try
             {
+                // get users saved password hash and salt
                 User user = _context.Users.Single(a => a.Email == json["email"].ToString());
-                string userPass = user.Password;
+                byte[] passwordHash = new byte[user.Password.Length - HelperMethods.salt_length];
+                byte[] salt = new byte[HelperMethods.salt_length]; ;
+                Buffer.BlockCopy(user.Password, 0, salt, 0, salt.Length);
+                Buffer.BlockCopy(user.Password, HelperMethods.salt_length, passwordHash, 0, passwordHash.Length);
 
-                // successful login
-                if (userPass == json["password"].ToString())
+                // successful login.. compare user hash to the hash generated from the inputted password and salt
+                if (passwordHash.SequenceEqual(HelperMethods.GenerateSaltedHash(Encoding.UTF8.GetBytes(json["password"].ToString()), salt)))
                 {
                     var tokenString = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email);
                     RefreshToken refToken = HelperMethods.GenerateRefreshToken(user, _context);
@@ -101,7 +107,14 @@ namespace SafeAccountsAPI.Controllers
             // attempt to create new user and add to the database... later we need to implement hashing
             try
             {
-                User newUser = new User { First_Name = json["firstname"].ToString(), Last_Name = json["lastname"].ToString(), Email = json["email"].ToString(), Password = json["password"].ToString(), NumAccs = 0, Role = UserRoles.User };
+                // hash password with salt.. still trying to understand a bit about the difference between unicode and base 64 string so for now we are just dealing with byte arrays
+                byte[] salt = HelperMethods.CreateSalt(HelperMethods.salt_length);
+                byte[] password = HelperMethods.GenerateSaltedHash(Encoding.UTF8.GetBytes(json["password"].ToString()), salt);
+                byte[] concatenated = new byte[salt.Length + password.Length];
+                Buffer.BlockCopy(salt, 0, concatenated, 0, salt.Length);
+                Buffer.BlockCopy(password, 0, concatenated, salt.Length, password.Length);
+
+                User newUser = new User { First_Name = json["firstname"].ToString(), Last_Name = json["lastname"].ToString(), Email = json["email"].ToString(), Password = concatenated, NumAccs = 0, Role = UserRoles.User };
                 _context.Users.Add(newUser);
                 _context.SaveChanges();
             }

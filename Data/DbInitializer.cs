@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using SafeAccountsAPI.Models;
 using System.Threading.Tasks;
+using System.Text;
 
 namespace SafeAccountsAPI.Data
 {
@@ -19,11 +20,11 @@ namespace SafeAccountsAPI.Data
                 // add base users if data base not populated
                 var users = new User[]
                 {
-                    new User { First_Name="John", Last_Name="Doe", Email="john@doe.com", Password="useless", NumAccs=2, Role=UserRoles.User },
-                    new User { First_Name="Edwin", Last_Name="May", Email="edwin@may.com", Password="useless", NumAccs=2, Role=UserRoles.User },
-                    new User { First_Name="Lucy", Last_Name="Vale", Email="lucy@vale.com", Password="useless", NumAccs=2, Role=UserRoles.User },
-                    new User { First_Name="Pam", Last_Name="Willis", Email="pam@willis.com", Password="useless", NumAccs=2, Role=UserRoles.User },
-                    new User { First_Name="Game", Last_Name="Stonk", Email="game@stonk.com", Password="useless", NumAccs=2, Role=UserRoles.User }
+                    new User { First_Name="John", Last_Name="Doe", Email="john@doe.com", Password=Encoding.UTF8.GetBytes("useless"), NumAccs=2, Role=UserRoles.User },
+                    new User { First_Name="Edwin", Last_Name="May", Email="edwin@may.com", Password=Encoding.UTF8.GetBytes("useless"), NumAccs=2, Role=UserRoles.User },
+                    new User { First_Name="Lucy", Last_Name="Vale", Email="lucy@vale.com", Password=Encoding.UTF8.GetBytes("useless"), NumAccs=2, Role=UserRoles.User },
+                    new User { First_Name="Pam", Last_Name="Willis", Email="pam@willis.com", Password=Encoding.UTF8.GetBytes("useless"), NumAccs=2, Role=UserRoles.User },
+                    new User { First_Name="Game", Last_Name="Stonk", Email="game@stonk.com", Password=Encoding.UTF8.GetBytes("useless"), NumAccs=2, Role=UserRoles.User }
                 };
 
                 foreach (User person in users) { context.Users.Add(person); } // add each user to the table
