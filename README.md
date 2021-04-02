@@ -17,6 +17,8 @@ To test the admin functionality on the live domain, I have a default admin accou
 Also, all inputs and outputs are in json format of course. <br />
 Download [Postman](https://www.postman.com/downloads/) and use SafeAccountsAPI.postman_collection.json to easily test the API's endpoints.
 
+&nbsp;
+
 * **/users**
   * Get - Retrieve all users. Admin users only.
   * Post - Add new user.
@@ -32,3 +34,8 @@ Download [Postman](https://www.postman.com/downloads/) and use SafeAccountsAPI.p
 * **/users/{id}/accounts**
   * Get - Get user's accounts. Admin or Authorized user only.
   * Post - Add a new account to the user. Admin or Authorized user only.
+
+&nbsp;
+
+* **/passwords/generate**
+  * Post - Generate a password based on regex string.
