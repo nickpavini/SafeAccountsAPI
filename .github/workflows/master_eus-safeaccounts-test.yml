@@ -2,7 +2,7 @@
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 # Build and deploy ASP.Net Core app to Azure Web App - eus-safeaccounts-test
 
-name: Build
+name: Build and Deploy
 
 on:
   push:
