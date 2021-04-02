@@ -1,5 +1,7 @@
 # SafeAccountsAPI
-Cloud based account manager API (RESTful implementation).
+The Open Source password manager API  in the cloud. (RESTful implementation).
+
+Domain: https://eus-safeaccounts-test.azurewebsites.net
 
 &nbsp;
 
