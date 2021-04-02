@@ -1,7 +1,6 @@
-![example workflow](https://github.com/nickpavini/safeaccountsapi/actions/workflows/master_eus-safeaccounts-test.yml/badge.svg)
-
-
 # SafeAccountsAPI (In Development)
+![example workflow](https://github.com/nickpavini/safeaccountsapi/actions/workflows/master_eus-safeaccounts-test.yml/badge.svg) <br />
+
 The Open Source password manager API in the cloud. (RESTful implementation).<br />
 <ins>Live Domain:</ins> https://eus-safeaccounts-test.azurewebsites.net
 
