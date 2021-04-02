@@ -6,7 +6,7 @@ namespace SafeAccountsAPI.Data
     // reference to the api database.. models refer to table entries
     public class APIContext : DbContext
     {
-        private string _connectionString = "Server=DESKTOP-UB8RIFR\\SQLEXPRESS;Database=SafeAccountsAPI_Db;Trusted_Connection=True;MultipleActiveResultSets=true";
+        public static readonly string _connectionString = "Server=safeaccounts.mysql.database.azure.com; Port=3306; Database=SafeAccountsAPI_Db; Uid=safeaccounts@safeaccounts; Pwd=Lqxx34pTqUpoIlRANDfC; SslMode=Preferred;";
 
         public APIContext(DbContextOptions<APIContext> options) : base(options)
         {
@@ -15,7 +15,7 @@ namespace SafeAccountsAPI.Data
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
             => optionsBuilder
                 .UseLazyLoadingProxies()
-                .UseSqlServer(_connectionString);
+                .UseMySql(_connectionString, ServerVersion.AutoDetect(_connectionString));
 
         public DbSet<User> Users { get; set; } // whole table reference
         public DbSet<Account> Accounts { get; set; } // whole table reference

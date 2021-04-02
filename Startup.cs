@@ -9,7 +9,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using Microsoft.AspNetCore.Mvc;
 using System;
 
 namespace SafeAccountsAPI
@@ -27,7 +26,7 @@ namespace SafeAccountsAPI
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<APIContext>(options =>
-                options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+                options.UseMySql(APIContext._connectionString, ServerVersion.AutoDetect(APIContext._connectionString)));
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
            .AddJwtBearer(options =>
