@@ -24,7 +24,7 @@ namespace SafeAccountsAPI.Controllers
         //}
 
         //// generate a password based on specific allowed characters in regex format
-        [HttpGet("generate")]
+        [HttpPost("generate")]
         public string GeneratePassword([FromBody]string options = "")
         {
             /*
