@@ -1,4 +1,4 @@
-# SafeAccountsAPI
+# SafeAccountsAPI (In Development)
 The Open Source password manager API in the cloud. (RESTful implementation).<br />
 <ins>Live Domain:</ins> https://eus-safeaccounts-test.azurewebsites.net
 
@@ -11,8 +11,10 @@ CI/CD is setup through Github Actions, so all accepted commits are available thr
 
 ## REST API Endpoints
 
-To test the admin functionality on the live domain, I have a default admin account. <ins>Email: john@doe.com, <ins>Password: useless</ins>.
+To test the admin functionality on the live domain, I have a default admin account. <ins>Email: john@doe.com, Password: useless</ins>.<br />
 
+Also, all inputs and outputs are in json format of course. <br />
+Download [Postman](https://www.postman.com/downloads/) and use SafeAccountsAPI.postman_collection.json to easily test the API's endpoints.
 
 * **/users**
   * Get - Retrieve all users. Admin users only.
@@ -20,7 +22,7 @@ To test the admin functionality on the live domain, I have a default admin accou
 * **/users/login**
   * Post - Sign in with user credentials and retrieve tokens.
 * **/users/{id}**
-  * Get - Retrieve user data. Admin or Authorized user only.
+  * Get - Retrieve user profile data. Admin or Authorized user only.
   * Delete - Remove a user and all associated data. Admin or Authorized user only
 * **/users/{id}/firstname**
   * Put - Modify user first name. Admin or Authorized user only.
