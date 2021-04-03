@@ -41,3 +41,8 @@ Download [Postman](https://www.postman.com/downloads/) and use SafeAccountsAPI.p
 
 * **/passwords/generate**
   * Post - Generate a password based on regex string.
+
+&nbsp;
+
+* **/refresh**
+  * Post - Generate a new access token from refresh token and expired access token.
