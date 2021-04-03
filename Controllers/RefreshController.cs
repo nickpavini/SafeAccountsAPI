@@ -42,51 +42,13 @@ namespace SafeAccountsAPI.Controllers
             }
 
             // attempt getting user from claims
-            User user = GetUserFromAccessToken(json["access_token"].ToString());
+            User user = HelperMethods.GetUserFromAccessToken(json["access_token"].ToString(), _context);
             ValidateRefreshToken(user, json["refresh_token"].ToString()); // make sure this is a valid token for the user
             string newToken = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email);
             RefreshToken newRefresh = HelperMethods.GenerateRefreshToken(user, _context);
             string ret = HelperMethods.GenerateLoginResponse(newToken, newRefresh, user.ID);
             _context.SaveChanges(); // save refresh token just before returning string to be safe
             return ret;
-        }
-
-        private User GetUserFromAccessToken(string accessToken)
-        {
-            // paramters for a valid token.. might want to put in static class or function at some point
-            var tokenValidationParamters = new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidateAudience = true,
-                ValidateLifetime = false, // Do not validate lifetime here
-
-                ValidIssuer = "http://localhost:5000",
-                ValidAudience = "http://localhost:5000",
-                IssuerSigningKey =
-                    new SymmetricSecurityKey(
-                        Encoding.ASCII.GetBytes(HelperMethods.token_key)
-                    )
-            };
-
-            // validate the received token
-            var tokenHandler = new JwtSecurityTokenHandler();
-            SecurityToken securityToken;
-            var principal = tokenHandler.ValidateToken(accessToken, tokenValidationParamters, out securityToken);
-            var jwtSecurityToken = securityToken as JwtSecurityToken;
-            if (jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
-            {
-                throw new SecurityTokenException("Invalid token!");
-            }
-
-            // get the email from the token
-            string email = principal.FindFirst(ClaimTypes.Email)?.Value;
-            if (string.IsNullOrEmpty(email))
-            {
-                throw new SecurityTokenException($"Missing claim: {ClaimTypes.Email}!");
-            }
-
-            User user = _context.Users.Single(a => a.Email == email);
-            return user;
         }
 
         // make sure the refresh token is valid

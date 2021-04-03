@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 using System.Text;
 using System.Security.Cryptography;
+using Microsoft.Net.Http.Headers;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -45,13 +46,9 @@ namespace SafeAccountsAPI.Controllers
             {
                 // get users saved password hash and salt
                 User user = _context.Users.Single(a => a.Email == json["email"].ToString());
-                byte[] passwordHash = new byte[user.Password.Length - HelperMethods.salt_length];
-                byte[] salt = new byte[HelperMethods.salt_length]; ;
-                Buffer.BlockCopy(user.Password, 0, salt, 0, salt.Length);
-                Buffer.BlockCopy(user.Password, HelperMethods.salt_length, passwordHash, 0, passwordHash.Length);
 
                 // successful login.. compare user hash to the hash generated from the inputted password and salt
-                if (passwordHash.SequenceEqual(HelperMethods.GenerateSaltedHash(Encoding.UTF8.GetBytes(json["password"].ToString()), salt)))
+                if (ValidatePassword(json["password"].ToString(), user.Password))
                 {
                     var tokenString = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email);
                     RefreshToken refToken = HelperMethods.GenerateRefreshToken(user, _context);
@@ -70,6 +67,20 @@ namespace SafeAccountsAPI.Controllers
                 ErrorMessage error = new ErrorMessage("Error validating credentials", credentials, ex.Message);
                 return JObject.FromObject(error).ToString();
             }
+        }
+
+        private bool ValidatePassword(string input, byte[] storedPassword)
+        {
+            byte[] passwordHash = new byte[storedPassword.Length - HelperMethods.salt_length];
+            byte[] salt = new byte[HelperMethods.salt_length]; ;
+            Buffer.BlockCopy(storedPassword, 0, salt, 0, salt.Length);
+            Buffer.BlockCopy(storedPassword, HelperMethods.salt_length, passwordHash, 0, passwordHash.Length);
+
+            // successful login.. compare user hash to the hash generated from the inputted password and salt
+            if (passwordHash.SequenceEqual(HelperMethods.GenerateSaltedHash(Encoding.UTF8.GetBytes(input), salt)))
+                return true;
+            else
+                return false;
         }
 
         // Get all available users.. might change later as it might not make sense to grab all accounts if there are tons
@@ -236,6 +247,53 @@ namespace SafeAccountsAPI.Controllers
             JObject message = JObject.Parse(SuccessMessage._result);
             message.Add(new JProperty("new_lastname", _context.Users.Where(a => a.ID == id).Single().Last_Name)); // this part re-affirms that in the database we have a new firstname
             return message.ToString();
+        }
+
+        [HttpPut("{id:int}/password")]
+        public string User_EditPassword(int id, [FromBody]string passwordJson)
+        {
+            JObject json = null;
+
+            // might want Json verification as own function since all will do it.. we will see
+            try { json = JObject.Parse(passwordJson); }
+            catch (Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Invalid Json", passwordJson, ex.Message);
+                return JObject.FromObject(error).ToString();
+            }
+
+            try
+            {
+                User user = HelperMethods.GetUserFromAccessToken(Request.Headers[HeaderNames.Authorization].ToString().Replace("Bearer ", ""), _context);
+
+                // if password is valid then we change it
+                if (ValidatePassword(json["current_password"].ToString(), user.Password))
+                {
+                    // get salt
+                    byte[] salt = new byte[HelperMethods.salt_length];
+                    Buffer.BlockCopy(user.Password, 0, salt, 0, salt.Length);
+
+                    // generate new hash and concatenate
+                    byte[] newPassHash = HelperMethods.GenerateSaltedHash(Encoding.UTF8.GetBytes(json["new_password"].ToString()), salt);
+                    byte[] concatenated = new byte[salt.Length + newPassHash.Length];
+                    Buffer.BlockCopy(salt, 0, concatenated, 0, salt.Length);
+                    Buffer.BlockCopy(newPassHash, 0, concatenated, salt.Length, newPassHash.Length);
+
+                    //assign and update db
+                    user.Password = concatenated;
+                    _context.Update(user);
+                    _context.SaveChanges();
+                }
+                else
+                    return JObject.FromObject(new ErrorMessage("Invalid Password", json["current_password"].ToString(), "n/a")).ToString();
+            }
+            catch(Exception ex)
+            {
+                return JObject.FromObject(new ErrorMessage("Failed to update with new password", "n/a", ex.Message)).ToString(); // don't continue to send password back and forth in messages
+            }
+
+
+            return JObject.Parse(SuccessMessage._result).ToString();
         }
 
         // get all of the user's accounts

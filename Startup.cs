@@ -43,6 +43,7 @@ namespace SafeAccountsAPI
                    ValidAudience = "http://localhost:5000",
                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SafeAccountsAPI.Controllers.HelperMethods.token_key))
                };
+               options.SaveToken = true;
            });
 
             services.AddHttpContextAccessor();

@@ -34,6 +34,44 @@ namespace SafeAccountsAPI.Controllers
             return new JwtSecurityTokenHandler().WriteToken(tokeOptions);
         }
 
+        public static User GetUserFromAccessToken(string accessToken, APIContext _context)
+        {
+            // paramters for a valid token.. might want to put in static class or function at some point
+            var tokenValidationParamters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = false, // Do not validate lifetime here
+
+                ValidIssuer = "http://localhost:5000",
+                ValidAudience = "http://localhost:5000",
+                IssuerSigningKey =
+                    new SymmetricSecurityKey(
+                        Encoding.ASCII.GetBytes(HelperMethods.token_key)
+                    )
+            };
+
+            // validate the received token
+            var tokenHandler = new JwtSecurityTokenHandler();
+            SecurityToken securityToken;
+            var principal = tokenHandler.ValidateToken(accessToken, tokenValidationParamters, out securityToken);
+            var jwtSecurityToken = securityToken as JwtSecurityToken;
+            if (jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+            {
+                throw new SecurityTokenException("Invalid token!");
+            }
+
+            // get the email from the token
+            string email = principal.FindFirst(ClaimTypes.Email)?.Value;
+            if (string.IsNullOrEmpty(email))
+            {
+                throw new SecurityTokenException($"Missing claim: {ClaimTypes.Email}!");
+            }
+
+            User user = _context.Users.Single(a => a.Email == email);
+            return user;
+        }
+
         // generate our refresh token with expiration
         public static RefreshToken GenerateRefreshToken(User user, APIContext context)
         {
