@@ -19,6 +19,7 @@ namespace SafeAccountsAPI.Models
 
     public class ReturnableAccount
     {
+        public int ID { get; set; }
         public string Title { get; set; }
         public string Login { get; set; }
         public string Password { get; set; }
