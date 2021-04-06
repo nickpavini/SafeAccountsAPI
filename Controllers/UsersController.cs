@@ -314,7 +314,7 @@ namespace SafeAccountsAPI.Controllers
         }
 
         // add account.. input format is json
-        [HttpPost("{id:int}/accounts")] // in progress
+        [HttpPost("{id:int}/accounts")] // working
         public string User_AddAccount(int id, [FromBody]string accJson) 
         {
             // verify that the user is either admin or is requesting their own data
@@ -331,6 +331,7 @@ namespace SafeAccountsAPI.Controllers
                 return JObject.FromObject(error).ToString();
             }
 
+            int newAccountID = 0; // sent this back in request message
             try
             {
                 // use token in header to to 
@@ -344,6 +345,41 @@ namespace SafeAccountsAPI.Controllers
             }
 
             return SuccessMessage._result;
+        }
+
+        // edit a specific accounts info
+        [HttpPost("{id:int}/accounts/{account_id:int}")] // in progress
+        public string User_GetSingleAccount(int id, int account_id)
+        {
+            return "";
+        }
+
+        // edit a specific accounts info
+        [HttpPost("{id:int}/accounts/{account_id:int}/title")] // in progress
+        public string User_EditAccountTitle()
+        {
+            return ""; 
+        }
+
+        // edit a specific accounts info
+        [HttpPost("{id:int}/accounts/{account_id:int}/login")] // in progress
+        public string User_EditAccountLogin()
+        {
+            return "";
+        }
+
+        // edit a specific accounts info
+        [HttpPost("{id:int}/accounts/{account_id:int}/password")] // in progress
+        public string User_EditAccountPassword()
+        {
+            return "";
+        }
+
+        // edit a specific accounts info
+        [HttpPost("{id:int}/accounts/{account_id:int}/description")] // in progress
+        public string User_EditAccountDesc()
+        {
+            return "";
         }
     }
 }
