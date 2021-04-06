@@ -69,6 +69,7 @@ namespace SafeAccountsAPI.Controllers
             }
         }
 
+        // compare string input to store hash and salt combo
         private bool ValidatePassword(string input, byte[] storedPassword)
         {
             byte[] passwordHash = new byte[storedPassword.Length - HelperMethods.salt_length];
@@ -320,7 +321,29 @@ namespace SafeAccountsAPI.Controllers
             if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
                 return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
 
-            return "";
+            JObject json = null;
+
+            // might want Json verification as own function since all will do it.. we will see
+            try { json = JObject.Parse(accJson); }
+            catch (Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Invalid Json", accJson, ex.Message);
+                return JObject.FromObject(error).ToString();
+            }
+
+            try
+            {
+                // use token in header to to 
+                Account new_account = new Account { UserID = HelperMethods.GetUserFromAccessToken(Request.Headers[HeaderNames.Authorization].ToString().Replace("Bearer ", ""), _context).ID, Title = json["account_title"].ToString(), Login = json["account_login"].ToString(), Password = json["account_password"].ToString(), Description = json["account_description"].ToString() };
+                _context.Accounts.Add(new_account);
+                _context.SaveChanges();
+            }
+            catch(Exception ex)
+            {
+                return JObject.FromObject(new ErrorMessage("Error creating new account.", accJson, ex.Message)).ToString();
+            }
+
+            return SuccessMessage._result;
         }
     }
 }
