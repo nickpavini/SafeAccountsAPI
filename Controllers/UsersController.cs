@@ -331,7 +331,6 @@ namespace SafeAccountsAPI.Controllers
                 return JObject.FromObject(error).ToString();
             }
 
-            int newAccountID = 0; // sent this back in request message
             try
             {
                 // use token in header to to 
