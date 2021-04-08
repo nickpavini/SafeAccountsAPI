@@ -346,39 +346,101 @@ namespace SafeAccountsAPI.Controllers
             return SuccessMessage._result;
         }
 
-        // edit a specific accounts info
-        [HttpPost("{id:int}/accounts/{account_id:int}")] // in progress
+        // get a specific accounts info
+        [HttpGet("{id:int}/accounts/{account_id:int}")] // in progress
         public string User_GetSingleAccount(int id, int account_id)
         {
-            return "";
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+
+            JObject message = JObject.Parse(SuccessMessage._result);
+            message.Add(new JProperty("account", JObject.FromObject(HelperMethods.GetUserFromAccessToken(Request.Headers[HeaderNames.Authorization].ToString().Replace("Bearer ", ""), _context).Accounts.Single(a => a.ID == account_id))));
+            return message.ToString();
         }
 
         // edit a specific accounts info
-        [HttpPost("{id:int}/accounts/{account_id:int}/title")] // in progress
-        public string User_EditAccountTitle()
+        [HttpPut("{id:int}/accounts/{account_id:int}/title")] // in progress
+        public string User_EditAccountTitle(int id, int account_id, [FromBody]string title)
         {
-            return ""; 
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+
+            // attempt to edit the title
+            try
+            {
+                Account acc = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
+                acc.Title = title;
+                _context.Accounts.Update(acc);
+                _context.SaveChanges();
+            }
+            catch(Exception ex)
+            {
+                return JObject.FromObject(new ErrorMessage("Error editing title", "Attempted title: " + title, "Caller can only access their information.")).ToString();
+            }
+
+            return SuccessMessage._result; 
         }
 
         // edit a specific accounts info
-        [HttpPost("{id:int}/accounts/{account_id:int}/login")] // in progress
-        public string User_EditAccountLogin()
+        [HttpPut("{id:int}/accounts/{account_id:int}/login")] // in progress
+        public string User_EditAccountLogin(int id, int account_id, [FromBody]string login)
         {
-            return "";
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+
+            try
+            {
+
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+            return SuccessMessage._result;
         }
 
         // edit a specific accounts info
-        [HttpPost("{id:int}/accounts/{account_id:int}/password")] // in progress
-        public string User_EditAccountPassword()
+        [HttpPut("{id:int}/accounts/{account_id:int}/password")] // in progress
+        public string User_EditAccountPassword(int id, int account_id, [FromBody]string password)
         {
-            return "";
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+
+            try
+            {
+
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+            return SuccessMessage._result;
         }
 
         // edit a specific accounts info
-        [HttpPost("{id:int}/accounts/{account_id:int}/description")] // in progress
-        public string User_EditAccountDesc()
+        [HttpPut("{id:int}/accounts/{account_id:int}/description")] // in progress
+        public string User_EditAccountDesc(int id, int account_id, [FromBody]string description)
         {
-            return "";
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+
+            try
+            {
+
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+            return SuccessMessage._result;
         }
     }
 }
