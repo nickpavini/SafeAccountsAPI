@@ -36,6 +36,16 @@ Download [Postman](https://www.postman.com/downloads/) and use SafeAccountsAPI.p
 * **/users/{id}/accounts**
   * Get - Get user's accounts. Admin or Authorized user only.
   * Post - Add a new account to the user. Admin or Authorized user only.
+* **/users/{id}/accounts/{account_id}**
+  * Get - Get user's specific account. Admin or Authorized user only.
+* **/users/{id}/accounts/{account_id}/title**
+  * Put - Edit title of user's specific account. Admin or Authorized user only.
+* **/users/{id}/accounts/{account_id}/login**
+  * Put - Edit login for user's specific account. Admin or Authorized user only.
+* **/users/{id}/accounts/{account_id}/password**
+  * Put - Edit password of user's specific account. Admin or Authorized user only.
+* **/users/{id}/accounts/{account_id}/description**
+  * Put - Edit description of user's specific account. Admin or Authorized user only.
 
 &nbsp;
 
