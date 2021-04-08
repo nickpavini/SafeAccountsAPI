@@ -27,6 +27,7 @@ namespace SafeAccountsAPI.Models
 
         public ReturnableAccount(Account acc)
         {
+            ID = acc.ID;
             Title = acc.Title;
             Login = acc.Login;
             Password = acc.Password;
