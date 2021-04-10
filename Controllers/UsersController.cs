@@ -273,7 +273,7 @@ namespace SafeAccountsAPI.Controllers
 
             try
             {
-                User user = HelperMethods.GetUserFromAccessToken(Request.Headers[HeaderNames.Authorization].ToString().Replace("Bearer ", ""), _context);
+                User user = _context.Users.Single(a => a.ID == id);
 
                 // if password is valid then we change it
                 if (ValidatePassword(json["current_password"].ToString(), user.Password))
@@ -342,7 +342,7 @@ namespace SafeAccountsAPI.Controllers
             try
             {
                 // use token in header to to 
-                Account new_account = new Account { UserID = HelperMethods.GetUserFromAccessToken(Request.Headers[HeaderNames.Authorization].ToString().Replace("Bearer ", ""), _context).ID, Title = json["account_title"].ToString(), Login = json["account_login"].ToString(), Password = json["account_password"].ToString(), Description = json["account_description"].ToString() };
+                Account new_account = new Account { UserID = id, Title = json["account_title"].ToString(), Login = json["account_login"].ToString(), Password = json["account_password"].ToString(), Description = json["account_description"].ToString() };
                 _context.Accounts.Add(new_account);
                 _context.SaveChanges();
             }
@@ -363,7 +363,7 @@ namespace SafeAccountsAPI.Controllers
                 return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
 
             JObject message = JObject.Parse(SuccessMessage._result);
-            message.Add(new JProperty("account", JObject.FromObject(HelperMethods.GetUserFromAccessToken(Request.Headers[HeaderNames.Authorization].ToString().Replace("Bearer ", ""), _context).Accounts.Single(a => a.ID == account_id))));
+            message.Add(new JProperty("account", JObject.FromObject(new ReturnableAccount(_context.Accounts.Single(a => a.ID == account_id)))));
             return message.ToString();
         }
 
@@ -385,7 +385,7 @@ namespace SafeAccountsAPI.Controllers
             }
             catch(Exception ex)
             {
-                return JObject.FromObject(new ErrorMessage("Error editing title", "Attempted title: " + title, "Caller can only access their information.")).ToString();
+                return JObject.FromObject(new ErrorMessage("Error editing title", "Attempted title: " + title, ex.Message)).ToString();
             }
 
             return SuccessMessage._result; 
