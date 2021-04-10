@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System;
+using System.Threading.Tasks;
 
 namespace SafeAccountsAPI
 {
@@ -44,6 +45,14 @@ namespace SafeAccountsAPI
                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SafeAccountsAPI.Controllers.HelperMethods.token_key))
                };
                options.SaveToken = true;
+               options.Events = new JwtBearerEvents
+               {
+                   OnMessageReceived = context =>
+                   {
+                       context.Token = context.Request.Cookies["access_token"];
+                       return Task.CompletedTask;
+                   },
+               };
            });
 
             services.AddHttpContextAccessor();

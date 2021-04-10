@@ -30,24 +30,23 @@ namespace SafeAccountsAPI.Controllers
 
         // GET: api/RefreshToken
         [HttpPost]
-        public string Refresh([FromBody]string request)
+        public string Refresh()
         {
-            // parse json.. might also want a function, maybe a helper methods file for all code minimization needs
-            JObject json = null;
-            try { json = JObject.Parse(request); }
-            catch (Exception ex)
-            {
-                ErrorMessage error = new ErrorMessage("Invalid Json", request, ex.Message);
-                return JObject.FromObject(error).ToString();
-            }
-
             // attempt getting user from claims
-            User user = HelperMethods.GetUserFromAccessToken(json["access_token"].ToString(), _context);
-            ValidateRefreshToken(user, json["refresh_token"].ToString()); // make sure this is a valid token for the user
+            User user = HelperMethods.GetUserFromAccessToken(Request.Cookies["access_token"], _context);
+            ValidateRefreshToken(user, Request.Cookies["refresh_token"]); // make sure this is a valid token for the user
             string newToken = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email);
             RefreshToken newRefresh = HelperMethods.GenerateRefreshToken(user, _context);
             string ret = HelperMethods.GenerateLoginResponse(newToken, newRefresh, user.ID);
             _context.SaveChanges(); // save refresh token just before returning string to be safe
+
+            CookieOptions options = new CookieOptions();
+            options.HttpOnly = true;
+            options.Secure = true;
+            options.Expires = DateTime.UtcNow.AddDays(1); // set cookie to expire in 1 day
+
+            Response.Cookies.Append("access_token", newToken, options); // boom this is it.. modify the response directly to include needed cookie
+            Response.Cookies.Append("refresh_token", newRefresh.Token, options);
             return ret;
         }
 
