@@ -11,6 +11,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Security.Cryptography;
 using Microsoft.Net.Http.Headers;
+using Microsoft.AspNetCore.Identity;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -348,7 +349,7 @@ namespace SafeAccountsAPI.Controllers
         }
 
         // get a specific accounts info
-        [HttpGet("{id:int}/accounts/{account_id:int}")] // in progress
+        [HttpGet("{id:int}/accounts/{account_id:int}")]
         public string User_GetSingleAccount(int id, int account_id)
         {
             // verify that the user is either admin or is requesting their own data
@@ -385,20 +386,24 @@ namespace SafeAccountsAPI.Controllers
         }
 
         // edit a specific accounts info
-        [HttpPut("{id:int}/accounts/{account_id:int}/login")] // in progress
+        [HttpPut("{id:int}/accounts/{account_id:int}/login")]
         public string User_EditAccountLogin(int id, int account_id, [FromBody]string login)
         {
             // verify that the user is either admin or is requesting their own data
             if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
                 return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
 
+            // attempt to edit the login
             try
             {
-
+                Account acc = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
+                acc.Login = login;
+                _context.Accounts.Update(acc);
+                _context.SaveChanges();
             }
             catch (Exception ex)
             {
-
+                return JObject.FromObject(new ErrorMessage("Error editing login", "Attempted login: " + login, ex.Message)).ToString();
             }
 
             return SuccessMessage._result;
@@ -414,31 +419,38 @@ namespace SafeAccountsAPI.Controllers
 
             try
             {
-
+                Account acc = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
+                acc.Password = HelperMethods.EncryptStringToBytes_Aes(password, HelperMethods.temp_password_key); // this logic will need to be changed to use a unique key
+                _context.Accounts.Update(acc);
+                _context.SaveChanges();
             }
             catch (Exception ex)
             {
-
+                return JObject.FromObject(new ErrorMessage("Error editing password", "n/a", ex.Message)).ToString();
             }
 
             return SuccessMessage._result;
         }
 
         // edit a specific accounts info
-        [HttpPut("{id:int}/accounts/{account_id:int}/description")] // in progress
+        [HttpPut("{id:int}/accounts/{account_id:int}/description")]
         public string User_EditAccountDesc(int id, int account_id, [FromBody]string description)
         {
             // verify that the user is either admin or is requesting their own data
             if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
                 return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
 
+            // attempt to edit the description
             try
             {
-
+                Account acc = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
+                acc.Description = description;
+                _context.Accounts.Update(acc);
+                _context.SaveChanges();
             }
             catch (Exception ex)
             {
-
+                return JObject.FromObject(new ErrorMessage("Error editing description", "Attempted description: " + description, ex.Message)).ToString();
             }
 
             return SuccessMessage._result;
