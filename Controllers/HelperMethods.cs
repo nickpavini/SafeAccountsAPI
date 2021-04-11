@@ -22,10 +22,10 @@ namespace SafeAccountsAPI.Controllers
 
         public static string GenerateJWTAccessToken(string role, string email)
         {
-            var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(token_key));
-            var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
+            SymmetricSecurityKey secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(token_key));
+            SigningCredentials signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
 
-            var tokeOptions = new JwtSecurityToken(
+            JwtSecurityToken tokeOptions = new JwtSecurityToken(
                 issuer: "http://localhost:5000",
                 audience: "http://localhost:5000",
                 claims: new List<Claim> { new Claim(ClaimTypes.Role, role), new Claim(ClaimTypes.Email, email) },
@@ -39,7 +39,7 @@ namespace SafeAccountsAPI.Controllers
         public static User GetUserFromAccessToken(string accessToken, APIContext _context)
         {
             // paramters for a valid token.. might want to put in static class or function at some point
-            var tokenValidationParamters = new TokenValidationParameters
+            TokenValidationParameters tokenValidationParamters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
                 ValidateAudience = true,
@@ -54,10 +54,10 @@ namespace SafeAccountsAPI.Controllers
             };
 
             // validate the received token
-            var tokenHandler = new JwtSecurityTokenHandler();
+            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
             SecurityToken securityToken;
-            var principal = tokenHandler.ValidateToken(accessToken, tokenValidationParamters, out securityToken);
-            var jwtSecurityToken = securityToken as JwtSecurityToken;
+            ClaimsPrincipal principal = tokenHandler.ValidateToken(accessToken, tokenValidationParamters, out securityToken);
+            JwtSecurityToken jwtSecurityToken = securityToken as JwtSecurityToken;
             if (jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
             {
                 throw new SecurityTokenException("Invalid token!");

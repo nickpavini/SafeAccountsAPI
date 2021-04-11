@@ -50,7 +50,7 @@ namespace SafeAccountsAPI.Controllers
                 // successful login.. compare user hash to the hash generated from the inputted password and salt
                 if (ValidatePassword(json["password"].ToString(), user.Password))
                 {
-                    var tokenString = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email);
+                    string tokenString = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email);
                     RefreshToken refToken = HelperMethods.GenerateRefreshToken(user, _context);
                     string ret = HelperMethods.GenerateLoginResponse(tokenString, refToken, user.ID);
                     _context.SaveChanges(); // always last on db to make sure nothing breaks and db has new info

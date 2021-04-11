@@ -19,7 +19,7 @@ namespace SafeAccountsAPI.Data
             if (!context.Users.Any())
             {
                 // add base users if data base not populated
-                var users = new User[]
+                User[] users = new User[]
                 {
                     new User { First_Name="John", Last_Name="Doe", Email="john@doe.com", Password=HelperMethods.ConcatenatedSaltAndSaltedHash("useless"), NumAccs=2, Role=UserRoles.User },
                     new User { First_Name="Edwin", Last_Name="May", Email="edwin@may.com", Password=HelperMethods.ConcatenatedSaltAndSaltedHash("useless"), NumAccs=2, Role=UserRoles.User },
@@ -35,7 +35,7 @@ namespace SafeAccountsAPI.Data
             if (!context.Accounts.Any())
             {
                 // add 2 base accounts to each user for testing
-                var accs = new Account[]
+                Account[] accs = new Account[]
                 {
                     new Account { UserID=1, Title="gmail", Login="johndoe", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.temp_password_key), Description="Add description here.." },
                     new Account { UserID=1, Title="yahoo", Login="johndoe", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.temp_password_key), Description="Add description here.." },

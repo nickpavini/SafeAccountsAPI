@@ -58,7 +58,7 @@ namespace SafeAccountsAPI.Controllers
                 throw new SecurityTokenException("Invalid token!");
             }
 
-            var storedRefreshToken = user.RefreshTokens.Find(rt => rt.Token == refreshToken);
+            RefreshToken storedRefreshToken = user.RefreshTokens.Find(rt => rt.Token == refreshToken);
 
             // Ensure that the refresh token that we got from storage is not yet expired.
             if (DateTime.UtcNow > DateTime.Parse(storedRefreshToken.Expiration))
