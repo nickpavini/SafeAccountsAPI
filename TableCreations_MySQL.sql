@@ -21,7 +21,7 @@ Create Table Accounts
 	UserID int not null,
 	Title nvarchar(50),
 	Login nvarchar(50),
-	Password nvarchar(50),
+	Password varbinary(200),
 	Description nvarchar(250),
     CONSTRAINT FK_Accounts_UserID FOREIGN KEY (UserID)
     REFERENCES Users(ID)
