@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SafeAccountsAPI.Controllers;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
@@ -13,7 +14,7 @@ namespace SafeAccountsAPI.Models
         public virtual User User { get; set; }
         public string Title { get; set; }
         public string Login { get; set; }
-        public string Password { get; set; }
+        public byte[] Password { get; set; }
         public string Description { get; set; }
     }
 
@@ -30,7 +31,7 @@ namespace SafeAccountsAPI.Models
             ID = acc.ID;
             Title = acc.Title;
             Login = acc.Login;
-            Password = acc.Password;
+            Password = HelperMethods.DecryptStringFromBytes_Aes(acc.Password, HelperMethods.temp_password_key); // this later will nees to be editted for logic to decrypt based on each users key
             Description = acc.Description;
         }
     }

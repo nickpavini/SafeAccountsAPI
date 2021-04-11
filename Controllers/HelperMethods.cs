@@ -10,12 +10,14 @@ using System.Security.Cryptography;
 using Newtonsoft.Json.Linq;
 using Microsoft.AspNetCore.Http;
 using System.Linq;
+using System.IO;
 
 namespace SafeAccountsAPI.Controllers
 {
     public static class HelperMethods
     {
         public static string token_key = "KeyForSignInSecret@1234"; // key for encrypting access tokens
+        public static string temp_password_key = "b14ca5898a4e4133bbce2ea2315a1916"; // this will be replaced by likely a key per user
         public static int salt_length = 12; // length of salts for password storage
 
         public static string GenerateJWTAccessToken(string role, string email)
@@ -151,7 +153,7 @@ namespace SafeAccountsAPI.Controllers
             byte[] buff = new byte[size];
             rng.GetBytes(buff);
 
-            // Return a Base64 string representation of the random number.
+            // return byte array representing salt.
             return buff;
         }
 
@@ -175,6 +177,88 @@ namespace SafeAccountsAPI.Controllers
             }
 
             return algorithm.ComputeHash(plainTextWithSaltBytes);
+        }
+
+        public static byte[] ConcatenatedSaltAndSaltedHash(string passwordStr)
+        {
+            // hash password with salt.. still trying to understand a bit about the difference between unicode and base 64 string so for now we are just dealing with byte arrays
+            byte[] salt = HelperMethods.CreateSalt(HelperMethods.salt_length);
+            byte[] password = HelperMethods.GenerateSaltedHash(Encoding.UTF8.GetBytes(passwordStr), salt);
+            byte[] concatenated = new byte[salt.Length + password.Length];
+            Buffer.BlockCopy(salt, 0, concatenated, 0, salt.Length);
+            Buffer.BlockCopy(password, 0, concatenated, salt.Length, password.Length);
+
+            return concatenated;
+        }
+
+        public static byte[] EncryptStringToBytes_Aes(string plainText, string key)
+        {
+            byte[] encrypted;
+            byte[] iv = new byte[16];
+
+            // Create an Aes object
+            // with the specified key and IV.
+            using (Aes aesAlg = Aes.Create())
+            {
+                aesAlg.Key = Encoding.UTF8.GetBytes(key);
+                aesAlg.IV = iv;
+
+                // Create an encryptor to perform the stream transform.
+                ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+
+                // Create the streams used for encryption.
+                using (MemoryStream msEncrypt = new MemoryStream())
+                {
+                    using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
+                    {
+                        using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
+                        {
+                            //Write all data to the stream.
+                            swEncrypt.Write(plainText);
+                        }
+                        encrypted = msEncrypt.ToArray();
+                    }
+                }
+            }
+
+            // Return the encrypted bytes from the memory stream.
+            return encrypted;
+        }
+
+        public static string DecryptStringFromBytes_Aes(byte[] cipherText, string key)
+        {
+            // Declare the string used to hold
+            // the decrypted text.
+            string plaintext = null;
+            byte[] iv = new byte[16];
+
+            // Create an Aes object
+            // with the specified key and IV.
+            using (Aes aesAlg = Aes.Create())
+            {
+                aesAlg.Key = Encoding.UTF8.GetBytes(key);
+                aesAlg.IV = iv;
+
+                // Create a decryptor to perform the stream transform.
+                ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+
+                // Create the streams used for decryption.
+                using (MemoryStream msDecrypt = new MemoryStream(cipherText))
+                {
+                    using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
+                    {
+                        using (StreamReader srDecrypt = new StreamReader(csDecrypt))
+                        {
+
+                            // Read the decrypted bytes from the decrypting stream
+                            // and place them in a string.
+                            plaintext = srDecrypt.ReadToEnd();
+                        }
+                    }
+                }
+            }
+
+            return plaintext;
         }
     }
 }

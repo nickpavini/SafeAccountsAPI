@@ -82,8 +82,8 @@ namespace SafeAccountsAPI.Controllers
         {
             byte[] passwordHash = new byte[storedPassword.Length - HelperMethods.salt_length];
             byte[] salt = new byte[HelperMethods.salt_length]; ;
-            Buffer.BlockCopy(storedPassword, 0, salt, 0, salt.Length);
-            Buffer.BlockCopy(storedPassword, HelperMethods.salt_length, passwordHash, 0, passwordHash.Length);
+            Buffer.BlockCopy(storedPassword, 0, salt, 0, salt.Length); // get salt
+            Buffer.BlockCopy(storedPassword, HelperMethods.salt_length, passwordHash, 0, passwordHash.Length); // get hash
 
             // successful login.. compare user hash to the hash generated from the inputted password and salt
             if (passwordHash.SequenceEqual(HelperMethods.GenerateSaltedHash(Encoding.UTF8.GetBytes(input), salt)))
@@ -127,14 +127,7 @@ namespace SafeAccountsAPI.Controllers
             // attempt to create new user and add to the database... later we need to implement hashing
             try
             {
-                // hash password with salt.. still trying to understand a bit about the difference between unicode and base 64 string so for now we are just dealing with byte arrays
-                byte[] salt = HelperMethods.CreateSalt(HelperMethods.salt_length);
-                byte[] password = HelperMethods.GenerateSaltedHash(Encoding.UTF8.GetBytes(json["password"].ToString()), salt);
-                byte[] concatenated = new byte[salt.Length + password.Length];
-                Buffer.BlockCopy(salt, 0, concatenated, 0, salt.Length);
-                Buffer.BlockCopy(password, 0, concatenated, salt.Length, password.Length);
-
-                User newUser = new User { First_Name = json["firstname"].ToString(), Last_Name = json["lastname"].ToString(), Email = json["email"].ToString(), Password = concatenated, NumAccs = 0, Role = UserRoles.User };
+                User newUser = new User { First_Name = json["firstname"].ToString(), Last_Name = json["lastname"].ToString(), Email = json["email"].ToString(), Password = HelperMethods.ConcatenatedSaltAndSaltedHash(json["password"].ToString()), NumAccs = 0, Role = UserRoles.User };
                 _context.Users.Add(newUser);
                 _context.SaveChanges();
             }
@@ -342,7 +335,7 @@ namespace SafeAccountsAPI.Controllers
             try
             {
                 // use token in header to to 
-                Account new_account = new Account { UserID = id, Title = json["account_title"].ToString(), Login = json["account_login"].ToString(), Password = json["account_password"].ToString(), Description = json["account_description"].ToString() };
+                Account new_account = new Account { UserID = id, Title = json["account_title"].ToString(), Login = json["account_login"].ToString(), Password = HelperMethods.EncryptStringToBytes_Aes(json["account_password"].ToString(), HelperMethods.temp_password_key), Description = json["account_description"].ToString() };
                 _context.Accounts.Add(new_account);
                 _context.SaveChanges();
             }
