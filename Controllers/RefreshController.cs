@@ -33,21 +33,15 @@ namespace SafeAccountsAPI.Controllers
         public string Refresh()
         {
             // attempt getting user from claims
-            User user = HelperMethods.GetUserFromAccessToken(Request.Cookies["access_token"], _context);
-            ValidateRefreshToken(user, Request.Cookies["refresh_token"]); // make sure this is a valid token for the user
-            string newToken = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email);
-            RefreshToken newRefresh = HelperMethods.GenerateRefreshToken(user, _context);
-            string ret = HelperMethods.GenerateLoginResponse(newToken, newRefresh, user.ID);
+            User user = HelperMethods.GetUserFromAccessToken(Request.Cookies["AccessTokenSameSite"] ?? Request.Cookies["AccessToken"], _context);
+            ValidateRefreshToken(user, Request.Cookies["RefreshTokenSameSite"] ?? Request.Cookies["RefreshToken"]); // make sure this is a valid token for the user
+            string newTokenStr = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email);
+            RefreshToken newRefToken = HelperMethods.GenerateRefreshToken(user, _context);
+            string ret = HelperMethods.GenerateLoginResponse(newTokenStr, newRefToken, user.ID);
             _context.SaveChanges(); // save refresh token just before returning string to be safe
 
-            CookieOptions options = new CookieOptions();
-            options.HttpOnly = true;
-            options.Secure = true;
-            options.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.None; // for cross site requests
-            options.Expires = DateTime.UtcNow.AddDays(1); // set cookie to expire in 1 day
-
-            Response.Cookies.Append("access_token", newToken, options); // boom this is it.. modify the response directly to include needed cookie
-            Response.Cookies.Append("refresh_token", newRefresh.Token, options);
+            // append cookies after refresh
+            HelperMethods.SetCookies(Response, newTokenStr, newRefToken);
             return ret;
         }
 

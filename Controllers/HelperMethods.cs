@@ -11,6 +11,7 @@ using Newtonsoft.Json.Linq;
 using Microsoft.AspNetCore.Http;
 using System.Linq;
 using System.IO;
+using System.Diagnostics.Eventing.Reader;
 
 namespace SafeAccountsAPI.Controllers
 {
@@ -259,6 +260,25 @@ namespace SafeAccountsAPI.Controllers
             }
 
             return plaintext;
+        }
+
+        public static void SetCookies(HttpResponse Response, string tokenString, RefreshToken refToken)
+        {
+            // append cookies after login
+            Response.Cookies.Append("AccessToken", tokenString, HelperMethods.GetCookieOptions(false));
+            Response.Cookies.Append("RefreshToken", refToken.Token, HelperMethods.GetCookieOptions(false));
+            Response.Cookies.Append("AccessTokenSameSite", tokenString, HelperMethods.GetCookieOptions(true));
+            Response.Cookies.Append("RefreshTokenSameSite", refToken.Token, HelperMethods.GetCookieOptions(true));
+        }
+
+        public static CookieOptions GetCookieOptions(bool sameSite = false)
+        {
+            CookieOptions options = new CookieOptions();
+            options.HttpOnly = true;
+            options.Secure = true;
+            options.Expires = DateTime.UtcNow.AddDays(1); // set cookie to expire in 1 day
+            if (sameSite) options.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.None; // for cross site requests
+            return options;
         }
     }
 }

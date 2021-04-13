@@ -49,7 +49,7 @@ namespace SafeAccountsAPI
                {
                    OnMessageReceived = context =>
                    {
-                       context.Token = context.Request.Cookies["access_token"];
+                       context.Token = context.Request.Cookies["AccessTokenSameSite"] ?? context.Request.Cookies["AccessToken"];
                        return Task.CompletedTask;
                    },
                };
