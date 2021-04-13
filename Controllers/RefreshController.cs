@@ -43,6 +43,7 @@ namespace SafeAccountsAPI.Controllers
             CookieOptions options = new CookieOptions();
             options.HttpOnly = true;
             options.Secure = true;
+            options.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.None; // for cross site requests
             options.Expires = DateTime.UtcNow.AddDays(1); // set cookie to expire in 1 day
 
             Response.Cookies.Append("access_token", newToken, options); // boom this is it.. modify the response directly to include needed cookie
