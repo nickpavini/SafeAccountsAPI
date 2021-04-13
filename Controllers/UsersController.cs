@@ -39,6 +39,7 @@ namespace SafeAccountsAPI.Controllers
             try { json = JObject.Parse(credentials); }
             catch (Exception ex)
             {
+                Response.StatusCode = 400;
                 ErrorMessage error = new ErrorMessage("Invalid Json", credentials, ex.Message);
                 return JObject.FromObject(error).ToString();
             }
@@ -62,12 +63,14 @@ namespace SafeAccountsAPI.Controllers
                 }
                 else
                 {
+                    Response.StatusCode = 401;
                     ErrorMessage error = new ErrorMessage("Invalid Credentials", credentials, Unauthorized().ToString());
                     return JObject.FromObject(error).ToString();
                 }
             }
             catch (Exception ex)
             {
+                Response.StatusCode = 500; // later we will add logic to see if the error comes from users not giving all json arguments
                 ErrorMessage error = new ErrorMessage("Error validating credentials", credentials, ex.Message);
                 return JObject.FromObject(error).ToString();
             }
@@ -92,8 +95,10 @@ namespace SafeAccountsAPI.Controllers
         [HttpGet] //working
         public string GetAllUsers()
         {
-            if (!HelperMethods.ValidateIsAdmin(_httpContextAccessor))
+            if (!HelperMethods.ValidateIsAdmin(_httpContextAccessor)) {
+                Response.StatusCode = 401;
                 return JObject.FromObject(new ErrorMessage("Invalid Role", "n/a", "Caller must have admin role.")).ToString(); // n/a for no args there
+            }
 
             // format success response.. maybe could be done better but not sure yet
             JObject message = JObject.Parse(SuccessMessage._result);
@@ -116,6 +121,7 @@ namespace SafeAccountsAPI.Controllers
             try { json = JObject.Parse(userJson); }
             catch (Exception ex)
             {
+                Response.StatusCode = 400; 
                 ErrorMessage error = new ErrorMessage("Invalid Json", userJson, ex.Message);
                 return JObject.FromObject(error).ToString();
             }
@@ -129,6 +135,7 @@ namespace SafeAccountsAPI.Controllers
             }
             catch(Exception ex)
             {
+                Response.StatusCode = 500;
                 ErrorMessage error = new ErrorMessage("Failed to create new user", json.ToString(), ex.Message);
                 return JObject.FromObject(error).ToString();
             }
@@ -143,8 +150,10 @@ namespace SafeAccountsAPI.Controllers
         public string User_GetUser(int id)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id)) {
+                Response.StatusCode = 401;
                 return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+            }
 
             //format response
             JObject message = JObject.Parse(SuccessMessage._result);
@@ -157,8 +166,10 @@ namespace SafeAccountsAPI.Controllers
         public string User_DeleteUser(int id)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id)) {
+                Response.StatusCode = 401;
                 return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+            }
 
             try
             {
@@ -170,6 +181,7 @@ namespace SafeAccountsAPI.Controllers
             }
             catch (Exception ex)
             {
+                Response.StatusCode = 500;
                 ErrorMessage error = new ErrorMessage("Failed to delete user.", "ID: " + id.ToString(), ex.Message);
                 return JObject.FromObject(error).ToString();
             }
@@ -182,8 +194,10 @@ namespace SafeAccountsAPI.Controllers
         public string User_GetFirstName(int id)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id)) {
+                Response.StatusCode = 401;
                 return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+            }
 
             JObject message = JObject.Parse(SuccessMessage._result);
             message.Add(new JProperty("firstname", _context.Users.Where(a => a.ID == id).Single().First_Name));
@@ -194,8 +208,10 @@ namespace SafeAccountsAPI.Controllers
         public string User_EditFirstName(int id, [FromBody]string firstname)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id)) {
+                Response.StatusCode = 401;
                 return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+            }
 
             try
             {
@@ -203,6 +219,7 @@ namespace SafeAccountsAPI.Controllers
                 _context.SaveChanges();
             }
             catch(Exception ex) {
+                Response.StatusCode = 500;
                 ErrorMessage error = new ErrorMessage("Failed to update first name.", "ID: "+id.ToString()+" First Name: "+firstname, ex.Message);
                 return JObject.FromObject(error).ToString();
             }
@@ -216,8 +233,10 @@ namespace SafeAccountsAPI.Controllers
         public string User_GetLastName(int id)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id)) {
+                Response.StatusCode = 401;
                 return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+            }
 
             JObject message = JObject.Parse(SuccessMessage._result);
             message.Add(new JProperty("lastname", _context.Users.Where(a => a.ID == id).Single().Last_Name));
@@ -228,8 +247,10 @@ namespace SafeAccountsAPI.Controllers
         public string User_EditLastName(int id, [FromBody]string lastname)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id)) {
+                Response.StatusCode = 401;
                 return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+            }
 
             try
             {
@@ -238,6 +259,7 @@ namespace SafeAccountsAPI.Controllers
             }
             catch (Exception ex)
             {
+                Response.StatusCode = 500;
                 ErrorMessage error = new ErrorMessage("Failed to update last name.", "ID: " + id.ToString() + " Last Name: " + lastname, ex.Message);
                 return JObject.FromObject(error).ToString();
             }
@@ -250,12 +272,19 @@ namespace SafeAccountsAPI.Controllers
         [HttpPut("{id:int}/password")]
         public string User_EditPassword(int id, [FromBody]string passwordJson)
         {
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id)) {
+                Response.StatusCode = 401;
+                return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+            }
+
             JObject json = null;
 
             // might want Json verification as own function since all will do it.. we will see
             try { json = JObject.Parse(passwordJson); }
             catch (Exception ex)
             {
+                Response.StatusCode = 400;
                 ErrorMessage error = new ErrorMessage("Invalid Json", passwordJson, ex.Message);
                 return JObject.FromObject(error).ToString();
             }
@@ -264,29 +293,20 @@ namespace SafeAccountsAPI.Controllers
             {
                 User user = _context.Users.Single(a => a.ID == id);
 
-                // if password is valid then we change it
-                if (ValidatePassword(json["current_password"].ToString(), user.Password))
-                {
-                    // get salt
-                    byte[] salt = new byte[HelperMethods.salt_length];
-                    Buffer.BlockCopy(user.Password, 0, salt, 0, salt.Length);
-
-                    // generate new hash and concatenate
-                    byte[] newPassHash = HelperMethods.GenerateSaltedHash(Encoding.UTF8.GetBytes(json["new_password"].ToString()), salt);
-                    byte[] concatenated = new byte[salt.Length + newPassHash.Length];
-                    Buffer.BlockCopy(salt, 0, concatenated, 0, salt.Length);
-                    Buffer.BlockCopy(newPassHash, 0, concatenated, salt.Length, newPassHash.Length);
-
-                    //assign and update db
-                    user.Password = concatenated;
+                // if password is valid then we change it and update db
+                if (ValidatePassword(json["current_password"].ToString(), user.Password)) {
+                    user.Password = HelperMethods.ConcatenatedSaltAndSaltedHash(json["new_password"].ToString());
                     _context.Update(user);
                     _context.SaveChanges();
                 }
-                else
+                else {
+                    Response.StatusCode = 401;
                     return JObject.FromObject(new ErrorMessage("Invalid Password", json["current_password"].ToString(), "n/a")).ToString();
+                }
             }
             catch(Exception ex)
             {
+                Response.StatusCode = 500;
                 return JObject.FromObject(new ErrorMessage("Failed to update with new password", "n/a", ex.Message)).ToString(); // don't continue to send password back and forth in messages
             }
 
@@ -299,8 +319,10 @@ namespace SafeAccountsAPI.Controllers
         public string User_GetAccounts(int id)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id)) {
+                Response.StatusCode = 401;
                 return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+            }
 
             // format success response.. maybe could be done better but not sure yet
             JObject message = JObject.Parse(SuccessMessage._result);
@@ -315,8 +337,10 @@ namespace SafeAccountsAPI.Controllers
         public string User_AddAccount(int id, [FromBody]string accJson) 
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id)) {
+                Response.StatusCode = 401;
                 return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+            }
 
             JObject json = null;
 
@@ -324,6 +348,7 @@ namespace SafeAccountsAPI.Controllers
             try { json = JObject.Parse(accJson); }
             catch (Exception ex)
             {
+                Response.StatusCode = 400;
                 ErrorMessage error = new ErrorMessage("Invalid Json", accJson, ex.Message);
                 return JObject.FromObject(error).ToString();
             }
@@ -337,6 +362,7 @@ namespace SafeAccountsAPI.Controllers
             }
             catch(Exception ex)
             {
+                Response.StatusCode = 500;
                 return JObject.FromObject(new ErrorMessage("Error creating new account.", accJson, ex.Message)).ToString();
             }
 
@@ -348,8 +374,10 @@ namespace SafeAccountsAPI.Controllers
         public string User_GetSingleAccount(int id, int account_id)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id)) {
+                Response.StatusCode = 401;
                 return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+            }
 
             JObject message = JObject.Parse(SuccessMessage._result);
             message.Add(new JProperty("account", JObject.FromObject(new ReturnableAccount(_context.Accounts.Single(a => a.ID == account_id)))));
@@ -361,8 +389,10 @@ namespace SafeAccountsAPI.Controllers
         public string User_EditAccountTitle(int id, int account_id, [FromBody]string title)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id)) {
+                Response.StatusCode = 401;
                 return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+            }
 
             // attempt to edit the title
             try
@@ -374,6 +404,7 @@ namespace SafeAccountsAPI.Controllers
             }
             catch(Exception ex)
             {
+                Response.StatusCode = 500;
                 return JObject.FromObject(new ErrorMessage("Error editing title", "Attempted title: " + title, ex.Message)).ToString();
             }
 
@@ -385,8 +416,10 @@ namespace SafeAccountsAPI.Controllers
         public string User_EditAccountLogin(int id, int account_id, [FromBody]string login)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id)) {
+                Response.StatusCode = 401;
                 return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+            }
 
             // attempt to edit the login
             try
@@ -398,6 +431,7 @@ namespace SafeAccountsAPI.Controllers
             }
             catch (Exception ex)
             {
+                Response.StatusCode = 500;
                 return JObject.FromObject(new ErrorMessage("Error editing login", "Attempted login: " + login, ex.Message)).ToString();
             }
 
@@ -409,8 +443,10 @@ namespace SafeAccountsAPI.Controllers
         public string User_EditAccountPassword(int id, int account_id, [FromBody]string password)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id)) {
+                Response.StatusCode = 401;
                 return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+            }
 
             try
             {
@@ -421,6 +457,7 @@ namespace SafeAccountsAPI.Controllers
             }
             catch (Exception ex)
             {
+                Response.StatusCode = 500;
                 return JObject.FromObject(new ErrorMessage("Error editing password", "n/a", ex.Message)).ToString();
             }
 
@@ -432,8 +469,10 @@ namespace SafeAccountsAPI.Controllers
         public string User_EditAccountDesc(int id, int account_id, [FromBody]string description)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id)) {
+                Response.StatusCode = 401;
                 return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+            }
 
             // attempt to edit the description
             try
@@ -445,6 +484,7 @@ namespace SafeAccountsAPI.Controllers
             }
             catch (Exception ex)
             {
+                Response.StatusCode = 500;
                 return JObject.FromObject(new ErrorMessage("Error editing description", "Attempted description: " + description, ex.Message)).ToString();
             }
 

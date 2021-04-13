@@ -51,6 +51,7 @@ namespace SafeAccountsAPI.Controllers
             // might want Json verification as own function since all will do it.. we will see
             try { json = JObject.Parse(options); }
             catch (Exception ex) {
+                Response.StatusCode = 400;
                 ErrorMessage error = new ErrorMessage("Invalid Json", options, ex.Message);
                 return JObject.FromObject(error).ToString(); 
             }
@@ -58,7 +59,8 @@ namespace SafeAccountsAPI.Controllers
             // check that the provided regex string was good
             try { regex = new Regex(json["regex"].ToString()); } // try to create regex from the string
             catch (Exception ex) {
-                ErrorMessage error = new ErrorMessage("Invalid Json", json["regex"].ToString(), ex.Message);
+                Response.StatusCode = 400;
+                ErrorMessage error = new ErrorMessage("Invalid Regex", json["regex"].ToString(), ex.Message);
                 return JObject.FromObject(error).ToString();
             }
 
