@@ -18,7 +18,7 @@ namespace SafeAccountsAPI.Models {
 
         public int ID { get; set; }
         public string FolderName { get; set; }
-        public String ParentName { get; set; }
+        public int? ParentID { get; set; }
         public bool HasChild { get; set; }
 
         public ReturnableFolder(Folder fold)
@@ -28,7 +28,7 @@ namespace SafeAccountsAPI.Models {
             HasChild = fold.HasChild;
 
             if (fold.ParentID != null)
-                ParentName = fold.Parent.FolderName;
+                ParentID = fold.ParentID;
         }
     }
 }
