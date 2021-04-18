@@ -2,6 +2,7 @@ Use safeaccountsapi_db;
 
 drop table accounts;
 drop table refreshtokens;
+drop table folders;
 drop table users;
 
 Create Table Users
@@ -15,16 +16,31 @@ Create Table Users
 	Role nvarchar(25)
 );
 
+Create Table Folders
+(
+	ID int primary key auto_increment,
+    UserID int not null,
+    ParentID int,
+    FolderName nvarchar(50),
+    Constraint FK_Folders_UserID foreign key (UserID)
+    references Users(ID),
+    Constraint FK_Folders_ParentID foreign key (ParentID)
+    references Folders(ID)
+);
+
 Create Table Accounts
 (
 	ID int primary key auto_increment,
 	UserID int not null,
+    FolderID int,
 	Title nvarchar(50),
 	Login nvarchar(50),
 	Password varbinary(200),
 	Description nvarchar(250),
     CONSTRAINT FK_Accounts_UserID FOREIGN KEY (UserID)
-    REFERENCES Users(ID)
+    REFERENCES Users(ID),
+    CONSTRAINT FK_Accounts_FolderID FOREIGN KEY (FolderID)
+    REFERENCES Folders(ID)
 );
 
 Create Table RefreshTokens
