@@ -490,5 +490,61 @@ namespace SafeAccountsAPI.Controllers
 
             return SuccessMessage._result;
         }
+
+        [HttpGet("{id:int}/folders")]
+        public string User_GetFolders(int id)
+        {
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id)) {
+                Response.StatusCode = 401;
+                return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+            }
+
+            // format success response.. maybe could be done better but not sure yet
+            JObject message = JObject.Parse(SuccessMessage._result);
+            JArray folders = new JArray();
+            foreach (Folder fold in _context.Users.Single(a => a.ID == id).Folders) { folders.Add(JToken.FromObject(new ReturnableFolder(fold))); }
+            message.Add(new JProperty("folders", folders));
+            return message.ToString();
+        }
+
+        [HttpPost("{id:int}/folders")] // working
+        public string User_AddFolder(int id, [FromBody]string folderJson)
+        {
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id)) {
+                Response.StatusCode = 401;
+                return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+            }
+
+            JObject json = null;
+
+            // might want Json verification as own function since all will do it.. we will see
+            try { json = JObject.Parse(folderJson); }
+            catch (Exception ex) {
+                Response.StatusCode = 400;
+                ErrorMessage error = new ErrorMessage("Invalid Json", folderJson, ex.Message);
+                return JObject.FromObject(error).ToString();
+            }
+
+            try {
+                int? pid = json["parent_id"] == null ? null : json["parent_id"].ToObject<int?>(); // parent id
+
+                // if user doesnt own the parent or isnt currently admin, we throw error
+                if (pid != null && _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == pid) == null && !HelperMethods.ValidateIsAdmin(_httpContextAccessor))
+                    throw new Exception("User must own the parent folder or be admin");
+
+                // use token in header to to 
+                Folder new_folder = new Folder { UserID = id, FolderName=json["folder_name"].ToString(), ParentID=pid};
+                _context.Folders.Add(new_folder);
+                _context.SaveChanges();
+            }
+            catch (Exception ex) {
+                Response.StatusCode = 500;
+                return JObject.FromObject(new ErrorMessage("Error creating new folder.", folderJson, ex.Message)).ToString();
+            }
+
+            return SuccessMessage._result;
+        }
     }
 }

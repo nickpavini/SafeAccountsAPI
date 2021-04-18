@@ -20,5 +20,6 @@ namespace SafeAccountsAPI.Data
         public DbSet<User> Users { get; set; } // whole table reference
         public DbSet<Account> Accounts { get; set; } // whole table reference
         public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<Folder> Folders { get; set; }
     }
 }

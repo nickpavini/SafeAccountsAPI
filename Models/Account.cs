@@ -12,6 +12,8 @@ namespace SafeAccountsAPI.Models
         public int ID { get; set; }
         public int UserID { get; set; }
         public virtual User User { get; set; }
+        public int? FolderID { get; set; }
+        public virtual Folder Folder { get; set; }
         public string Title { get; set; }
         public string Login { get; set; }
         public byte[] Password { get; set; }
@@ -25,6 +27,7 @@ namespace SafeAccountsAPI.Models
         public string Login { get; set; }
         public string Password { get; set; }
         public string Description { get; set; }
+        public string FolderName { get; set; }
 
         public ReturnableAccount(Account acc)
         {
@@ -33,6 +36,9 @@ namespace SafeAccountsAPI.Models
             Login = acc.Login;
             Password = HelperMethods.DecryptStringFromBytes_Aes(acc.Password, HelperMethods.temp_password_key); // this later will nees to be editted for logic to decrypt based on each users key
             Description = acc.Description;
+
+            if (acc.FolderID != null)
+                FolderName = acc.Folder.FolderName;
         }
     }
 }

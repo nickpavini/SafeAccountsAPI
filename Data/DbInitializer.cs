@@ -53,6 +53,26 @@ namespace SafeAccountsAPI.Data
                 context.SaveChanges(); // execute changes
             }
 
+            if (!context.Folders.Any()) {
+                // add 2 base accounts to each user for testing
+                Folder[] folds = new Folder[]
+                {
+                    new Folder { UserID=1, FolderName="Folder" },
+                    new Folder { UserID=1, FolderName="Sub-Folder", ParentID=1 },
+                    new Folder { UserID=2, FolderName="Folder" },
+                    new Folder { UserID=2, FolderName="Sub-Folder", ParentID=3 },
+                    new Folder { UserID=3, FolderName="Folder" },
+                    new Folder { UserID=3, FolderName="Sub-Folder", ParentID=5 },
+                    new Folder { UserID=4, FolderName="Folder" },
+                    new Folder { UserID=4, FolderName="Sub-Folder", ParentID=7 },
+                    new Folder { UserID=5, FolderName="Folder" },
+                    new Folder { UserID=5, FolderName="Sub-Folder", ParentID=9 }
+                };
+
+                foreach (Folder fold in folds) { context.Folders.Add(fold); } // add each account to the table
+                context.SaveChanges(); // execute changes
+            }
+
             //This raw code isnt working for some reason with EnityFramework
             //context.Database.ExecuteSqlRaw(
             //        @"INSERT INTO TABLE Users (First_Name, Last_Name, Email, Password, NumAccs) Values (""Bob"", ""Jones"", ""Bob@Jones.com"", ""Useless"", 0)"
