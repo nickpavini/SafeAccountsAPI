@@ -66,11 +66,11 @@ namespace SafeAccountsAPI.Data
 
                 Folder[] sub_folds = new Folder[]
                 {
-                    new Folder { UserID=1, FolderName="Sub-Folder", HasChild=false, ParentID=1 },
-                    new Folder { UserID=2, FolderName="Sub-Folder", HasChild=false, ParentID=2 },
+                    new Folder { UserID=1, FolderName="Sub-Folder", HasChild=false, ParentID=5 },
+                    new Folder { UserID=2, FolderName="Sub-Folder", HasChild=false, ParentID=4 },
                     new Folder { UserID=3, FolderName="Sub-Folder", HasChild=false, ParentID=3 },
-                    new Folder { UserID=4, FolderName="Sub-Folder", HasChild=false, ParentID=4 },
-                    new Folder { UserID=5, FolderName="Sub-Folder", HasChild=false, ParentID=5 }
+                    new Folder { UserID=4, FolderName="Sub-Folder", HasChild=false, ParentID=2 },
+                    new Folder { UserID=5, FolderName="Sub-Folder", HasChild=false, ParentID=1 }
                 };
 
                 foreach (Folder fold in base_folds) { context.Folders.Add(fold); } // add each account to the table
