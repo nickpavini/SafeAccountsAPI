@@ -536,7 +536,10 @@ namespace SafeAccountsAPI.Controllers
 
                 // use token in header to to 
                 Folder new_folder = new Folder { UserID = id, FolderName=json["folder_name"].ToString(), ParentID=pid};
-                _context.Folders.Add(new_folder);
+                Folder parent_folder = _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == pid);
+                parent_folder.HasChild = true;
+                _context.Folders.Add(new_folder); // add new folder
+                _context.Folders.Update(parent_folder); // register to parent that is now has at least 1 child
                 _context.SaveChanges();
             }
             catch (Exception ex) {

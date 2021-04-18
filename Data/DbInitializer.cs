@@ -54,22 +54,28 @@ namespace SafeAccountsAPI.Data
             }
 
             if (!context.Folders.Any()) {
-                // add 2 base accounts to each user for testing
-                Folder[] folds = new Folder[]
+                // add base folders
+                Folder[] base_folds = new Folder[]
                 {
-                    new Folder { UserID=1, FolderName="Folder" },
-                    new Folder { UserID=1, FolderName="Sub-Folder", ParentID=1 },
-                    new Folder { UserID=2, FolderName="Folder" },
-                    new Folder { UserID=2, FolderName="Sub-Folder", ParentID=3 },
-                    new Folder { UserID=3, FolderName="Folder" },
-                    new Folder { UserID=3, FolderName="Sub-Folder", ParentID=5 },
-                    new Folder { UserID=4, FolderName="Folder" },
-                    new Folder { UserID=4, FolderName="Sub-Folder", ParentID=7 },
-                    new Folder { UserID=5, FolderName="Folder" },
-                    new Folder { UserID=5, FolderName="Sub-Folder", ParentID=9 }
+                    new Folder { UserID=1, FolderName="Folder", HasChild=true },
+                    new Folder { UserID=2, FolderName="Folder", HasChild=true },
+                    new Folder { UserID=3, FolderName="Folder", HasChild=true },
+                    new Folder { UserID=4, FolderName="Folder", HasChild=true },
+                    new Folder { UserID=5, FolderName="Folder", HasChild=true }
                 };
 
-                foreach (Folder fold in folds) { context.Folders.Add(fold); } // add each account to the table
+                Folder[] sub_folds = new Folder[]
+                {
+                    new Folder { UserID=1, FolderName="Sub-Folder", HasChild=false, ParentID=1 },
+                    new Folder { UserID=2, FolderName="Sub-Folder", HasChild=false, ParentID=2 },
+                    new Folder { UserID=3, FolderName="Sub-Folder", HasChild=false, ParentID=3 },
+                    new Folder { UserID=4, FolderName="Sub-Folder", HasChild=false, ParentID=4 },
+                    new Folder { UserID=5, FolderName="Sub-Folder", HasChild=false, ParentID=5 }
+                };
+
+                foreach (Folder fold in base_folds) { context.Folders.Add(fold); } // add each account to the table
+                context.SaveChanges();
+                foreach (Folder fold in sub_folds) { context.Folders.Add(fold); } // add each account to the table
                 context.SaveChanges(); // execute changes
             }
 

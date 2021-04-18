@@ -21,6 +21,7 @@ Create Table Folders
 	ID int primary key auto_increment,
     UserID int not null,
     ParentID int,
+    HasChild bool not null,
     FolderName nvarchar(50),
     Constraint FK_Folders_UserID foreign key (UserID)
     references Users(ID),
