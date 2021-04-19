@@ -33,6 +33,9 @@ Download [Postman](https://www.postman.com/downloads/) and use SafeAccountsAPI.p
   * Put - Modify user last name. Admin or Authorized user only.
 * **/users/{id}/password**
   * Put - Change user password. Admin or Authorized user only... Requires current password authentication.
+
+&nbsp;
+
 * **/users/{id}/accounts**
   * Get - Get user's accounts. Admin or Authorized user only.
   * Post - Add a new account to the user. Admin or Authorized user only.
@@ -47,6 +50,12 @@ Download [Postman](https://www.postman.com/downloads/) and use SafeAccountsAPI.p
 * **/users/{id}/accounts/{account_id}/description**
   * Put - Edit description of user's specific account. Admin or Authorized user only.
 
+&nbsp;
+
+* **/users/{id}/folders**
+  * Get - Get user's folders. Admin or Authorized user only.
+  * Post - Add a new folder to the user's profile. Admin or Authorized user only.
+ 
 &nbsp;
 
 * **/passwords/generate**
