@@ -12,10 +12,20 @@ Create Table Users
 	Role nvarchar(25)
 )
 
+Create Table Folders
+(
+	ID int IDENTITY(1,1) primary key,
+    UserID int not null foreign key references Users(ID),
+    ParentID int foreign key references Folders(ID),
+    HasChild bool not null,
+    FolderName nvarchar(50)
+);
+
 Create Table Accounts
 (
 	ID int IDENTITY(1,1) primary key,
 	UserID int foreign key references Users(ID),
+	FolderID int foreign key references Folders(ID),
 	Title nvarchar(50),
 	Login nvarchar(50),
 	Password varbinary(200),
