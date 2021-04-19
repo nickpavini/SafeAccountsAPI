@@ -27,7 +27,7 @@ namespace SafeAccountsAPI.Models
         public string Login { get; set; }
         public string Password { get; set; }
         public string Description { get; set; }
-        public string FolderName { get; set; }
+        public int? FolderID { get; set; }
 
         public ReturnableAccount(Account acc)
         {
@@ -38,7 +38,7 @@ namespace SafeAccountsAPI.Models
             Description = acc.Description;
 
             if (acc.FolderID != null)
-                FolderName = acc.Folder.FolderName;
+                FolderID = acc.FolderID;
         }
     }
 }
