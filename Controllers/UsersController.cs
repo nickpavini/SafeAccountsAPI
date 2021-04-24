@@ -20,13 +20,12 @@ namespace SafeAccountsAPI.Controllers
     [ApiController]
     [Authorize]
     [Route("[controller]")]
-    public class UsersController : Controller
-    {
+    public class UsersController : Controller {
         private readonly APIContext _context; // database handle
         private readonly IHttpContextAccessor _httpContextAccessor; // handle to all http information.. used for authorization
 
         // get an instance of a database and http handle
-        public UsersController(APIContext context, IHttpContextAccessor httpContextAccessor) { 
+        public UsersController(APIContext context, IHttpContextAccessor httpContextAccessor) {
             _context = context;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -37,21 +36,18 @@ namespace SafeAccountsAPI.Controllers
         {
             JObject json = null;
             try { json = JObject.Parse(credentials); }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 Response.StatusCode = 400;
                 ErrorMessage error = new ErrorMessage("Invalid Json", credentials, ex.Message);
                 return JObject.FromObject(error).ToString();
             }
 
-            try
-            {
+            try {
                 // get users saved password hash and salt
                 User user = _context.Users.Single(a => a.Email == json["email"].ToString());
 
                 // successful login.. compare user hash to the hash generated from the inputted password and salt
-                if (ValidatePassword(json["password"].ToString(), user.Password))
-                {
+                if (ValidatePassword(json["password"].ToString(), user.Password)) {
                     string tokenString = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email);
                     RefreshToken refToken = HelperMethods.GenerateRefreshToken(user, _context);
                     string ret = HelperMethods.GenerateLoginResponse(tokenString, refToken, user.ID);
@@ -61,15 +57,13 @@ namespace SafeAccountsAPI.Controllers
                     HelperMethods.SetCookies(Response, tokenString, refToken);
                     return ret;
                 }
-                else
-                {
+                else {
                     Response.StatusCode = 401;
                     ErrorMessage error = new ErrorMessage("Invalid Credentials", credentials, Unauthorized().ToString());
                     return JObject.FromObject(error).ToString();
                 }
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 Response.StatusCode = 500; // later we will add logic to see if the error comes from users not giving all json arguments
                 ErrorMessage error = new ErrorMessage("Error validating credentials", credentials, ex.Message);
                 return JObject.FromObject(error).ToString();
@@ -104,8 +98,8 @@ namespace SafeAccountsAPI.Controllers
             JObject message = JObject.Parse(SuccessMessage._result);
             JArray users = new JArray();
             foreach (User user in _context.Users.ToArray()) {
-               ReturnableUser retUser = new ReturnableUser(user);
-               users.Add(JToken.FromObject(retUser));
+                ReturnableUser retUser = new ReturnableUser(user);
+                users.Add(JToken.FromObject(retUser));
             }
             message.Add(new JProperty("users", users));
             return message.ToString();
@@ -119,22 +113,19 @@ namespace SafeAccountsAPI.Controllers
 
             // might want Json verification as own function since all will do it.. we will see
             try { json = JObject.Parse(userJson); }
-            catch (Exception ex)
-            {
-                Response.StatusCode = 400; 
+            catch (Exception ex) {
+                Response.StatusCode = 400;
                 ErrorMessage error = new ErrorMessage("Invalid Json", userJson, ex.Message);
                 return JObject.FromObject(error).ToString();
             }
 
             // attempt to create new user and add to the database... later we need to implement hashing
-            try
-            {
+            try {
                 User newUser = new User { First_Name = json["firstname"].ToString(), Last_Name = json["lastname"].ToString(), Email = json["email"].ToString(), Password = HelperMethods.ConcatenatedSaltAndSaltedHash(json["password"].ToString()), NumAccs = 0, Role = UserRoles.User };
                 _context.Users.Add(newUser);
                 _context.SaveChanges();
             }
-            catch(Exception ex)
-            {
+            catch (Exception ex) {
                 Response.StatusCode = 500;
                 ErrorMessage error = new ErrorMessage("Failed to create new user", json.ToString(), ex.Message);
                 return JObject.FromObject(error).ToString();
@@ -171,16 +162,14 @@ namespace SafeAccountsAPI.Controllers
                 return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
             }
 
-            try
-            {
+            try {
                 // attempt to remove all data and update changes
                 _context.Accounts.RemoveRange(_context.Accounts.Where(a => a.UserID == id));
                 _context.RefreshTokens.RemoveRange(_context.RefreshTokens.Where(a => a.UserID == id));
                 _context.Users.Remove(_context.Users.Single(a => a.ID == id));
                 _context.SaveChanges();
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 Response.StatusCode = 500;
                 ErrorMessage error = new ErrorMessage("Failed to delete user.", "ID: " + id.ToString(), ex.Message);
                 return JObject.FromObject(error).ToString();
@@ -213,14 +202,13 @@ namespace SafeAccountsAPI.Controllers
                 return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
             }
 
-            try
-            {
+            try {
                 _context.Users.Where(a => a.ID == id).Single().First_Name = firstname;
                 _context.SaveChanges();
             }
-            catch(Exception ex) {
+            catch (Exception ex) {
                 Response.StatusCode = 500;
-                ErrorMessage error = new ErrorMessage("Failed to update first name.", "ID: "+id.ToString()+" First Name: "+firstname, ex.Message);
+                ErrorMessage error = new ErrorMessage("Failed to update first name.", "ID: " + id.ToString() + " First Name: " + firstname, ex.Message);
                 return JObject.FromObject(error).ToString();
             }
 
@@ -252,13 +240,11 @@ namespace SafeAccountsAPI.Controllers
                 return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
             }
 
-            try
-            {
+            try {
                 _context.Users.Where(a => a.ID == id).Single().Last_Name = lastname;
                 _context.SaveChanges();
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 Response.StatusCode = 500;
                 ErrorMessage error = new ErrorMessage("Failed to update last name.", "ID: " + id.ToString() + " Last Name: " + lastname, ex.Message);
                 return JObject.FromObject(error).ToString();
@@ -282,15 +268,13 @@ namespace SafeAccountsAPI.Controllers
 
             // might want Json verification as own function since all will do it.. we will see
             try { json = JObject.Parse(passwordJson); }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 Response.StatusCode = 400;
                 ErrorMessage error = new ErrorMessage("Invalid Json", passwordJson, ex.Message);
                 return JObject.FromObject(error).ToString();
             }
 
-            try
-            {
+            try {
                 User user = _context.Users.Single(a => a.ID == id);
 
                 // if password is valid then we change it and update db
@@ -304,8 +288,7 @@ namespace SafeAccountsAPI.Controllers
                     return JObject.FromObject(new ErrorMessage("Invalid Password", json["current_password"].ToString(), "n/a")).ToString();
                 }
             }
-            catch(Exception ex)
-            {
+            catch (Exception ex) {
                 Response.StatusCode = 500;
                 return JObject.FromObject(new ErrorMessage("Failed to update with new password", "n/a", ex.Message)).ToString(); // don't continue to send password back and forth in messages
             }
@@ -334,7 +317,7 @@ namespace SafeAccountsAPI.Controllers
 
         // add account.. input format is json
         [HttpPost("{id:int}/accounts")] // working
-        public string User_AddAccount(int id, [FromBody]string accJson) 
+        public string User_AddAccount(int id, [FromBody]string accJson)
         {
             // verify that the user is either admin or is requesting their own data
             if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id)) {
@@ -346,22 +329,34 @@ namespace SafeAccountsAPI.Controllers
 
             // might want Json verification as own function since all will do it.. we will see
             try { json = JObject.Parse(accJson); }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 Response.StatusCode = 400;
                 ErrorMessage error = new ErrorMessage("Invalid Json", accJson, ex.Message);
                 return JObject.FromObject(error).ToString();
             }
 
-            try
-            {
+            try {
+                // if folder id is present, then use it, if not we use standard null for top parent
+                int? folder_id;
+                if (json["folder_id"] == null)
+                    folder_id = null;
+                else {
+                    folder_id = _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == int.Parse(json["folder_id"].ToString())).ID; // makes sure folder exists and is owned by user
+                }
+
                 // use token in header to to 
-                Account new_account = new Account { UserID = id, Title = json["account_title"].ToString(), Login = json["account_login"].ToString(), Password = HelperMethods.EncryptStringToBytes_Aes(json["account_password"].ToString(), HelperMethods.temp_password_key), Description = json["account_description"].ToString() };
+                Account new_account = new Account {
+                    UserID = id,
+                    FolderID = folder_id,
+                    Title = json["account_title"] != null ? json["account_title"].ToString() : null,
+                    Login = json["account_login"] != null ? json["account_login"].ToString() : null,
+                    Password = json["account_password"] != null ? HelperMethods.EncryptStringToBytes_Aes(json["account_password"].ToString(), HelperMethods.temp_password_key) : null,
+                    Description = json["account_description"] != null ? json["account_description"].ToString() : null 
+                };
                 _context.Accounts.Add(new_account);
                 _context.SaveChanges();
             }
-            catch(Exception ex)
-            {
+            catch (Exception ex) {
                 Response.StatusCode = 500;
                 return JObject.FromObject(new ErrorMessage("Error creating new account.", accJson, ex.Message)).ToString();
             }
@@ -395,20 +390,18 @@ namespace SafeAccountsAPI.Controllers
             }
 
             // attempt to edit the title
-            try
-            {
+            try {
                 Account acc = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
                 acc.Title = title;
                 _context.Accounts.Update(acc);
                 _context.SaveChanges();
             }
-            catch(Exception ex)
-            {
+            catch (Exception ex) {
                 Response.StatusCode = 500;
                 return JObject.FromObject(new ErrorMessage("Error editing title", "Attempted title: " + title, ex.Message)).ToString();
             }
 
-            return SuccessMessage._result; 
+            return SuccessMessage._result;
         }
 
         // edit a specific accounts info
@@ -422,15 +415,13 @@ namespace SafeAccountsAPI.Controllers
             }
 
             // attempt to edit the login
-            try
-            {
+            try {
                 Account acc = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
                 acc.Login = login;
                 _context.Accounts.Update(acc);
                 _context.SaveChanges();
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 Response.StatusCode = 500;
                 return JObject.FromObject(new ErrorMessage("Error editing login", "Attempted login: " + login, ex.Message)).ToString();
             }
@@ -448,15 +439,13 @@ namespace SafeAccountsAPI.Controllers
                 return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
             }
 
-            try
-            {
+            try {
                 Account acc = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
                 acc.Password = HelperMethods.EncryptStringToBytes_Aes(password, HelperMethods.temp_password_key); // this logic will need to be changed to use a unique key
                 _context.Accounts.Update(acc);
                 _context.SaveChanges();
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 Response.StatusCode = 500;
                 return JObject.FromObject(new ErrorMessage("Error editing password", "n/a", ex.Message)).ToString();
             }
@@ -475,17 +464,46 @@ namespace SafeAccountsAPI.Controllers
             }
 
             // attempt to edit the description
-            try
-            {
+            try {
                 Account acc = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
                 acc.Description = description;
                 _context.Accounts.Update(acc);
                 _context.SaveChanges();
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 Response.StatusCode = 500;
                 return JObject.FromObject(new ErrorMessage("Error editing description", "Attempted description: " + description, ex.Message)).ToString();
+            }
+
+            return SuccessMessage._result;
+        }
+
+        [HttpPut("{id:int}/accounts/{account_id:int}/folder")]
+        public string User_AccountSetFolder(int id, int account_id, [FromBody]string folder_id)
+        {
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id)) {
+                Response.StatusCode = 401;
+                return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+            }
+
+            // attempt to edit the description
+            try {
+                Account acc = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
+
+                // left empty implies removing any associated folder
+                if (folder_id == "")
+                    acc.FolderID = null;
+                else { // here we have to validate that the user owns the folder
+                    acc.FolderID = _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == int.Parse(folder_id)).ID; // we code it like this to make sure that whatever folder we attempt exists and is owner by this user
+                }
+
+                _context.Accounts.Update(acc);
+                _context.SaveChanges();
+            }
+            catch (Exception ex) {
+                Response.StatusCode = 500;
+                return JObject.FromObject(new ErrorMessage("Error settting folder", "Attempted folder id: " + folder_id, ex.Message)).ToString();
             }
 
             return SuccessMessage._result;
@@ -540,7 +558,7 @@ namespace SafeAccountsAPI.Controllers
                 
                 // only update parent if needed
                 if (pid != null) {
-                    Folder parent_folder = _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == pid);
+                    Folder parent_folder = _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == pid); // this makes sure that the parent folder is owned by our user
                     parent_folder.HasChild = true;
                     _context.Folders.Update(parent_folder); // register to parent that is now has at least 1 child
                 }
