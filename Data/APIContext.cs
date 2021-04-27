@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using SafeAccountsAPI.Models;
 
 namespace SafeAccountsAPI.Data
@@ -6,16 +7,19 @@ namespace SafeAccountsAPI.Data
     // reference to the api database.. models refer to table entries
     public class APIContext : DbContext
     {
-        public static readonly string _connectionString = "Server=safeaccounts.mysql.database.azure.com; Port=3306; Database=SafeAccountsAPI_Db; Uid=safeaccounts@safeaccounts; Pwd=Lqxx34pTqUpoIlRANDfC; SslMode=Preferred;";
+        public IConfiguration Configuration { get; }
 
-        public APIContext(DbContextOptions<APIContext> options) : base(options)
+        public APIContext(DbContextOptions<APIContext> options, IConfiguration configuration) : base(options)
         {
+            Configuration = configuration;
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-            => optionsBuilder
+        {
+            optionsBuilder
                 .UseLazyLoadingProxies()
-                .UseMySql(_connectionString, ServerVersion.AutoDetect(_connectionString));
+                .UseMySql(Configuration.GetValue<string>("ConnectionStrings:DefaultConnection"), ServerVersion.AutoDetect(Configuration.GetValue<string>("ConnectionStrings:DefaultConnection")));
+        }
 
         public DbSet<User> Users { get; set; } // whole table reference
         public DbSet<Account> Accounts { get; set; } // whole table reference
