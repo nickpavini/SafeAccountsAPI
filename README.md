@@ -4,8 +4,6 @@
 The Open Source password manager API in the cloud. (RESTful implementation).<br />
 <ins>Live Domain:</ins> https://eus-safeaccounts-test.azurewebsites.net
 
-CI/CD is setup through Github Actions, so all accepted commits are available through the domain within about a minute, and SafeAccountsAPI is deployed as an Azure App Service that connects to an Azure Database for MySQL server.
-
 <ins>**Important Development Note:**</ins> You must create your own local instance of MySql and update the connection string in `appsettings.development.json`. You can run `TableCreations_MySQL.sql` to setup your database and then it will populate with 5 users, 2 accounts and 2 folders each on first local run of the API.
 
 &nbsp;
