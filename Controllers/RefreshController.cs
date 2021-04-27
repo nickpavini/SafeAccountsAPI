@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json.Linq;
 using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Models;
+using Microsoft.Extensions.Configuration;
 
 namespace SafeAccountsAPI.Controllers
 {
@@ -20,11 +20,13 @@ namespace SafeAccountsAPI.Controllers
     {
 
         private readonly APIContext _context; // database handle
+        public IConfiguration _configuration; //config handle
 
         // get an instance of a database and http handle
-        public RefreshController(APIContext context, IHttpContextAccessor httpContextAccessor)
+        public RefreshController(APIContext context, IHttpContextAccessor httpContextAccessor, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
 
@@ -33,9 +35,9 @@ namespace SafeAccountsAPI.Controllers
         public string Refresh()
         {
             // attempt getting user from claims
-            User user = HelperMethods.GetUserFromAccessToken(Request.Cookies["AccessTokenSameSite"] ?? Request.Cookies["AccessToken"], _context);
+            User user = HelperMethods.GetUserFromAccessToken(Request.Cookies["AccessTokenSameSite"] ?? Request.Cookies["AccessToken"], _context, _configuration.GetValue<string>("JwtTokenKey"));
             ValidateRefreshToken(user, Request.Cookies["RefreshTokenSameSite"] ?? Request.Cookies["RefreshToken"]); // make sure this is a valid token for the user
-            string newTokenStr = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email);
+            string newTokenStr = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email, _configuration.GetValue<string>("JwtTokenKey"));
             RefreshToken newRefToken = HelperMethods.GenerateRefreshToken(user, _context);
             string ret = HelperMethods.GenerateLoginResponse(newTokenStr, newRefToken, user.ID);
             _context.SaveChanges(); // save refresh token just before returning string to be safe

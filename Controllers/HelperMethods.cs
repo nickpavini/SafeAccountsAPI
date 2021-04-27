@@ -14,11 +14,10 @@ using System.Text;
 
 namespace SafeAccountsAPI.Controllers {
 	public static class HelperMethods {
-		public static string token_key = "KeyForSignInSecret@1234"; // key for encrypting access tokens
 		public static string temp_password_key = "b14ca5898a4e4133bbce2ea2315a1916"; // this will be replaced by likely a key per user
 		public static int salt_length = 12; // length of salts for password storage
 
-		public static string GenerateJWTAccessToken(string role, string email) {
+		public static string GenerateJWTAccessToken(string role, string email, string token_key) {
 			SymmetricSecurityKey secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(token_key));
 			SigningCredentials signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
 
@@ -33,7 +32,7 @@ namespace SafeAccountsAPI.Controllers {
 			return new JwtSecurityTokenHandler().WriteToken(tokeOptions);
 		}
 
-		public static User GetUserFromAccessToken(string accessToken, APIContext _context) {
+		public static User GetUserFromAccessToken(string accessToken, APIContext _context, string token_key) {
 			// paramters for a valid token.. might want to put in static class or function at some point
 			TokenValidationParameters tokenValidationParamters = new TokenValidationParameters {
 				ValidateIssuer = true,
@@ -44,7 +43,7 @@ namespace SafeAccountsAPI.Controllers {
 				ValidAudience = "http://localhost:5000",
 				IssuerSigningKey =
 					new SymmetricSecurityKey(
-						Encoding.ASCII.GetBytes(HelperMethods.token_key)
+						Encoding.ASCII.GetBytes(token_key)
 					)
 			};
 

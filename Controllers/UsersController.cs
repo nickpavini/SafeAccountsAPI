@@ -8,8 +8,7 @@ using SafeAccountsAPI.Models;
 using System;
 using System.Linq;
 using System.Text;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+using Microsoft.Extensions.Configuration;
 
 namespace SafeAccountsAPI.Controllers {
 	[ApiController]
@@ -18,11 +17,13 @@ namespace SafeAccountsAPI.Controllers {
 	public class UsersController : Controller {
 		private readonly APIContext _context; // database handle
 		private readonly IHttpContextAccessor _httpContextAccessor; // handle to all http information.. used for authorization
+		public IConfiguration _configuration; //
 
 		// get an instance of a database and http handle
-		public UsersController(APIContext context, IHttpContextAccessor httpContextAccessor) {
+		public UsersController(APIContext context, IHttpContextAccessor httpContextAccessor, IConfiguration configuration) {
 			_context = context;
 			_httpContextAccessor = httpContextAccessor;
+			_configuration = configuration;
 		}
 
 		// login and get tokens...
@@ -41,7 +42,7 @@ namespace SafeAccountsAPI.Controllers {
 
 				// successful login.. compare user hash to the hash generated from the inputted password and salt
 				if (ValidatePassword(json["password"].ToString(), user.Password)) {
-					string tokenString = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email);
+					string tokenString = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email, _configuration.GetValue<string>("JwtTokenKey"));
 					RefreshToken refToken = HelperMethods.GenerateRefreshToken(user, _context);
 					string ret = HelperMethods.GenerateLoginResponse(tokenString, refToken, user.ID);
 					_context.SaveChanges(); // always last on db to make sure nothing breaks and db has new info
