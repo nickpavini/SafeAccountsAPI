@@ -12,7 +12,7 @@ CI/CD is setup through Github Actions, so all accepted commits are available thr
 
 ## REST API Endpoints
 
-To test the admin functionality on the live domain, I have a default admin account. <ins>`Email: john@doe.com, Password: useless`</ins>.<br />
+To test the admin functionality, modify the role of one of the default users directly in the database.
 
 Also, all inputs and outputs are in json format of course. <br />
 Download [Postman](https://www.postman.com/downloads/) and use SafeAccountsAPI.postman_collection.json to easily test the API's endpoints.
