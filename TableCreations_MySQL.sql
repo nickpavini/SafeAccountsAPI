@@ -1,9 +1,10 @@
+Create database safeaccountsapi_db;
 Use safeaccountsapi_db;
 
-drop table accounts;
+/*drop table accounts;
 drop table refreshtokens;
 drop table folders;
-drop table users;
+drop table users;*/
 
 Create Table Users
 (
