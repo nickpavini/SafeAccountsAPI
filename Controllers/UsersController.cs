@@ -9,6 +9,7 @@ using System;
 using System.Linq;
 using System.Text;
 using Microsoft.Extensions.Configuration;
+using System.Collections.Generic;
 
 namespace SafeAccountsAPI.Controllers {
 	[ApiController]
@@ -544,6 +545,47 @@ namespace SafeAccountsAPI.Controllers {
 			} catch (Exception ex) {
 				Response.StatusCode = 500;
 				return JObject.FromObject(new ErrorMessage("Error creating new folder.", folderJson, ex.Message)).ToString();
+			}
+
+			return SuccessMessage._result;
+		}
+
+		// delete a folder and all contents if it is not empty
+		[HttpDelete("{id:int}/folders/{folder_id:int}")] // working
+		public string User_DeleteFolder(int id, int folder_id)
+		{
+			// verify that the user is either admin or is requesting their own data
+			if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id)) {
+				Response.StatusCode = 401;
+				return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+			}
+
+			try {
+				Folder folderToDelete = _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == folder_id);
+				// if this folder has children, then we need to call DeleteFolder on all children
+				if (folderToDelete.HasChild) {
+					List<Folder> folders = _context.Users.Single(a => a.ID == id).Folders.ToList<Folder>();
+					foreach (Folder folder in folders) {
+						if (folder.ParentID == folderToDelete.ID) {
+							User_DeleteFolder(id, folder.ID); // recursive call to go down the tree and delete children
+						}
+					}
+				}
+
+				// delete the accounts in the folder
+				List<Account> accounts = _context.Users.Single(a => a.ID == id).Accounts.ToList<Account>();
+				foreach (Account account in accounts) {
+					if (account.FolderID == folderToDelete.ID) {
+						_context.Accounts.Remove(account); // no need to call User_DeleteAccount because identity and access token have already been verifies
+					}
+				}
+				_context.SaveChanges(); // save the accounts being deleted
+				_context.Folders.Remove(folderToDelete); // remove the folder
+				_context.SaveChanges(); // save the folder being deleted.. must be done seperate because of foreign keys
+			}
+			catch (Exception ex) {
+				Response.StatusCode = 500;
+				return JObject.FromObject(new ErrorMessage("Error deleting folder.", "Folder ID: " + folder_id.ToString(), ex.Message)).ToString();
 			}
 
 			return SuccessMessage._result;
