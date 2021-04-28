@@ -14,8 +14,8 @@ using System.Text;
 
 namespace SafeAccountsAPI.Controllers {
 	public static class HelperMethods {
-		public static string temp_password_key = "b14ca5898a4e4133bbce2ea2315a1916"; // this will be replaced by likely a key per user
-		public static int salt_length = 12; // length of salts for password storage
+		private static string keys_file = "keys.txt"; // file for securely storing user keys and ivs
+		public static int salt_length = 16; // length of salts for password storage
 
 		public static string GenerateJWTAccessToken(string role, string email, string token_key) {
 			SymmetricSecurityKey secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(token_key));
@@ -169,15 +169,58 @@ namespace SafeAccountsAPI.Controllers {
 			return concatenated;
 		}
 
-		public static byte[] EncryptStringToBytes_Aes(string plainText, string key) {
+		// get the key associated to the specific user that is used to secure the user's saved passwords
+		// password to the actual user's account isnt encrypted because it is hashed for matching.. might later want to encrypt to add extra layer against theft
+		public static string[] GetUserKeyAndIV(int uid)
+		{
+			if (!File.Exists(keys_file))
+				throw new Exception("File for keys does not exist.");
+
+			string[] keyAndIv = null;
+			foreach (string line in File.ReadAllLines(keys_file)) {
+				string[] line_split = line.Split(" "); // id key iv
+				if (uid.ToString() == line_split[0]) { // found matching id
+					keyAndIv = new string[2];
+					keyAndIv[0] = line_split[1]; // key
+					keyAndIv[1] = line_split[2]; // iv
+				}
+			}
+
+			// return empty string if we never found the user
+			if (keyAndIv == null)
+				return keyAndIv;
+
+			return keyAndIv;
+		}
+
+		// created when a new user signs up. This is their unique key and iv for securing the items in their safe
+		public static string CreateUserKeyandIV(int uid)
+		{
+			if (!File.Exists(keys_file))
+				using (File.Create(keys_file)) { } ; // simply create the file and dispose of the file stream
+
+			// if there is a key already we simply return the key
+			if (GetUserKeyAndIV(uid) != null)
+				throw new Exception("Key for user id already exists.");
+			
+			string key, iv;
+			using (Aes myAes = Aes.Create()) {
+				key = Convert.ToBase64String(myAes.Key);
+				iv = Convert.ToBase64String(myAes.IV);
+			}
+
+			File.AppendAllText(keys_file, uid.ToString() + " " + key + " " + iv + "\n"); // id key iv
+			return key + "+" + iv;
+		}
+
+		public static byte[] EncryptStringToBytes_Aes(string plainText, string[] keyAndIv) {
 			byte[] encrypted;
-			byte[] iv = new byte[16];
 
 			// Create an Aes object
 			// with the specified key and IV.
 			using (Aes aesAlg = Aes.Create()) {
-				aesAlg.Key = Encoding.UTF8.GetBytes(key);
-				aesAlg.IV = iv;
+				aesAlg.Key = Convert.FromBase64String(keyAndIv[0]);
+				aesAlg.IV = Convert.FromBase64String(keyAndIv[1]);
 
 				// Create an encryptor to perform the stream transform.
 				ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
@@ -198,17 +241,16 @@ namespace SafeAccountsAPI.Controllers {
 			return encrypted;
 		}
 
-		public static string DecryptStringFromBytes_Aes(byte[] cipherText, string key) {
+		public static string DecryptStringFromBytes_Aes(byte[] cipherText, string[] keyAndIv) {
 			// Declare the string used to hold
 			// the decrypted text.
 			string plaintext = null;
-			byte[] iv = new byte[16];
 
 			// Create an Aes object
 			// with the specified key and IV.
 			using (Aes aesAlg = Aes.Create()) {
-				aesAlg.Key = Encoding.UTF8.GetBytes(key);
-				aesAlg.IV = iv;
+				aesAlg.Key = Convert.FromBase64String(keyAndIv[0]);
+				aesAlg.IV = Convert.FromBase64String(keyAndIv[1]);
 
 				// Create a decryptor to perform the stream transform.
 				ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);

@@ -34,7 +34,7 @@ namespace SafeAccountsAPI.Models
             ID = acc.ID;
             Title = acc.Title;
             Login = acc.Login;
-            Password = HelperMethods.DecryptStringFromBytes_Aes(acc.Password, HelperMethods.temp_password_key); // this later will nees to be editted for logic to decrypt based on each users key
+            Password = HelperMethods.DecryptStringFromBytes_Aes(acc.Password, HelperMethods.GetUserKeyAndIV(acc.UserID));
             Description = acc.Description;
 
             if (acc.FolderID != null)

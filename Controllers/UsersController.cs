@@ -112,6 +112,7 @@ namespace SafeAccountsAPI.Controllers {
 				User newUser = new User { First_Name = json["firstname"].ToString(), Last_Name = json["lastname"].ToString(), Email = json["email"].ToString(), Password = HelperMethods.ConcatenatedSaltAndSaltedHash(json["password"].ToString()), NumAccs = 0, Role = UserRoles.User };
 				_context.Users.Add(newUser);
 				_context.SaveChanges();
+				HelperMethods.CreateUserKeyandIV(_context.Users.Single(a => a.Email == json["email"].ToString()).ID); // after we save changes, we need to get the user by their email and then use the id to create unique password and iv
 			} catch (Exception ex) {
 				Response.StatusCode = 500;
 				ErrorMessage error = new ErrorMessage("Failed to create new user", json.ToString(), ex.Message);
@@ -321,7 +322,7 @@ namespace SafeAccountsAPI.Controllers {
 					FolderID = folder_id,
 					Title = json["account_title"]?.ToString(),
 					Login = json["account_login"]?.ToString(),
-					Password = json["account_password"] != null ? HelperMethods.EncryptStringToBytes_Aes(json["account_password"].ToString(), HelperMethods.temp_password_key) : null,
+					Password = json["account_password"] != null ? HelperMethods.EncryptStringToBytes_Aes(json["account_password"].ToString(), HelperMethods.GetUserKeyAndIV(id)) : null,
 					Description = json["account_description"]?.ToString()
 				};
 				_context.Accounts.Add(new_account);
@@ -405,7 +406,7 @@ namespace SafeAccountsAPI.Controllers {
 
 			try {
 				Account acc = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
-				acc.Password = HelperMethods.EncryptStringToBytes_Aes(password, HelperMethods.temp_password_key); // this logic will need to be changed to use a unique key
+				acc.Password = HelperMethods.EncryptStringToBytes_Aes(password, HelperMethods.GetUserKeyAndIV(id)); // this logic will need to be changed to use a unique key
 				_context.Accounts.Update(acc);
 				_context.SaveChanges();
 			} catch (Exception ex) {
