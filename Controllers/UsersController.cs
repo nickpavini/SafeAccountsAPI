@@ -335,6 +335,27 @@ namespace SafeAccountsAPI.Controllers {
 			return SuccessMessage._result;
 		}
 
+		[HttpDelete("{id:int}/accounts/{account_id:int}")] // working
+		public string User_DeleteAccount(int id, int account_id)
+		{
+			// verify that the user is either admin or is requesting their own data
+			if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id)) {
+				Response.StatusCode = 401;
+				return JObject.FromObject(new ErrorMessage("Invalid User", "id accessed: " + id.ToString(), "Caller can only access their information.")).ToString();
+			}
+
+			try {
+				_context.Accounts.Remove(_context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id)); // fist match user id to ensure ownership
+				_context.SaveChanges();
+			}
+			catch(Exception ex) {
+				Response.StatusCode = 500;
+				return JObject.FromObject(new ErrorMessage("Error deleting account.", "Account ID: " + account_id.ToString(), ex.Message)).ToString();
+			}
+
+			return SuccessMessage._result;
+		}
+
 		// get a specific accounts info
 		[HttpGet("{id:int}/accounts/{account_id:int}")]
 		public string User_GetSingleAccount(int id, int account_id) {
