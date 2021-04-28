@@ -4,7 +4,16 @@
 The Open Source password manager API in the cloud. (RESTful implementation).<br />
 <ins>Live Domain:</ins> https://eus-safeaccounts-test.azurewebsites.net
 
-<ins>**Important Development Note:**</ins> You must create your own local instance of MySql and update the connection string in `appsettings.development.json`. You can run `TableCreations_MySQL.sql` to setup your database and then it will populate with 5 users, 2 accounts and 2 folders each on first local run of the API.
+&nbsp;
+
+<ins>**Security Comes First:**</ins> <br/>
+I take security seriously and have implemented a 3 stage system that seperates the Database from the API and the UI's.<br/>
+Everyone is welcome to test pentest the software so long as the intent is non-malicous and all bugs are reported.
+
+&nbsp;
+
+<ins>**Important Development Note:**</ins> <br/>
+You must create your own local instance of MySql and update the connection string in `appsettings.development.json`. You can run `TableCreations_MySQL.sql` to setup your database and then it will populate with 5 users, 2 accounts and 2 folders each on first local run of the API.
 
 &nbsp;
 
