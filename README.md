@@ -50,6 +50,7 @@ Download [Postman](https://www.postman.com/downloads/) and use SafeAccountsAPI.p
   * Post - Add a new account to the user. Admin or Authorized user only.
 * **/users/{id}/accounts/{account_id}**
   * Get - Get user's specific account. Admin or Authorized user only.
+  * Delete - Delete a user's specific account. Admin or Authorized user only.
 * **/users/{id}/accounts/{account_id}/title**
   * Put - Edit title of user's specific account. Admin or Authorized user only.
 * **/users/{id}/accounts/{account_id}/login**
@@ -64,6 +65,8 @@ Download [Postman](https://www.postman.com/downloads/) and use SafeAccountsAPI.p
 * **/users/{id}/folders**
   * Get - Get user's folders. Admin or Authorized user only.
   * Post - Add a new folder to the user's profile. Admin or Authorized user only.
+* **/users/{id}/folders/{folder_id}**
+  * Delete - Delete a folder and all contents. Admin or Authorized user only.
  
 &nbsp;
 
