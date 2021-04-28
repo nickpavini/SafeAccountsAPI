@@ -3,7 +3,8 @@
 
 The Open Source password manager API in the cloud. (RESTful implementation).<br />
 Message me if your interested in creating a UI for mobile or contributing to the in progress website <br />
-<ins>Live Domain:</ins> https://eus-safeaccounts-test.azurewebsites.net
+<ins>Live Domain:</ins> https://eus-safeaccounts-test.azurewebsites.net <br/>
+<ins>Discord Server:</ins> https://discord.gg/9gvH9YweJe
 
 &nbsp;
 
