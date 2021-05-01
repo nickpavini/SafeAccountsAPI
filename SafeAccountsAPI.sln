@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30011.22
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SafeAccountsAPI", "SafeAccountsAPI.csproj", "{694AE8C5-5929-4619-9EF0-50443140B816}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SafeAccountsAPI", "SafeAccountsAPI\SafeAccountsAPI.csproj", "{B52237B9-3EC8-4B34-8D4A-CF6075F8AA99}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SafeAccountsAPI.UnitTests", "SafeAccountsAPI.UnitTests\SafeAccountsAPI.UnitTests.csproj", "{DD421C37-BAF8-4FC8-B81B-A00A48BC0C1E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +13,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{694AE8C5-5929-4619-9EF0-50443140B816}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{694AE8C5-5929-4619-9EF0-50443140B816}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{694AE8C5-5929-4619-9EF0-50443140B816}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{694AE8C5-5929-4619-9EF0-50443140B816}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B52237B9-3EC8-4B34-8D4A-CF6075F8AA99}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B52237B9-3EC8-4B34-8D4A-CF6075F8AA99}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B52237B9-3EC8-4B34-8D4A-CF6075F8AA99}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B52237B9-3EC8-4B34-8D4A-CF6075F8AA99}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DD421C37-BAF8-4FC8-B81B-A00A48BC0C1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DD421C37-BAF8-4FC8-B81B-A00A48BC0C1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DD421C37-BAF8-4FC8-B81B-A00A48BC0C1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DD421C37-BAF8-4FC8-B81B-A00A48BC0C1E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
