@@ -2,6 +2,8 @@
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
+using SafeAccountsAPI.Constants;
+using SafeAccountsAPI.Models;
 
 namespace SafeAccountsAPI.Controllers
 {
@@ -82,7 +84,7 @@ namespace SafeAccountsAPI.Controllers
             }
 
             // format success response.. maybe could be done better but not sure yet
-            JObject message = JObject.Parse(SuccessMessage._result);
+            JObject message = JObject.Parse(SuccessMessage.Result);
             message.Add(new JProperty("password", password));
             return message.ToString();
         }
