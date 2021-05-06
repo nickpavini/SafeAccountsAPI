@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
 using SafeAccountsAPI.Constants;
 using SafeAccountsAPI.Data;
+using SafeAccountsAPI.Helpers;
 using SafeAccountsAPI.Models;
 
 namespace SafeAccountsAPI.Controllers
@@ -33,24 +34,27 @@ namespace SafeAccountsAPI.Controllers
 
         // login and get tokens...
         [HttpPost("login"), AllowAnonymous] //working
-        public string User_Login([FromBody] string credentials)
+        public ActionResult User_Login([FromBody] Login login)
         {
-            JObject json = null;
-            try { json = JObject.Parse(credentials); }
-            catch (Exception ex)
-            {
-                Response.StatusCode = 400;
-                ErrorMessage error = new ErrorMessage("Invalid Json", credentials, ex.Message);
-                return JObject.FromObject(error).ToString();
-            }
+            // use model binding
+
+            // move this away to a filter / middleware
+            //JObject json = null;
+            //try { json = JObject.Parse(credentials); }
+            //catch (Exception ex)
+            //{
+            //    Response.StatusCode = 400;
+            //    ErrorMessage error = new ErrorMessage("Invalid Json", credentials, ex.Message);
+            //    return JObject.FromObject(error).ToString();
+            //}
 
             try
             {
                 // get users saved password hash and salt
-                User user = _context.Users.Single(a => a.Email == json["email"].ToString());
+                User user = _context.Users.Single(a => a.Email == login.Email);
 
                 // successful login.. compare user hash to the hash generated from the inputted password and salt
-                if (ValidatePassword(json["password"].ToString(), user.Password))
+                if (ValidatePassword(login.Password, user.Password))
                 {
                     string tokenString = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email, _configuration.GetValue<string>("JwtTokenKey"));
                     RefreshToken refToken = HelperMethods.GenerateRefreshToken(user, _context);
@@ -59,20 +63,19 @@ namespace SafeAccountsAPI.Controllers
 
                     // append cookies to response after login
                     HelperMethods.SetCookies(Response, tokenString, refToken);
-                    return ret;
+                    return new JsonResult(ret);
                 }
                 else
                 {
-                    Response.StatusCode = 401;
-                    ErrorMessage error = new ErrorMessage("Invalid Credentials", credentials, Unauthorized().ToString());
-                    return JObject.FromObject(error).ToString();
+                    //  do we need  to return so much info ?
+                    ErrorMessage error = new ErrorMessage("Invalid Credentials", login.Email, Unauthorized().ToString());
+                    return new BadRequestObjectResult(error);
                 }
             }
             catch (Exception ex)
             {
-                Response.StatusCode = 500; // later we will add logic to see if the error comes from users not giving all json arguments
-                ErrorMessage error = new ErrorMessage("Error validating credentials", credentials, ex.Message);
-                return JObject.FromObject(error).ToString();
+                ErrorMessage error = new ErrorMessage("Error validating credentials", login.Email, ex.Message);
+                return new InternalServerErrorResult(error);
             }
         }
 
