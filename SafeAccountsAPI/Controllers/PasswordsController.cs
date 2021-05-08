@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json.Linq;
-using SafeAccountsAPI.Constants;
 using SafeAccountsAPI.Models;
 
 namespace SafeAccountsAPI.Controllers
@@ -11,26 +9,17 @@ namespace SafeAccountsAPI.Controllers
     [ApiController]
     public class PasswordsController : ControllerBase
     {
-        // GET: api/Passwords
-        // generate a single password with the potential of applying regex standards in body
-        //[HttpGet("generate")]
-        //public string GeneratePassword()
-        //{
-        //    string options = @"{""regex"":""[a-zA-Z0-9]"",""minLength"":8,""maxLength"":12}"; // default options for a secure password that will fit any site.. 8-12 characters, capitals and numbers allowed
-        //    return Generate(options);
-        //}
 
-        //// generate a password based on specific allowed characters in regex format
         [HttpPost("generate")]
-        public string GeneratePassword([FromBody] string options = "")
+        public IActionResult GeneratePassword([FromBody] PasswordOptions passwordOptions)
         {
             /*
              * validate regex string here
              */
-            if (options.Length == 0)
-                options = @"{""regex"":""[a-zA-Z0-9]"",""minLength"":8,""maxLength"":12}"; // default options for a secure password that will fit any site.. 8-12 characters, capitals and numbers allowed
+            //if (options.Length == 0)
+            //    options = @"{""regex"":""[a-zA-Z0-9]"",""minLength"":8,""maxLength"":12}"; // default options for a secure password that will fit any site.. 8-12 characters, capitals and numbers allowed
 
-            return Generate(options);
+            return Ok(Generate(passwordOptions));
         }
 
         // private function to generate passwords based on allowed expression
@@ -40,28 +29,28 @@ namespace SafeAccountsAPI.Controllers
          *      minLength: int
          *      maxLength: int
          */
-        private string Generate(string options)
+        private string Generate(PasswordOptions passwordOptions)
         {
-            JObject json;
+            //JObject json;
 
-            // might want Json verification as own function since all will do it.. we will see
-            try { json = JObject.Parse(options); }
-            catch (Exception ex)
-            {
-                Response.StatusCode = 400;
-                ErrorMessage error = new ErrorMessage("Invalid Json", options, ex.Message);
-                return JObject.FromObject(error).ToString();
-            }
+            //// might want Json verification as own function since all will do it.. we will see
+            //try { json = JObject.Parse(options); }
+            //catch (Exception ex)
+            //{
+            //    Response.StatusCode = 400;
+            //    ErrorMessage error = new ErrorMessage("Invalid Json", options, ex.Message);
+            //    return JObject.FromObject(error).ToString();
+            //}
 
-            Regex regex;
-            // check that the provided regex string was good
-            try { regex = new Regex(json["regex"].ToString()); } // try to create regex from the string
-            catch (Exception ex)
-            {
-                Response.StatusCode = 400;
-                ErrorMessage error = new ErrorMessage("Invalid Regex", json["regex"].ToString(), ex.Message);
-                return JObject.FromObject(error).ToString();
-            }
+            Regex regex = new Regex(passwordOptions.RegexPattern);
+            //// check that the provided regex string was good
+            //try { regex = new Regex(json["regex"].ToString()); } // try to create regex from the string
+            //catch (Exception ex)
+            //{
+            //    Response.StatusCode = 400;
+            //    ErrorMessage error = new ErrorMessage("Invalid Regex", json["regex"].ToString(), ex.Message);
+            //    return JObject.FromObject(error).ToString();
+            //}
 
             string allChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789~`!@#$%^&*()_-+={[}]|\\:;\"'<,>.?/"; // string containing all possible chars
 
@@ -69,7 +58,7 @@ namespace SafeAccountsAPI.Controllers
             int seed = (DateTime.Now.Hour * 60 * 60 + DateTime.Now.Minute * 60 + DateTime.Now.Second) * 1000 + DateTime.Now.Millisecond; // get current milliseconds from midnight for seeding.. makes it much more random but still could be better
 
             Random randomNumGenerator = new Random(seed);
-            int len = randomNumGenerator.Next(json["minLength"].ToObject<int>(), json["maxLength"].ToObject<int>() + 1);
+            int len = randomNumGenerator.Next(passwordOptions.MinLength, passwordOptions.MaxLength + 1);
             string password = ""; //empty password
             for (int i = 0; i < len; ++i)
             {
@@ -82,11 +71,11 @@ namespace SafeAccountsAPI.Controllers
 
                 password += chr.ToString();
             }
-
+            return password;
             // format success response.. maybe could be done better but not sure yet
-            JObject message = JObject.Parse(SuccessMessage.Result);
-            message.Add(new JProperty("password", password));
-            return message.ToString();
+            //JObject message = JObject.Parse(SuccessMessage.Result);
+            //message.Add(new JProperty("password", password));
+            //return message.ToString();
         }
     }
 }
