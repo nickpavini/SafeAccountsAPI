@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using SafeAccountsAPI.Models;
+using Microsoft.AspNetCore.Routing;
 
 namespace SafeAccountsAPI.Controllers
 {
@@ -9,48 +10,23 @@ namespace SafeAccountsAPI.Controllers
     [ApiController]
     public class PasswordsController : ControllerBase
     {
-
+        /*
+         *  Json Parameters (in any order):
+         *      RegexPatter: string // use to specify formatting of string
+         *      MinLength: int
+         *      MaxLength: int
+         */
         [HttpPost("generate")]
         public IActionResult GeneratePassword([FromBody] PasswordOptions passwordOptions)
         {
-            /*
-             * validate regex string here
-             */
-            //if (options.Length == 0)
-            //    options = @"{""regex"":""[a-zA-Z0-9]"",""minLength"":8,""maxLength"":12}"; // default options for a secure password that will fit any site.. 8-12 characters, capitals and numbers allowed
-
-            return Ok(Generate(passwordOptions));
-        }
-
-        // private function to generate passwords based on allowed expression
-        /*
-         *  Json Parameters (in any order):
-         *      regex: string // use to specify formatting of string
-         *      minLength: int
-         *      maxLength: int
-         */
-        private string Generate(PasswordOptions passwordOptions)
-        {
-            //JObject json;
-
-            //// might want Json verification as own function since all will do it.. we will see
-            //try { json = JObject.Parse(options); }
-            //catch (Exception ex)
-            //{
-            //    Response.StatusCode = 400;
-            //    ErrorMessage error = new ErrorMessage("Invalid Json", options, ex.Message);
-            //    return JObject.FromObject(error).ToString();
-            //}
-
-            Regex regex = new Regex(passwordOptions.RegexPattern);
-            //// check that the provided regex string was good
-            //try { regex = new Regex(json["regex"].ToString()); } // try to create regex from the string
-            //catch (Exception ex)
-            //{
-            //    Response.StatusCode = 400;
-            //    ErrorMessage error = new ErrorMessage("Invalid Regex", json["regex"].ToString(), ex.Message);
-            //    return JObject.FromObject(error).ToString();
-            //}
+            // check that the provided regex string was good
+            Regex regex;
+            try { regex = new Regex(passwordOptions.RegexPattern); } // try to create regex from the string
+            catch (Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Invalid Regex", passwordOptions.RegexPattern, ex.Message);
+                return new BadRequestObjectResult(error);
+            }
 
             string allChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789~`!@#$%^&*()_-+={[}]|\\:;\"'<,>.?/"; // string containing all possible chars
 
@@ -71,11 +47,8 @@ namespace SafeAccountsAPI.Controllers
 
                 password += chr.ToString();
             }
-            return password;
-            // format success response.. maybe could be done better but not sure yet
-            //JObject message = JObject.Parse(SuccessMessage.Result);
-            //message.Add(new JProperty("password", password));
-            //return message.ToString();
+
+            return Ok(password);
         }
     }
 }
