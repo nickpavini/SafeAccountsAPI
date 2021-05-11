@@ -100,11 +100,29 @@ namespace SafeAccountsAPI.Controllers
         {
             try
             {
-                // delete the users cookies
+                // delete cookies
                 foreach (var cookie in Request.Cookies)
-                    Response.Cookies.Delete(cookie.Key);
+                {
+                    if (cookie.Key.Contains("SameSite"))
+                    {
+                        Response.Cookies.Delete(cookie.Key, new CookieOptions
+                        {
+                            HttpOnly = true,
+                            Secure = true,
+                            SameSite = Microsoft.AspNetCore.Http.SameSiteMode.None
+                        });
+                    }
+                    else
+                    {
+                        Response.Cookies.Delete(cookie.Key, new CookieOptions
+                        {
+                            HttpOnly = true,
+                            Secure = true
+                        });
+                    }
+                }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 ErrorMessage error = new ErrorMessage("Error removing users cookies.", "n/a", ex.Message);
                 return new InternalServerErrorResult(error);
