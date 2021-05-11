@@ -94,6 +94,25 @@ namespace SafeAccountsAPI.Controllers
                 return false;
         }
 
+        // logout and reset cookies.. I dont think here the ID of the user matters because we just delete all the associated cookies.
+        [HttpPost("logout")] //working
+        public IActionResult User_Logout()
+        {
+            try
+            {
+                // delete the users cookies
+                foreach (var cookie in Request.Cookies)
+                    Response.Cookies.Delete(cookie.Key);
+            }
+            catch(Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Error removing users cookies.", "n/a", ex.Message);
+                return new InternalServerErrorResult(error);
+            }
+
+            return Ok();
+        }
+
         // Get all available users.. might change later as it might not make sense to grab all accounts if there are tons
         [HttpGet] //working
         public string GetAllUsers()
