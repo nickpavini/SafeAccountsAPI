@@ -63,7 +63,7 @@ namespace SafeAccountsAPI.Controllers
 
                     // append cookies to response after login
                     HelperMethods.SetCookies(Response, tokenString, refToken);
-                    return new JsonResult(ret);
+                    return Ok(ret);
                 }
                 else
                 {
