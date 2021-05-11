@@ -1,16 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
+using SafeAccountsAPI.Controllers;
 
 namespace SafeAccountsAPI.Models
 {
     public class User
     {
-        //public User() {
-            
-        //    this.RefreshTokens = new List<RefreshToken>();
-        //    this.Accounts = new List<Account>();
-        //}
-
         public int ID { get; set; }
         public string First_Name { get; set; }
         public string Last_Name { get; set; }
@@ -21,6 +17,19 @@ namespace SafeAccountsAPI.Models
         public virtual List<Account> Accounts { get; set; }
         public virtual List<RefreshToken> RefreshTokens { get; set; }
         public virtual List<Folder> Folders { get; set; }
+
+        public User() { } // blank constructor needed for db initializer
+
+        // constructor to easily set from NewUser type
+        public User(NewUser newUser)
+        {
+            First_Name = newUser.First_Name;
+            Last_Name = newUser.Last_Name;
+            Email = newUser.Email;
+            Password = HelperMethods.ConcatenatedSaltAndSaltedHash(newUser.Password);
+            NumAccs = 0;
+            Role = UserRoles.User;
+        }
     }
 
     // this class exists so we can easily send the needed user data, but have more data server side
@@ -45,6 +54,20 @@ namespace SafeAccountsAPI.Models
         }
     }
 
+    // model for registering a new user
+    public class NewUser
+    {
+        [JsonProperty]
+        public string First_Name { get; set; }
+        [JsonProperty]
+        public string Last_Name { get; set; }
+        [JsonProperty]
+        public string Email { get; set; }
+        [JsonProperty]
+        public string Password { get; set; }
+    }
+
+    // static class for roles
     public static class UserRoles
     {
         public static string User = "user";

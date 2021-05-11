@@ -154,38 +154,26 @@ namespace SafeAccountsAPI.Controllers
         }
 
         // register new user
-        [HttpPost, AllowAnonymous] // Working.. needs password hashing
-        public string User_AddUser([FromBody] string userJson)
+        [HttpPost, AllowAnonymous]
+        public IActionResult User_AddUser([FromBody] NewUser newUser)
         {
-            JObject json = null;
-
-            // might want Json verification as own function since all will do it.. we will see
-            try { json = JObject.Parse(userJson); }
-            catch (Exception ex)
-            {
-                Response.StatusCode = 400;
-                ErrorMessage error = new ErrorMessage("Invalid Json", userJson, ex.Message);
-                return JObject.FromObject(error).ToString();
-            }
-
             // attempt to create new user and add to the database... later we need to implement hashing
             try
             {
-                User newUser = new User { First_Name = json["firstname"].ToString(), Last_Name = json["lastname"].ToString(), Email = json["email"].ToString(), Password = HelperMethods.ConcatenatedSaltAndSaltedHash(json["password"].ToString()), NumAccs = 0, Role = UserRoles.User };
-                _context.Users.Add(newUser);
+                User userToRegister = new User(newUser); // new user with no accounts and registered as user
+                _context.Users.Add(userToRegister);
                 _context.SaveChanges();
-                HelperMethods.CreateUserKeyandIV(_context.Users.Single(a => a.Email == json["email"].ToString()).ID); // after we save changes, we need to get the user by their email and then use the id to create unique password and iv
+                HelperMethods.CreateUserKeyandIV(_context.Users.Single(a => a.Email == newUser.Email).ID); // after we save changes, we need to get the user by their email and then use the id to create unique password and iv
             }
             catch (Exception ex)
             {
-                Response.StatusCode = 500;
-                ErrorMessage error = new ErrorMessage("Failed to create new user", json.ToString(), ex.Message);
-                return JObject.FromObject(error).ToString();
+                ErrorMessage error = new ErrorMessage("Failed to create new user", "n/a", ex.Message);
+                return new InternalServerErrorResult(error);
             }
 
             JObject message = JObject.Parse(SuccessMessage.Result);
-            message.Add(new JProperty("id", _context.Users.Single(a => a.Email == json["email"].ToString()).ID)); // user context to get id since locally created user will not have id set
-            return message.ToString();
+            message.Add(new JProperty("id", _context.Users.Single(a => a.Email == newUser.Email).ID)); // user context to get id since locally created user will not have id set
+            return Ok(message.ToString());
         }
 
         // Get a specific user.
