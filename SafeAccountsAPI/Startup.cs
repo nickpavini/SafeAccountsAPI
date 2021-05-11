@@ -29,6 +29,8 @@ namespace SafeAccountsAPI
             services.AddDbContext<APIContext>(options =>
                 options.UseMySql(Configuration.GetValue<string>("ConnectionStrings:DefaultConnection"), ServerVersion.AutoDetect(Configuration.GetValue<string>("ConnectionStrings:DefaultConnection"))));
 
+            services.AddCors(); // add cross-origin requests service
+
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
            .AddJwtBearer(options =>
            {
@@ -70,6 +72,13 @@ namespace SafeAccountsAPI
             app.UseHttpsRedirection();
 
             app.UseRouting();
+
+            // allow from the locally hosted UI.. This should be seperate from our Host's (Azure app service) Enable cors area.
+            // We need this because once the api is locked down, we need to be able to still test locally
+            app.UseCors(options =>
+            {
+                options.WithOrigins("https://localhost:44325").AllowCredentials().AllowAnyHeader().AllowAnyMethod();
+            });
 
             app.UseAuthentication();
             app.UseAuthorization();
