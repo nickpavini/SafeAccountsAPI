@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,6 +11,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace SafeAccountsAPI
 {
@@ -31,31 +33,78 @@ namespace SafeAccountsAPI
 
             services.AddCors(); // add cross-origin requests service
 
+            // 2 forms of authentication
+            // one is satisfied through user being logged in, the other is satisfied by giving an api key
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-           .AddJwtBearer(options =>
-           {
-               options.TokenValidationParameters = new TokenValidationParameters
-               {
-                   ValidateIssuer = true,
-                   ValidateAudience = true,
-                   ValidateLifetime = true,
-                   ValidateIssuerSigningKey = true,
-                   ClockSkew = TimeSpan.Zero, // use this to make time accurate when validating
+                .AddJwtBearer("ApiJwtToken", options =>
+                {
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        ClockSkew = TimeSpan.Zero, // use this to make time accurate when validating
 
-                   ValidIssuer = "http://localhost:5000",
-                   ValidAudience = "http://localhost:5000",
-                   IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration.GetValue<string>("JwtTokenKey")))
-               };
-               options.SaveToken = true;
-               options.Events = new JwtBearerEvents
-               {
-                   OnMessageReceived = context =>
-                   {
-                       context.Token = context.Request.Cookies["AccessTokenSameSite"] ?? context.Request.Cookies["AccessToken"];
-                       return Task.CompletedTask;
-                   },
-               };
-           });
+                        ValidIssuer = "http://localhost:5000",
+                        ValidAudience = "http://localhost:5000",
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration.GetValue<string>("ApiJwtTokenKey"))) // different password for the the api keys
+                    };
+                    options.SaveToken = true;
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            // get this token from authorization header
+                            context.Token = context.Request.Headers.ContainsKey("ApiKey")
+                                                ? context.Request.Headers["ApiKey"].ToString()
+                                                : "";
+                            return Task.CompletedTask;
+                        },
+                    };
+                })
+                .AddJwtBearer("UserJwtFromCookie", options =>
+                {
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        ClockSkew = TimeSpan.Zero, // use this to make time accurate when validating
+
+                        ValidIssuer = "http://localhost:5000",
+                        ValidAudience = "http://localhost:5000",
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration.GetValue<string>("UserJwtTokenKey")))
+                    };
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            context.Token = context.Request.Cookies["AccessTokenSameSite"] ?? context.Request.Cookies["AccessToken"]; // get this token from cookies
+                            return Task.CompletedTask;
+                        },
+                    };
+                });
+
+            // add authorization policies
+            services.AddAuthorization(options =>
+            {
+                // must have an api key
+                options.AddPolicy("ApiJwtToken", new AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    // NOTE: Without this added claim, this policy always succeeds because the user is authenticated from the LoggedIn policy
+                    // this makes us use the other jwt bearer option and check the claims in that token using the signing key for api_keys rather than for user jwt cookies
+                    .RequireClaim(ClaimTypes.Name, "api_key")
+                    .AddAuthenticationSchemes("ApiJwtToken")
+                    .Build());
+
+                // additional is that a user is signed in
+                options.AddPolicy("LoggedIn", new AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    .AddAuthenticationSchemes("UserJwtFromCookie")
+                    .Build());
+            });
 
             services.AddHttpContextAccessor();
             services.AddControllers();
