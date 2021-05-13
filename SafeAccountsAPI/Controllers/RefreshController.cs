@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -11,6 +12,7 @@ using SafeAccountsAPI.Models;
 namespace SafeAccountsAPI.Controllers
 {
     [Route("[controller]")]
+    [Authorize(Policy = "ApiJwtToken")]
     [ApiController]
     public class RefreshController : ControllerBase
     {
