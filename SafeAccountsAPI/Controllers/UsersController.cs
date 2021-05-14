@@ -176,20 +176,18 @@ namespace SafeAccountsAPI.Controllers
 
         // Get a specific user.
         [HttpGet("{id:int}")] // working
-        public string User_GetUser(int id)
+        public IActionResult User_GetUser(int id)
         {
             // verify that the user is either admin or is requesting their own data
             if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                Response.StatusCode = 401;
-                return JObject.FromObject(new ErrorMessage("Invalid User", "Caller can only access their information.")).ToString();
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
 
-            //format response
-            JObject message = JObject.Parse(SuccessMessage.Result);
-            ReturnableUser retUser = new ReturnableUser(_context.Users.Where(a => a.ID == id).Single()); // strips out private data that is never to be sent back
-            message.Add(new JProperty("user", JToken.FromObject(retUser)));
-            return message.ToString();
+            // strips out private data that is never to be sent back and returns user info
+            ReturnableUser retUser = new ReturnableUser(_context.Users.Where(a => a.ID == id).Single());
+            return new OkObjectResult(retUser);
         }
 
         [HttpDelete("{id:int}")] // working
