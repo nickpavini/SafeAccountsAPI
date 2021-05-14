@@ -599,38 +599,48 @@ namespace SafeAccountsAPI.Controllers
         }
 
         [HttpPut("{id:int}/accounts/{account_id:int}/folder")]
-        public string User_AccountSetFolder(int id, int account_id, [FromBody] string folder_id)
+        public IActionResult User_AccountSetFolder(int id, int account_id, [FromBody] int? folder_id)
         {
-            // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-            {
-                Response.StatusCode = 401;
-                return JObject.FromObject(new ErrorMessage("Invalid User", "Caller can only access their information.")).ToString();
-            }
-
             // attempt to edit the description
             try
             {
-                Account acc = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
-
-                // left empty implies removing any associated folder
-                if (string.IsNullOrWhiteSpace(folder_id))
-                    acc.FolderID = null;
-                else
-                { // here we have to validate that the user owns the folder
-                    acc.FolderID = _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == int.Parse(folder_id)).ID; // we code it like this to make sure that whatever folder we attempt exists and is owner by this user
+                // verify that the user is either admin or is requesting their own data
+                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                    return new UnauthorizedObjectResult(error);
                 }
 
-                _context.Accounts.Update(acc);
-                _context.SaveChanges();
+                // validate ownership of said account
+                if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == account_id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid account", "User does not have an account matching that ID.");
+                    return new BadRequestObjectResult(error);
+                }
+
+                // use zero to mean null since body paramter must be present
+                if (folder_id == 0)
+                    folder_id = null;
+
+                // if this user does not own the folder we are adding to, then error
+                if (folder_id != null && !_context.Users.Single(a => a.ID == id).Folders.Exists(b => b.ID == folder_id))
+                {
+                    ErrorMessage error = new ErrorMessage("Failed to create new account", "User does not have a folder matching that ID.");
+                    return new BadRequestObjectResult(error);
+                }
+                else
+                {
+                    _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id).FolderID = folder_id;
+                    _context.SaveChanges();
+                }
+
+                return new OkObjectResult(new { new_folder = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id).FolderID });
             }
             catch (Exception ex)
             {
-                Response.StatusCode = 500;
-                return JObject.FromObject(new ErrorMessage("Error settting folder", ex.Message)).ToString();
+                ErrorMessage error = new ErrorMessage("Error settting folder", ex.Message);
+                return new InternalServerErrorResult(error);
             }
-
-            return SuccessMessage.Result;
         }
 
         [HttpGet("{id:int}/folders")]
