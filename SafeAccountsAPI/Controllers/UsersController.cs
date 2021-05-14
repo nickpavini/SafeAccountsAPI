@@ -132,24 +132,31 @@ namespace SafeAccountsAPI.Controllers
 
         // Get all available users.. might change later as it might not make sense to grab all accounts if there are tons
         [HttpGet] //working
-        public string GetAllUsers()
+        public IActionResult GetAllUsers()
         {
             if (!HelperMethods.ValidateIsAdmin(_httpContextAccessor))
             {
-                Response.StatusCode = 401;
-                return JObject.FromObject(new ErrorMessage("Invalid Role", "Caller must have admin role.")).ToString(); // n/a for no args there
+                ErrorMessage error = new ErrorMessage("Invalid Role", "Caller must have admin role.");
+                return new UnauthorizedObjectResult(error);
             }
 
-            // format success response.. maybe could be done better but not sure yet
-            JObject message = JObject.Parse(SuccessMessage.Result);
-            JArray users = new JArray();
-            foreach (User user in _context.Users.ToArray())
+            // get and return all users
+            List<ReturnableUser> users = new List<ReturnableUser>();
+            try
             {
-                ReturnableUser retUser = new ReturnableUser(user);
-                users.Add(JToken.FromObject(retUser));
+                foreach (User user in _context.Users.ToArray())
+                {
+                    ReturnableUser retUser = new ReturnableUser(user);
+                    users.Add(retUser);
+                }
             }
-            message.Add(new JProperty("users", users));
-            return message.ToString();
+            catch (Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Error retrieving users.", ex.Message);
+                return new InternalServerErrorResult(error);
+            }
+
+            return new OkObjectResult(users);
         }
 
         // register new user
