@@ -4,12 +4,11 @@
     {
 
         public string Error { get; set; }
-        public string Input { get; set; }
         public string Exception { get; set; }
 
-        public ErrorMessage(string error, string input, string exception)
+        public ErrorMessage(string error, string exception)
         {
-            Error = error; Input = input; Exception = exception;
+            Error = error; Exception = exception;
         }
     }
 }

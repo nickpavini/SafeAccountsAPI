@@ -45,7 +45,7 @@ namespace SafeAccountsAPI.Controllers
             }
             catch(Exception ex)
             {
-                ErrorMessage error = new ErrorMessage("Error refreshing access.", "n/a", ex.Message);
+                ErrorMessage error = new ErrorMessage("Error refreshing access.", ex.Message);
                 return new InternalServerErrorResult(error);
             }
 

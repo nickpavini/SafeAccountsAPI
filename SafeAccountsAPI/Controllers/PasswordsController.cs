@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using SafeAccountsAPI.Models;
@@ -24,7 +24,7 @@ namespace SafeAccountsAPI.Controllers
             try { regex = new Regex(passwordOptions.RegexPattern); } // try to create regex from the string
             catch (Exception ex)
             {
-                ErrorMessage error = new ErrorMessage("Invalid Regex", passwordOptions.RegexPattern, ex.Message);
+                ErrorMessage error = new ErrorMessage("Invalid Regex", ex.Message);
                 return new BadRequestObjectResult(error);
             }
 
