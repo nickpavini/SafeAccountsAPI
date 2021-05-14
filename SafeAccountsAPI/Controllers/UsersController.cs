@@ -673,54 +673,42 @@ namespace SafeAccountsAPI.Controllers
         }
 
         [HttpPost("{id:int}/folders")] // working
-        public string User_AddFolder(int id, [FromBody] string folderJson)
+        public IActionResult User_AddFolder(int id, [FromBody] NewFolder folderToAdd)
         {
-            // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-            {
-                Response.StatusCode = 401;
-                return JObject.FromObject(new ErrorMessage("Invalid User", "Caller can only access their information.")).ToString();
-            }
-
-            JObject json = null;
-
-            // might want Json verification as own function since all will do it.. we will see
-            try { json = JObject.Parse(folderJson); }
-            catch (Exception ex)
-            {
-                Response.StatusCode = 400;
-                ErrorMessage error = new ErrorMessage("Invalid Json", ex.Message);
-                return JObject.FromObject(error).ToString();
-            }
-
             try
             {
-                int? pid = json["parent_id"]?.ToObject<int?>(); // parent id
+                // verify that the user is either admin or is requesting their own data
+                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                    return new UnauthorizedObjectResult(error);
+                }
 
-                // if user doesnt own the parent or isnt currently admin, we throw error
-                if (pid != null && _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == pid) == null && !HelperMethods.ValidateIsAdmin(_httpContextAccessor))
-                    throw new Exception("User must own the parent folder or be admin");
+                folderToAdd.Parent_ID = folderToAdd.Parent_ID == 0 ? null : folderToAdd.Parent_ID; // parent id goes from 0 to null for simplicity
+
+                // if user doesnt own the parent we throw error
+                if (folderToAdd.Parent_ID != null && !_context.Users.Single(a => a.ID == id).Folders.Exists(b => b.ID == folderToAdd.Parent_ID))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid parent ID", "User does not have a folder with that ID");
+                    return new BadRequestObjectResult(error);
+                }
 
                 // use token in header to to 
-                Folder new_folder = new Folder { UserID = id, FolderName = json["folder_name"].ToString(), ParentID = pid };
+                Folder new_folder = new Folder(folderToAdd, id);
                 _context.Folders.Add(new_folder); // add new folder
 
                 // only update parent if needed
-                if (pid != null)
-                {
-                    Folder parent_folder = _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == pid); // this makes sure that the parent folder is owned by our user
-                    parent_folder.HasChild = true;
-                    _context.Folders.Update(parent_folder); // register to parent that is now has at least 1 child
-                }
+                if (new_folder.ParentID != null)
+                    _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == new_folder.ParentID).HasChild = true;// set parent to having child
+
                 _context.SaveChanges();
+                return Ok();
             }
             catch (Exception ex)
             {
-                Response.StatusCode = 500;
-                return JObject.FromObject(new ErrorMessage("Error creating new folder.", ex.Message)).ToString();
+                ErrorMessage error = new ErrorMessage("Error creating new folder.", ex.Message);
+                return new InternalServerErrorResult(error);
             }
-
-            return SuccessMessage.Result;
         }
 
         // delete a folder and all contents if it is not empty
