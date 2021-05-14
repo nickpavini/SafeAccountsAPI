@@ -191,13 +191,13 @@ namespace SafeAccountsAPI.Controllers
         }
 
         [HttpDelete("{id:int}")] // working
-        public string User_DeleteUser(int id)
+        public IActionResult User_DeleteUser(int id)
         {
             // verify that the user is either admin or is requesting their own data
             if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                Response.StatusCode = 401;
-                return JObject.FromObject(new ErrorMessage("Invalid User", "Caller can only access their information.")).ToString();
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
 
             try
@@ -210,13 +210,11 @@ namespace SafeAccountsAPI.Controllers
             }
             catch (Exception ex)
             {
-                Response.StatusCode = 500;
                 ErrorMessage error = new ErrorMessage("Failed to delete user.", ex.Message);
-                return JObject.FromObject(error).ToString();
+                return new InternalServerErrorResult(error);
             }
 
-            JObject message = JObject.Parse(SuccessMessage.Result);
-            return message.ToString();
+            return Ok();
         }
 
         [HttpGet("{id:int}/firstname")] // working
