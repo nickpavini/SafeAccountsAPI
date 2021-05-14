@@ -713,17 +713,24 @@ namespace SafeAccountsAPI.Controllers
 
         // delete a folder and all contents if it is not empty
         [HttpDelete("{id:int}/folders/{folder_id:int}")] // working
-        public string User_DeleteFolder(int id, int folder_id)
+        public IActionResult User_DeleteFolder(int id, int folder_id)
         {
-            // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-            {
-                Response.StatusCode = 401;
-                return JObject.FromObject(new ErrorMessage("Invalid User", "Caller can only access their information.")).ToString();
-            }
-
             try
             {
+                // verify that the user is either admin or is requesting their own data
+                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                    return new UnauthorizedObjectResult(error);
+                }
+
+                // validate ownership of said folder
+                if (!_context.Users.Single(a => a.ID == id).Folders.Exists(b => b.ID == folder_id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid folder", "User does not have a folder matching that ID.");
+                    return new BadRequestObjectResult(error);
+                }
+
                 Folder folderToDelete = _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == folder_id);
                 // if this folder has children, then we need to call DeleteFolder on all children
                 if (folderToDelete.HasChild)
@@ -750,14 +757,34 @@ namespace SafeAccountsAPI.Controllers
                 _context.SaveChanges(); // save the accounts being deleted
                 _context.Folders.Remove(folderToDelete); // remove the folder
                 _context.SaveChanges(); // save the folder being deleted.. must be done seperate because of foreign keys
+
+                // if parent isnt root, then check if parent still has children
+                if (folderToDelete.ParentID != null)
+                {
+                    bool parent_has_children = false;
+                    List<Folder> folders = _context.Users.Single(a => a.ID == id).Folders.ToList<Folder>();
+                    foreach (Folder fold in folders)
+                    {
+                        // if this folders parent is the same as the one we were just deleting than the original parent still has kids
+                        if (fold.ParentID == folderToDelete.ParentID)
+                            parent_has_children = true;
+                    }
+
+                    // update parent if needed
+                    if (!parent_has_children)
+                    {
+                        _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == folderToDelete.ParentID).HasChild = false;
+                        _context.SaveChanges();
+                    }
+                }
+
+                return Ok();
             }
             catch (Exception ex)
             {
-                Response.StatusCode = 500;
-                return JObject.FromObject(new ErrorMessage("Error deleting folder.", ex.Message)).ToString();
+                ErrorMessage error = new ErrorMessage("Error deleting folder.", ex.Message);
+                return new InternalServerErrorResult(error);
             }
-
-            return SuccessMessage.Result;
         }
     }
 }
