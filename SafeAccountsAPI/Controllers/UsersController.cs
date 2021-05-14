@@ -644,21 +644,32 @@ namespace SafeAccountsAPI.Controllers
         }
 
         [HttpGet("{id:int}/folders")]
-        public string User_GetFolders(int id)
+        public IActionResult User_GetFolders(int id)
         {
-            // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            try
             {
-                Response.StatusCode = 401;
-                return JObject.FromObject(new ErrorMessage("Invalid User", "Caller can only access their information.")).ToString();
-            }
+                // verify that the user is either admin or is requesting their own data
+                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                    return new UnauthorizedObjectResult(error);
+                }
 
-            // format success response.. maybe could be done better but not sure yet
-            JObject message = JObject.Parse(SuccessMessage.Result);
-            JArray folders = new JArray();
-            foreach (Folder fold in _context.Users.Single(a => a.ID == id).Folders) { folders.Add(JToken.FromObject(new ReturnableFolder(fold))); }
-            message.Add(new JProperty("folders", folders));
-            return message.ToString();
+                // get and return all this user's accounts
+                List<ReturnableFolder> folders = new List<ReturnableFolder>();
+                foreach (Folder fold in _context.Users.Single(a => a.ID == id).Folders.ToArray())
+                {
+                    ReturnableFolder retFold = new ReturnableFolder(fold);
+                    folders.Add(retFold);
+                }
+
+                return new OkObjectResult(folders);
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Error getting folders", ex.Message);
+                return new InternalServerErrorResult(error);
+            }
         }
 
         [HttpPost("{id:int}/folders")] // working
