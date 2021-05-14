@@ -460,6 +460,13 @@ namespace SafeAccountsAPI.Controllers
                     return new UnauthorizedObjectResult(error);
                 }
 
+                // validate ownership of said account
+                if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == account_id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid account", "User does not have an account matching that ID.");
+                    return new BadRequestObjectResult(error);
+                }
+
                 _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id).Title = title;
                 _context.SaveChanges();
                 return new OkObjectResult(new { new_title = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id).Title }); // return new title from db to confirm
@@ -473,30 +480,34 @@ namespace SafeAccountsAPI.Controllers
 
         // edit a specific accounts info
         [HttpPut("{id:int}/accounts/{account_id:int}/login")]
-        public string User_EditAccountLogin(int id, int account_id, [FromBody] string login)
+        public IActionResult User_EditAccountLogin(int id, int account_id, [FromBody] string login)
         {
-            // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-            {
-                Response.StatusCode = 401;
-                return JObject.FromObject(new ErrorMessage("Invalid User", "Caller can only access their information.")).ToString();
-            }
-
             // attempt to edit the login
             try
             {
-                Account acc = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
-                acc.Login = login;
-                _context.Accounts.Update(acc);
+                // verify that the user is either admin or is requesting their own data
+                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                    return new UnauthorizedObjectResult(error);
+                }
+
+                // validate ownership of said account
+                if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == account_id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid account", "User does not have an account matching that ID.");
+                    return new BadRequestObjectResult(error);
+                }
+
+                _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id).Login = login;
                 _context.SaveChanges();
+                return new OkObjectResult(new { new_login = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id).Login });
             }
             catch (Exception ex)
             {
-                Response.StatusCode = 500;
-                return JObject.FromObject(new ErrorMessage("Error editing login", ex.Message)).ToString();
+                ErrorMessage error = new ErrorMessage("Error editing login", ex.Message);
+                return new InternalServerErrorResult(error);
             }
-
-            return SuccessMessage.Result;
         }
 
         // edit a specific accounts info
