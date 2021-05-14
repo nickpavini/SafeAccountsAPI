@@ -327,21 +327,31 @@ namespace SafeAccountsAPI.Controllers
 
         // get all of the user's accounts
         [HttpGet("{id:int}/accounts")] // working
-        public string User_GetAccounts(int id)
+        public IActionResult User_GetAccounts(int id)
         {
             // verify that the user is either admin or is requesting their own data
             if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                Response.StatusCode = 401;
-                return JObject.FromObject(new ErrorMessage("Invalid User", "Caller can only access their information.")).ToString();
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
 
-            // format success response.. maybe could be done better but not sure yet
-            JObject message = JObject.Parse(SuccessMessage.Result);
-            JArray accs = new JArray();
-            foreach (Account acc in _context.Users.Single(a => a.ID == id).Accounts) { accs.Add(JToken.FromObject(new ReturnableAccount(acc))); }
-            message.Add(new JProperty("accounts", accs));
-            return message.ToString();
+            // get and return all this user's accounts
+            List<ReturnableAccount> accs = new List<ReturnableAccount>();
+            try
+            {
+                foreach (Account acc in _context.Users.Single(a => a.ID == id).Accounts.ToArray())
+                {
+                    ReturnableAccount retAcc = new ReturnableAccount(acc);
+                    accs.Add(retAcc);
+                }
+                return new OkObjectResult(accs);
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Error retrieving accounts.", ex.Message);
+                return new InternalServerErrorResult(error);
+            }
         }
 
         // add account.. input format is json
