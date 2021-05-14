@@ -1,7 +1,9 @@
 ﻿using Newtonsoft.Json;
 
-namespace SafeAccountsAPI.Models {
-    public class Folder {
+namespace SafeAccountsAPI.Models
+{
+    public class Folder
+    {
         public int ID { get; set; }
         public int UserID { get; set; }
         public virtual User User { get; set; }
@@ -22,7 +24,8 @@ namespace SafeAccountsAPI.Models {
         }
     }
 
-    public class ReturnableFolder {
+    public class ReturnableFolder
+    {
 
         public int ID { get; set; }
         public string FolderName { get; set; }

@@ -17,7 +17,7 @@ namespace SafeAccountsAPI.Controllers
 {
     public static class HelperMethods
     {
-        private static string keys_file = "keys.txt"; // file for securely storing user keys and ivs
+        private static readonly string keys_file = "keys.txt"; // file for securely storing user keys and ivs
         public static int salt_length = 16; // length of salts for password storage
 
         public static string GenerateJWTAccessToken(string role, string email, string token_key)

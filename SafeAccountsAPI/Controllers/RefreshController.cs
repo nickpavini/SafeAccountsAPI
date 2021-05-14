@@ -44,7 +44,7 @@ namespace SafeAccountsAPI.Controllers
                 HelperMethods.SetCookies(Response, newTokenStr, newRefToken);
                 return new OkObjectResult(rtrn);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 ErrorMessage error = new ErrorMessage("Error refreshing access.", ex.Message);
                 return new InternalServerErrorResult(error);
