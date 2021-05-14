@@ -32,7 +32,7 @@
 													}
 												},
 												"url": {
-													"raw": "https://localhost:44366/users/2/accounts/9/password",
+													"raw": "https://localhost:44366/users/1/accounts/4/password",
 													"protocol": "https",
 													"host": [
 														"localhost"
@@ -40,10 +40,106 @@
 													"port": "44366",
 													"path": [
 														"users",
-														"2",
+														"1",
 														"accounts",
-														"9",
+														"4",
 														"password"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "folder",
+											"request": {
+												"method": "PUT",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "0",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "https://localhost:44366/users/1/accounts/4/folder",
+													"protocol": "https",
+													"host": [
+														"localhost"
+													],
+													"port": "44366",
+													"path": [
+														"users",
+														"1",
+														"accounts",
+														"4",
+														"folder"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "description",
+											"request": {
+												"method": "PUT",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "\"new description\"",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "https://localhost:44366/users/1/accounts/4/description",
+													"protocol": "https",
+													"host": [
+														"localhost"
+													],
+													"port": "44366",
+													"path": [
+														"users",
+														"1",
+														"accounts",
+														"4",
+														"description"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "title",
+											"request": {
+												"method": "PUT",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "\"new title\"",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "https://localhost:44366/users/1/accounts/4/title",
+													"protocol": "https",
+													"host": [
+														"localhost"
+													],
+													"port": "44366",
+													"path": [
+														"users",
+														"1",
+														"accounts",
+														"4",
+														"title"
 													]
 												}
 											},
@@ -56,7 +152,7 @@
 												"header": [],
 												"body": {
 													"mode": "raw",
-													"raw": "\"alsouseless\"",
+													"raw": "\"new login\"",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -64,7 +160,7 @@
 													}
 												},
 												"url": {
-													"raw": "https://localhost:44366/users/2/accounts/9/login",
+													"raw": "https://localhost:44366/users/1/accounts/5/login",
 													"protocol": "https",
 													"host": [
 														"localhost"
@@ -72,9 +168,9 @@
 													"port": "44366",
 													"path": [
 														"users",
-														"2",
+														"1",
 														"accounts",
-														"9",
+														"5",
 														"login"
 													]
 												}
@@ -87,7 +183,7 @@
 												"method": "GET",
 												"header": [],
 												"url": {
-													"raw": "https://localhost:44366/users/2/accounts/9",
+													"raw": "https://localhost:44366/users/1/accounts/4",
 													"protocol": "https",
 													"host": [
 														"localhost"
@@ -95,9 +191,31 @@
 													"port": "44366",
 													"path": [
 														"users",
-														"2",
+														"1",
 														"accounts",
-														"9"
+														"4"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "{acc_id}",
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "https://localhost:44366/users/1/accounts/2",
+													"protocol": "https",
+													"host": [
+														"localhost"
+													],
+													"port": "44366",
+													"path": [
+														"users",
+														"1",
+														"accounts",
+														"2"
 													]
 												}
 											},
@@ -107,6 +225,9 @@
 								},
 								{
 									"name": "{accounts}",
+									"protocolProfileBehavior": {
+										"strictSSL": false
+									},
 									"request": {
 										"auth": {
 											"type": "noauth"
@@ -114,7 +235,7 @@
 										"method": "GET",
 										"header": [],
 										"url": {
-											"raw": "https://localhost:44366/users/2/accounts",
+											"raw": "https://localhost:44366/users/1/accounts",
 											"protocol": "https",
 											"host": [
 												"localhost"
@@ -122,7 +243,7 @@
 											"port": "44366",
 											"path": [
 												"users",
-												"2",
+												"1",
 												"accounts"
 											]
 										}
@@ -139,7 +260,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "\"{\\\"account_title\\\":\\\"title\\\", \\\"account_login\\\":\\\"login\\\", \\\"account_password\\\":\\\"useless\\\", \\\"account_description\\\":\\\"description\\\"}\"",
+											"raw": "{\"title\":\"title2\", \"login\":\"login\", \"password\":\"useless\", \"description\":\"description\", \"folderid\": 5}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -147,7 +268,7 @@
 											}
 										},
 										"url": {
-											"raw": "https://localhost:44366/users/2/accounts",
+											"raw": "https://localhost:44366/users/1/accounts",
 											"protocol": "https",
 											"host": [
 												"localhost"
@@ -155,7 +276,7 @@
 											"port": "44366",
 											"path": [
 												"users",
-												"2",
+												"1",
 												"accounts"
 											]
 										}
@@ -165,14 +286,81 @@
 							]
 						},
 						{
+							"name": "users/id/folders",
+							"item": [
+								{
+									"name": "users/id/folders/id",
+									"item": [
+										{
+											"name": "{id}",
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "https://localhost:44366/users/1/folders/10",
+													"protocol": "https",
+													"host": [
+														"localhost"
+													],
+													"port": "44366",
+													"path": [
+														"users",
+														"1",
+														"folders",
+														"10"
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "{folders}",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "https://localhost:44366/users/1/folders",
+											"protocol": "https",
+											"host": [
+												"localhost"
+											],
+											"port": "44366",
+											"path": [
+												"users",
+												"1",
+												"folders"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "{folders}",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"url": null
+									},
+									"response": []
+								}
+							]
+						},
+						{
 							"name": "{id}",
 							"request": {
 								"auth": {
-									"type": "bearer",
-									"bearer": [
+									"type": "apikey",
+									"apikey": [
 										{
-											"key": "token",
-											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJ1c2VyIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoiam9obkBkb2UuY29tIiwiZXhwIjoxNjE3MzY4OTA4LCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjUwMDAiLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDAifQ.MvG6DZOL4Sq5Qp1hSVuy0uy3SKHV_ojo8CM1EKuZ7ho",
+											"key": "value",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYXBpX2tleSIsImV4cCI6MTY1MjQ3NDUzNywiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiYXVkIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIn0.2Oc3MRErCsOhEpj8n0lcaMNjuUVpMhR--Bzval9m-W8",
+											"type": "string"
+										},
+										{
+											"key": "key",
+											"value": "ApiKey",
 											"type": "string"
 										}
 									]
@@ -180,13 +368,12 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "https://eus-safeaccounts-test.azurewebsites.net/users/1",
+									"raw": "https://localhost:44366/users/1",
 									"protocol": "https",
 									"host": [
-										"eus-safeaccounts-test",
-										"azurewebsites",
-										"net"
+										"localhost"
 									],
+									"port": "44366",
 									"path": [
 										"users",
 										"1"
@@ -201,16 +388,15 @@
 								"method": "DELETE",
 								"header": [],
 								"url": {
-									"raw": "https://eus-safeaccounts-test.azurewebsites.net/users/4",
+									"raw": "https://localhost:44366/users/7",
 									"protocol": "https",
 									"host": [
-										"eus-safeaccounts-test",
-										"azurewebsites",
-										"net"
+										"localhost"
 									],
+									"port": "44366",
 									"path": [
 										"users",
-										"4"
+										"7"
 									]
 								}
 							},
@@ -218,12 +404,15 @@
 						},
 						{
 							"name": "firstname",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
 							"request": {
-								"method": "PUT",
+								"method": "GET",
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "\"John\"",
+									"raw": "\"john\"",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -247,6 +436,36 @@
 							"response": []
 						},
 						{
+							"name": "lastname",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "\"Doe\"",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://localhost:44366/users/1/lastname",
+									"protocol": "https",
+									"host": [
+										"localhost"
+									],
+									"port": "44366",
+									"path": [
+										"users",
+										"1",
+										"lastname"
+									]
+								}
+							},
+							"response": []
+						},
+						{
 							"name": "password",
 							"request": {
 								"auth": {
@@ -256,7 +475,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "\"{\\\"current_password\\\":\\\"useless\\\", \\\"new_password\\\":\\\"alsouseless\\\"}\"",
+									"raw": "{\"current_password\":\"alsouseless\", \"new_password\":\"useless\"}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -264,7 +483,7 @@
 									}
 								},
 								"url": {
-									"raw": "https://localhost:44366/users/2/password",
+									"raw": "https://localhost:44366/users/1/password",
 									"protocol": "https",
 									"host": [
 										"localhost"
@@ -272,7 +491,7 @@
 									"port": "44366",
 									"path": [
 										"users",
-										"2",
+										"1",
 										"password"
 									]
 								}
@@ -284,11 +503,26 @@
 				{
 					"name": "login",
 					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJ1c2VyIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoidGVzdEBkb2UuY29tIiwiZXhwIjoxNjIwODM3MTI0LCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjUwMDAiLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDAifQ.WX_aTHim_w_vr89p1DM6cfyG09YF7B2CzuKuW-hINYc",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "ApiKey",
+									"type": "string"
+								}
+							]
+						},
 						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "\"{\\\"email\\\":\\\"edwin@may.com\\\",\\\"password\\\":\\\"useless\\\"}\"",
+							"raw": "{\"email\":\"john@doe.com\",\"password\":\"useless\"}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -351,7 +585,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "\"{\\\"firstname\\\":\\\"Edwin\\\", \\\"lastname\\\":\\\"May\\\", \\\"email\\\":\\\"edwin@may.com\\\", \\\"password\\\":\\\"useless\\\"}\"",
+							"raw": "{\"first_name\":\"test\", \"last_name\":\"testlast\", \"email\":\"test1@doe.com\", \"password\":\"useless\"}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -379,15 +613,15 @@
 			"item": [
 				{
 					"name": "generate",
-					"protocolProfileBehavior": {
-						"disableBodyPruning": true
-					},
 					"request": {
-						"method": "GET",
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "\"{\\\"regex\\\":\\\"[a-zA-Z0-9]\\\",\\\"minLength\\\":8,\\\"maxLength\\\":12}\"",
+							"raw": "{}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -395,13 +629,12 @@
 							}
 						},
 						"url": {
-							"raw": "https://eus-safeaccounts-test.azurewebsites.net/passwords/generate",
+							"raw": "https://localhost:44366/passwords/generate",
 							"protocol": "https",
 							"host": [
-								"eus-safeaccounts-test",
-								"azurewebsites",
-								"net"
+								"localhost"
 							],
+							"port": "44366",
 							"path": [
 								"passwords",
 								"generate"
@@ -422,7 +655,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "\"{\\\"access_token\\\":\\\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJ1c2VyIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoiam9obkBkb2UuY29tIiwiZXhwIjoxNjE3MjM4NTY3LCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjUwMDAiLCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjUwMDAifQ.SHZOGQCL32wJ_VD8HorfSunKuimu0uE0roJW8FxIVvs\\\",\\\"refresh_token\\\":\\\"NIJJIsek6e5ktzSO5Ek9Ff/hytPHLPPQWkQ3JYHCnBk=\\\"}\"",
+					"raw": "",
 					"options": {
 						"raw": {
 							"language": "json"
