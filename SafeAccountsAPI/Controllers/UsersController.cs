@@ -448,30 +448,27 @@ namespace SafeAccountsAPI.Controllers
 
         // edit a specific accounts info
         [HttpPut("{id:int}/accounts/{account_id:int}/title")] // in progress
-        public string User_EditAccountTitle(int id, int account_id, [FromBody] string title)
+        public IActionResult User_EditAccountTitle(int id, int account_id, [FromBody] string title)
         {
-            // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-            {
-                Response.StatusCode = 401;
-                return JObject.FromObject(new ErrorMessage("Invalid User", "Caller can only access their information.")).ToString();
-            }
-
             // attempt to edit the title
             try
             {
-                Account acc = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
-                acc.Title = title;
-                _context.Accounts.Update(acc);
+                // verify that the user is either admin or is requesting their own data
+                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                    return new UnauthorizedObjectResult(error);
+                }
+
+                _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id).Title = title;
                 _context.SaveChanges();
+                return new OkObjectResult(new { new_title = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id).Title }); // return new title from db to confirm
             }
             catch (Exception ex)
             {
-                Response.StatusCode = 500;
-                return JObject.FromObject(new ErrorMessage("Error editing title", ex.Message)).ToString();
+                ErrorMessage error = new ErrorMessage("Error editing title", ex.Message);
+                return new InternalServerErrorResult(error);
             }
-
-            return SuccessMessage.Result;
         }
 
         // edit a specific accounts info
