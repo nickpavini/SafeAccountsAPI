@@ -419,18 +419,31 @@ namespace SafeAccountsAPI.Controllers
 
         // get a specific accounts info
         [HttpGet("{id:int}/accounts/{account_id:int}")]
-        public string User_GetSingleAccount(int id, int account_id)
+        public IActionResult User_GetSingleAccount(int id, int account_id)
         {
-            // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            try
             {
-                Response.StatusCode = 401;
-                return JObject.FromObject(new ErrorMessage("Invalid User", "Caller can only access their information.")).ToString();
-            }
+                // verify that the user is either admin or is requesting their own data
+                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                    return new UnauthorizedObjectResult(error);
+                }
 
-            JObject message = JObject.Parse(SuccessMessage.Result);
-            message.Add(new JProperty("account", JObject.FromObject(new ReturnableAccount(_context.Accounts.Single(a => a.ID == account_id)))));
-            return message.ToString();
+                // validate ownership of said account
+                if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == account_id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid account", "User does not have an account matching that ID.");
+                    return new BadRequestObjectResult(error);
+                }
+
+                return new OkObjectResult(new ReturnableAccount(_context.Accounts.Single(a => a.ID == account_id)));
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Error getting account", ex.Message);
+                return new InternalServerErrorResult(error);
+            }
         }
 
         // edit a specific accounts info
