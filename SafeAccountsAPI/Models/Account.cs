@@ -1,4 +1,5 @@
-﻿using SafeAccountsAPI.Controllers;
+﻿using Newtonsoft.Json;
+using SafeAccountsAPI.Controllers;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -18,6 +19,19 @@ namespace SafeAccountsAPI.Models
         public string Login { get; set; }
         public byte[] Password { get; set; }
         public string Description { get; set; }
+
+        public Account() { } // blank constructor needed for db initializer
+
+        // constructor to easily set from NewUser type
+        public Account(NewAccount newAcc, int uid)
+        {
+            UserID = uid;
+            Title = newAcc.Title;
+            Login = newAcc.Login;
+            Password = HelperMethods.EncryptStringToBytes_Aes(newAcc.Password, HelperMethods.GetUserKeyAndIV(uid));
+            Description = newAcc.Description;
+            FolderID = newAcc.FolderID;
+        }
     }
 
     public class ReturnableAccount
@@ -40,5 +54,19 @@ namespace SafeAccountsAPI.Models
             if (acc.FolderID != null)
                 FolderID = acc.FolderID;
         }
+    }
+
+    public class NewAccount
+    {
+        [JsonProperty]
+        public string Title { get; set; }
+        [JsonProperty]
+        public string Login { get; set; }
+        [JsonProperty]
+        public string Password { get; set; }
+        [JsonProperty]
+        public string Description { get; set; }
+        [JsonProperty]
+        public int? FolderID { get; set; }
     }
 }

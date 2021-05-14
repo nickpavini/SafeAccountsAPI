@@ -356,57 +356,35 @@ namespace SafeAccountsAPI.Controllers
 
         // add account.. input format is json
         [HttpPost("{id:int}/accounts")] // working
-        public string User_AddAccount(int id, [FromBody] string accJson)
+        public IActionResult User_AddAccount(int id, [FromBody] NewAccount accToAdd)
         {
             // verify that the user is either admin or is requesting their own data
             if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                Response.StatusCode = 401;
-                return JObject.FromObject(new ErrorMessage("Invalid User", "Caller can only access their information.")).ToString();
-            }
-
-            JObject json = null;
-
-            // might want Json verification as own function since all will do it.. we will see
-            try { json = JObject.Parse(accJson); }
-            catch (Exception ex)
-            {
-                Response.StatusCode = 400;
-                ErrorMessage error = new ErrorMessage("Invalid Json", ex.Message);
-                return JObject.FromObject(error).ToString();
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
 
             try
             {
-                // if folder id is present, then use it, if not we use standard null for top parent
-                int? folder_id;
-                if (json["folder_id"] == null)
-                    folder_id = null;
-                else
+                // if this user does not own the folder we are adding to, then error
+                if (accToAdd.FolderID != null && !_context.Users.Single(a => a.ID == id).Folders.Exists(b => b.ID == accToAdd.FolderID))
                 {
-                    folder_id = _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == int.Parse(json["folder_id"].ToString())).ID; // makes sure folder exists and is owned by user
+                    ErrorMessage error = new ErrorMessage("Failed to create new account", "User does not own the folder they wish to add an account to.");
+                    return new BadRequestObjectResult(error);
                 }
 
                 // use token in header to to 
-                Account new_account = new Account
-                {
-                    UserID = id,
-                    FolderID = folder_id,
-                    Title = json["account_title"]?.ToString(),
-                    Login = json["account_login"]?.ToString(),
-                    Password = json["account_password"] != null ? HelperMethods.EncryptStringToBytes_Aes(json["account_password"].ToString(), HelperMethods.GetUserKeyAndIV(id)) : null,
-                    Description = json["account_description"]?.ToString()
-                };
+                Account new_account = new Account(accToAdd, id);
                 _context.Accounts.Add(new_account);
                 _context.SaveChanges();
+                return Ok();
             }
             catch (Exception ex)
             {
-                Response.StatusCode = 500;
-                return JObject.FromObject(new ErrorMessage("Error creating new account.", ex.Message)).ToString();
+                ErrorMessage error = new ErrorMessage("Error creating new account.", ex.Message);
+                return new InternalServerErrorResult(error);
             }
-
-            return SuccessMessage.Result;
         }
 
         [HttpDelete("{id:int}/accounts/{account_id:int}")] // working
