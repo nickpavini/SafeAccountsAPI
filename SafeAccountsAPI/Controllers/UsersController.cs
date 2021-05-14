@@ -151,6 +151,13 @@ namespace SafeAccountsAPI.Controllers
         [HttpPost, AllowAnonymous]
         public IActionResult User_AddUser([FromBody] NewUser newUser)
         {
+            // if there is a user with this email already then we throw bad request error
+            if (_context.Users.Single(a => a.Email == newUser.Email) != null)
+            {
+                ErrorMessage error = new ErrorMessage("Failed to create new user", "Email already in use.");
+                return new BadRequestObjectResult(error);
+            }
+
             // attempt to create new user and add to the database... later we need to implement hashing
             try
             {
@@ -158,16 +165,13 @@ namespace SafeAccountsAPI.Controllers
                 _context.Users.Add(userToRegister);
                 _context.SaveChanges();
                 HelperMethods.CreateUserKeyandIV(_context.Users.Single(a => a.Email == newUser.Email).ID); // after we save changes, we need to get the user by their email and then use the id to create unique password and iv
+                return Ok();
             }
             catch (Exception ex)
             {
                 ErrorMessage error = new ErrorMessage("Failed to create new user", ex.Message);
                 return new InternalServerErrorResult(error);
             }
-
-            JObject message = JObject.Parse(SuccessMessage.Result);
-            message.Add(new JProperty("id", _context.Users.Single(a => a.Email == newUser.Email).ID)); // user context to get id since locally created user will not have id set
-            return Ok(message.ToString());
         }
 
         // Get a specific user.
