@@ -122,45 +122,45 @@ namespace SafeAccountsAPI.Controllers
         [HttpGet] //working
         public IActionResult GetAllUsers()
         {
-            if (!HelperMethods.ValidateIsAdmin(_httpContextAccessor))
-            {
-                ErrorMessage error = new ErrorMessage("Invalid Role", "Caller must have admin role.");
-                return new UnauthorizedObjectResult(error);
-            }
-
-            // get and return all users
-            List<ReturnableUser> users = new List<ReturnableUser>();
             try
             {
+                if (!HelperMethods.ValidateIsAdmin(_httpContextAccessor))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid Role", "Caller must have admin role.");
+                    return new UnauthorizedObjectResult(error);
+                }
+
+                // get and return all users
+                List<ReturnableUser> users = new List<ReturnableUser>();
                 foreach (User user in _context.Users.ToArray())
                 {
                     ReturnableUser retUser = new ReturnableUser(user);
                     users.Add(retUser);
                 }
+
+                return new OkObjectResult(users);
             }
             catch (Exception ex)
             {
                 ErrorMessage error = new ErrorMessage("Error retrieving users.", ex.Message);
                 return new InternalServerErrorResult(error);
             }
-
-            return new OkObjectResult(users);
         }
 
         // register new user
         [HttpPost, AllowAnonymous]
         public IActionResult User_AddUser([FromBody] NewUser newUser)
         {
-            // if there is a user with this email already then we throw bad request error
-            if (_context.Users.Single(a => a.Email == newUser.Email) != null)
-            {
-                ErrorMessage error = new ErrorMessage("Failed to create new user", "Email already in use.");
-                return new BadRequestObjectResult(error);
-            }
-
             // attempt to create new user and add to the database... later we need to implement hashing
             try
             {
+                // if there is a user with this email already then we throw bad request error
+                if (_context.Users.Single(a => a.Email == newUser.Email) != null)
+                {
+                    ErrorMessage error = new ErrorMessage("Failed to create new user", "Email already in use.");
+                    return new BadRequestObjectResult(error);
+                }
+
                 User userToRegister = new User(newUser); // new user with no accounts and registered as user
                 _context.Users.Add(userToRegister);
                 _context.SaveChanges();
@@ -169,7 +169,7 @@ namespace SafeAccountsAPI.Controllers
             }
             catch (Exception ex)
             {
-                ErrorMessage error = new ErrorMessage("Failed to create new user", ex.Message);
+                ErrorMessage error = new ErrorMessage("Error creating new user", ex.Message);
                 return new InternalServerErrorResult(error);
             }
         }
@@ -178,70 +178,86 @@ namespace SafeAccountsAPI.Controllers
         [HttpGet("{id:int}")] // working
         public IActionResult User_GetUser(int id)
         {
-            // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            try
             {
-                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                return new UnauthorizedObjectResult(error);
-            }
+                // verify that the user is either admin or is requesting their own data
+                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                    return new UnauthorizedObjectResult(error);
+                }
 
-            // strips out private data that is never to be sent back and returns user info
-            ReturnableUser retUser = new ReturnableUser(_context.Users.Where(a => a.ID == id).Single());
-            return new OkObjectResult(retUser);
+                // strips out private data that is never to be sent back and returns user info
+                ReturnableUser retUser = new ReturnableUser(_context.Users.Where(a => a.ID == id).Single());
+                return new OkObjectResult(retUser);
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Failed to get user.", ex.Message);
+                return new InternalServerErrorResult(error);
+            }
         }
 
         [HttpDelete("{id:int}")] // working
         public IActionResult User_DeleteUser(int id)
         {
-            // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-            {
-                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                return new UnauthorizedObjectResult(error);
-            }
-
             try
             {
+                // verify that the user is either admin or is requesting their own data
+                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                    return new UnauthorizedObjectResult(error);
+                }
+
                 // attempt to remove all data and update changes
                 _context.Accounts.RemoveRange(_context.Accounts.Where(a => a.UserID == id));
                 _context.RefreshTokens.RemoveRange(_context.RefreshTokens.Where(a => a.UserID == id));
                 _context.Users.Remove(_context.Users.Single(a => a.ID == id));
                 _context.SaveChanges();
+
+                return Ok();
             }
             catch (Exception ex)
             {
                 ErrorMessage error = new ErrorMessage("Failed to delete user.", ex.Message);
                 return new InternalServerErrorResult(error);
             }
-
-            return Ok();
         }
 
         [HttpGet("{id:int}/firstname")] // working
         public IActionResult User_GetFirstName(int id)
         {
-            // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            try
             {
-                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                return new UnauthorizedObjectResult(error);
-            }
+                // verify that the user is either admin or is requesting their own data
+                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                    return new UnauthorizedObjectResult(error);
+                }
 
-            return new OkObjectResult(new { firstname = _context.Users.Where(a => a.ID == id).Single().First_Name });
+                return new OkObjectResult(new { firstname = _context.Users.Where(a => a.ID == id).Single().First_Name });
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Failed to get first name.", ex.Message);
+                return new InternalServerErrorResult(error);
+            }
         }
 
         [HttpPut("{id:int}/firstname")] // working
         public IActionResult User_EditFirstName(int id, [FromBody] string firstname)
         {
-            // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-            {
-                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                return new UnauthorizedObjectResult(error);
-            }
-
             try
             {
+                // verify that the user is either admin or is requesting their own data
+                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                    return new UnauthorizedObjectResult(error);
+                }
+
                 _context.Users.Where(a => a.ID == id).Single().First_Name = firstname;
                 _context.SaveChanges();
                 return new OkObjectResult(new { new_firstname = _context.Users.Where(a => a.ID == id).Single().First_Name });
@@ -256,28 +272,36 @@ namespace SafeAccountsAPI.Controllers
         [HttpGet("{id:int}/lastname")] // working
         public IActionResult User_GetLastName(int id)
         {
-            // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            try
             {
-                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                return new UnauthorizedObjectResult(error);
-            }
+                // verify that the user is either admin or is requesting their own data
+                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                    return new UnauthorizedObjectResult(error);
+                }
 
-            return new OkObjectResult(new { lastname = _context.Users.Where(a => a.ID == id).Single().Last_Name });
+                return new OkObjectResult(new { lastname = _context.Users.Where(a => a.ID == id).Single().Last_Name });
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Failed to get last name.", ex.Message);
+                return new InternalServerErrorResult(error);
+            }
         }
 
         [HttpPut("{id:int}/lastname")] // working
         public IActionResult User_EditLastName(int id, [FromBody] string lastname)
         {
-            // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-            {
-                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                return new UnauthorizedObjectResult(error);
-            }
-
             try
             {
+                // verify that the user is either admin or is requesting their own data
+                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                    return new UnauthorizedObjectResult(error);
+                }
+
                 _context.Users.Where(a => a.ID == id).Single().Last_Name = lastname;
                 _context.SaveChanges();
                 return new OkObjectResult(new { new_lastname = _context.Users.Where(a => a.ID == id).Single().Last_Name });
@@ -292,16 +316,16 @@ namespace SafeAccountsAPI.Controllers
         [HttpPut("{id:int}/password")]
         public IActionResult User_EditPassword(int id, [FromBody] PasswordReset psw_reset)
         {
-            // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-            {
-                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                return new UnauthorizedObjectResult(error);
-            }
-
             try
             {
-                // get password from db
+                // verify that the user is either admin or is requesting their own data
+                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                    return new UnauthorizedObjectResult(error);
+                }
+
+                // get user from db
                 User user = _context.Users.Single(a => a.ID == id);
 
                 // if password is valid then we change it and update db
@@ -329,22 +353,23 @@ namespace SafeAccountsAPI.Controllers
         [HttpGet("{id:int}/accounts")] // working
         public IActionResult User_GetAccounts(int id)
         {
-            // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-            {
-                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                return new UnauthorizedObjectResult(error);
-            }
-
-            // get and return all this user's accounts
-            List<ReturnableAccount> accs = new List<ReturnableAccount>();
             try
             {
+                // verify that the user is either admin or is requesting their own data
+                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                    return new UnauthorizedObjectResult(error);
+                }
+
+                // get and return all this user's accounts
+                List<ReturnableAccount> accs = new List<ReturnableAccount>();
                 foreach (Account acc in _context.Users.Single(a => a.ID == id).Accounts.ToArray())
                 {
                     ReturnableAccount retAcc = new ReturnableAccount(acc);
                     accs.Add(retAcc);
                 }
+
                 return new OkObjectResult(accs);
             }
             catch (Exception ex)
@@ -358,15 +383,15 @@ namespace SafeAccountsAPI.Controllers
         [HttpPost("{id:int}/accounts")] // working
         public IActionResult User_AddAccount(int id, [FromBody] NewAccount accToAdd)
         {
-            // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-            {
-                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                return new UnauthorizedObjectResult(error);
-            }
-
             try
             {
+                // verify that the user is either admin or is requesting their own data
+                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                    return new UnauthorizedObjectResult(error);
+                }
+
                 // if this user does not own the folder we are adding to, then error
                 if (accToAdd.FolderID != null && !_context.Users.Single(a => a.ID == id).Folders.Exists(b => b.ID == accToAdd.FolderID))
                 {
@@ -390,15 +415,15 @@ namespace SafeAccountsAPI.Controllers
         [HttpDelete("{id:int}/accounts/{account_id:int}")] // working
         public IActionResult User_DeleteAccount(int id, int account_id)
         {
-            // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-            {
-                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                return new UnauthorizedObjectResult(error);
-            }
-
             try
             {
+                // verify that the user is either admin or is requesting their own data
+                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                    return new UnauthorizedObjectResult(error);
+                }
+
                 // validate ownership of said account
                 if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == account_id))
                 {
