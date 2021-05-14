@@ -103,17 +103,6 @@ namespace SafeAccountsAPI.Controllers
             }
         }
 
-        // generate login response with valid access token, refresh token, and the id for user navigation
-        public static string GenerateLoginResponse(string accessToken, RefreshToken rt, int id)
-        {
-            // format response
-            JObject message = JObject.Parse(SuccessMessage.Result);
-            message.Add(new JProperty("token", accessToken));
-            message.Add(new JProperty("refresh_token", JToken.FromObject(new ReturnableRefreshToken(rt))));
-            message.Add(new JProperty("id", id));
-            return message.ToString();
-        }
-
         // make sure this user is either admin or trying to access something they own
         public static bool ValidateIsUserOrAdmin(IHttpContextAccessor httpContextAccessor, APIContext context, int id)
         {

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Win32.SafeHandles;
 using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Helpers;
 using SafeAccountsAPI.Models;
@@ -29,7 +30,6 @@ namespace SafeAccountsAPI.Controllers
         [HttpPost]
         public IActionResult Refresh()
         {
-            string rtrn; // return string as login response to send the user id and such
             try
             {
                 // attempt getting user from claims
@@ -37,19 +37,18 @@ namespace SafeAccountsAPI.Controllers
                 ValidateRefreshToken(user, Request.Cookies["RefreshTokenSameSite"] ?? Request.Cookies["RefreshToken"]); // make sure this is a valid token for the user
                 string newTokenStr = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email, _configuration.GetValue<string>("JwtTokenKey"));
                 RefreshToken newRefToken = HelperMethods.GenerateRefreshToken(user, _context);
-                rtrn = HelperMethods.GenerateLoginResponse(newTokenStr, newRefToken, user.ID);
+                LoginResponse rtrn = new LoginResponse { ID = user.ID, AccessToken = newTokenStr, RefreshToken = new ReturnableRefreshToken(newRefToken) };
                 _context.SaveChanges(); // save refresh token just before returning string to be safe
 
                 // append cookies after refresh
                 HelperMethods.SetCookies(Response, newTokenStr, newRefToken);
+                return new OkObjectResult(rtrn);
             }
             catch(Exception ex)
             {
                 ErrorMessage error = new ErrorMessage("Error refreshing access.", ex.Message);
                 return new InternalServerErrorResult(error);
             }
-
-            return Ok(rtrn);
         }
 
         // make sure the refresh token is valid

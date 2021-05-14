@@ -36,18 +36,6 @@ namespace SafeAccountsAPI.Controllers
         [HttpPost("login"), AllowAnonymous] //working
         public ActionResult User_Login([FromBody] Login login)
         {
-            // use model binding
-
-            // move this away to a filter / middleware
-            //JObject json = null;
-            //try { json = JObject.Parse(credentials); }
-            //catch (Exception ex)
-            //{
-            //    Response.StatusCode = 400;
-            //    ErrorMessage error = new ErrorMessage("Invalid Json", credentials, ex.Message);
-            //    return JObject.FromObject(error).ToString();
-            //}
-
             try
             {
                 // get users saved password hash and salt
@@ -58,12 +46,12 @@ namespace SafeAccountsAPI.Controllers
                 {
                     string tokenString = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email, _configuration.GetValue<string>("JwtTokenKey"));
                     RefreshToken refToken = HelperMethods.GenerateRefreshToken(user, _context);
-                    string ret = HelperMethods.GenerateLoginResponse(tokenString, refToken, user.ID);
+                    LoginResponse rtrn = new LoginResponse { ID = user.ID, AccessToken = tokenString, RefreshToken = new ReturnableRefreshToken(refToken) };
                     _context.SaveChanges(); // always last on db to make sure nothing breaks and db has new info
 
                     // append cookies to response after login
                     HelperMethods.SetCookies(Response, tokenString, refToken);
-                    return Ok(ret);
+                    return new OkObjectResult(rtrn);
                 }
                 else
                 {
