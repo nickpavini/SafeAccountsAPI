@@ -231,30 +231,26 @@ namespace SafeAccountsAPI.Controllers
         }
 
         [HttpPut("{id:int}/firstname")] // working
-        public string User_EditFirstName(int id, [FromBody] string firstname)
+        public IActionResult User_EditFirstName(int id, [FromBody] string firstname)
         {
             // verify that the user is either admin or is requesting their own data
             if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                Response.StatusCode = 401;
-                return JObject.FromObject(new ErrorMessage("Invalid User", "Caller can only access their information.")).ToString();
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
 
             try
             {
                 _context.Users.Where(a => a.ID == id).Single().First_Name = firstname;
                 _context.SaveChanges();
+                return new OkObjectResult(new { new_firstname = _context.Users.Where(a => a.ID == id).Single().First_Name });
             }
             catch (Exception ex)
             {
-                Response.StatusCode = 500;
                 ErrorMessage error = new ErrorMessage("Failed to update first name.", ex.Message);
-                return JObject.FromObject(error).ToString();
+                return new InternalServerErrorResult(error);
             }
-
-            JObject message = JObject.Parse(SuccessMessage.Result);
-            message.Add(new JProperty("new_firstname", _context.Users.Where(a => a.ID == id).Single().First_Name)); // this part re-affirms that in the database we have a new firstname
-            return message.ToString();
         }
 
         [HttpGet("{id:int}/lastname")] // working
