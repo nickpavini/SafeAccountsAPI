@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using SafeAccountsAPI.Data;
+using SafeAccountsAPI.Helpers;
 using SafeAccountsAPI.Models;
 
 namespace SafeAccountsAPI.Controllers
@@ -26,19 +27,29 @@ namespace SafeAccountsAPI.Controllers
 
         // GET: api/RefreshToken
         [HttpPost]
-        public string Refresh()
+        public IActionResult Refresh()
         {
-            // attempt getting user from claims
-            User user = HelperMethods.GetUserFromAccessToken(Request.Cookies["AccessTokenSameSite"] ?? Request.Cookies["AccessToken"], _context, _configuration.GetValue<string>("JwtTokenKey"));
-            ValidateRefreshToken(user, Request.Cookies["RefreshTokenSameSite"] ?? Request.Cookies["RefreshToken"]); // make sure this is a valid token for the user
-            string newTokenStr = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email, _configuration.GetValue<string>("JwtTokenKey"));
-            RefreshToken newRefToken = HelperMethods.GenerateRefreshToken(user, _context);
-            string ret = HelperMethods.GenerateLoginResponse(newTokenStr, newRefToken, user.ID);
-            _context.SaveChanges(); // save refresh token just before returning string to be safe
+            string rtrn; // return string as login response to send the user id and such
+            try
+            {
+                // attempt getting user from claims
+                User user = HelperMethods.GetUserFromAccessToken(Request.Cookies["AccessTokenSameSite"] ?? Request.Cookies["AccessToken"], _context, _configuration.GetValue<string>("JwtTokenKey"));
+                ValidateRefreshToken(user, Request.Cookies["RefreshTokenSameSite"] ?? Request.Cookies["RefreshToken"]); // make sure this is a valid token for the user
+                string newTokenStr = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email, _configuration.GetValue<string>("JwtTokenKey"));
+                RefreshToken newRefToken = HelperMethods.GenerateRefreshToken(user, _context);
+                rtrn = HelperMethods.GenerateLoginResponse(newTokenStr, newRefToken, user.ID);
+                _context.SaveChanges(); // save refresh token just before returning string to be safe
 
-            // append cookies after refresh
-            HelperMethods.SetCookies(Response, newTokenStr, newRefToken);
-            return ret;
+                // append cookies after refresh
+                HelperMethods.SetCookies(Response, newTokenStr, newRefToken);
+            }
+            catch(Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Error refreshing access.", "n/a", ex.Message);
+                return new InternalServerErrorResult(error);
+            }
+
+            return Ok(rtrn);
         }
 
         // make sure the refresh token is valid
