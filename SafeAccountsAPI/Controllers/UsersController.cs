@@ -290,51 +290,39 @@ namespace SafeAccountsAPI.Controllers
         }
 
         [HttpPut("{id:int}/password")]
-        public string User_EditPassword(int id, [FromBody] string passwordJson)
+        public IActionResult User_EditPassword(int id, [FromBody] PasswordReset psw_reset)
         {
             // verify that the user is either admin or is requesting their own data
             if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                Response.StatusCode = 401;
-                return JObject.FromObject(new ErrorMessage("Invalid User", "Caller can only access their information.")).ToString();
-            }
-
-            JObject json = null;
-
-            // might want Json verification as own function since all will do it.. we will see
-            try { json = JObject.Parse(passwordJson); }
-            catch (Exception ex)
-            {
-                Response.StatusCode = 400;
-                ErrorMessage error = new ErrorMessage("Invalid Json", ex.Message);
-                return JObject.FromObject(error).ToString();
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
 
             try
             {
+                // get password from db
                 User user = _context.Users.Single(a => a.ID == id);
 
                 // if password is valid then we change it and update db
-                if (ValidatePassword(json["current_password"].ToString(), user.Password))
+                if (ValidatePassword(psw_reset.Current_Password, user.Password))
                 {
-                    user.Password = HelperMethods.ConcatenatedSaltAndSaltedHash(json["new_password"].ToString());
+                    user.Password = HelperMethods.ConcatenatedSaltAndSaltedHash(psw_reset.New_Password);
                     _context.Update(user);
                     _context.SaveChanges();
+                    return Ok();
                 }
                 else
                 {
-                    Response.StatusCode = 401;
-                    return JObject.FromObject(new ErrorMessage("Invalid Password", "n/a")).ToString();
+                    ErrorMessage error = new ErrorMessage("Invalid Password", "Your current password does not match.");
+                    return new BadRequestObjectResult(error);
                 }
             }
             catch (Exception ex)
             {
-                Response.StatusCode = 500;
-                return JObject.FromObject(new ErrorMessage("Failed to update with new password", ex.Message)).ToString(); // don't continue to send password back and forth in messages
+                ErrorMessage error = new ErrorMessage("Failed to update with new password", ex.Message);
+                return new InternalServerErrorResult(error);
             }
-
-
-            return JObject.Parse(SuccessMessage.Result).ToString();
         }
 
         // get all of the user's accounts

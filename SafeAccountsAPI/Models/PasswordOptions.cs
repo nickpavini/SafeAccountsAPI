@@ -11,4 +11,12 @@ namespace SafeAccountsAPI.Models
         [JsonProperty]
         public string RegexPattern { get; set; } = "[a-zA-Z0-9]";
     }
+
+    public class PasswordReset
+    {
+        [JsonProperty]
+        public string Current_Password { get; set; }
+        [JsonProperty]
+        public string New_Password { get; set; }
+    }
 }
