@@ -218,18 +218,16 @@ namespace SafeAccountsAPI.Controllers
         }
 
         [HttpGet("{id:int}/firstname")] // working
-        public string User_GetFirstName(int id)
+        public IActionResult User_GetFirstName(int id)
         {
             // verify that the user is either admin or is requesting their own data
             if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                Response.StatusCode = 401;
-                return JObject.FromObject(new ErrorMessage("Invalid User", "Caller can only access their information.")).ToString();
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
 
-            JObject message = JObject.Parse(SuccessMessage.Result);
-            message.Add(new JProperty("firstname", _context.Users.Where(a => a.ID == id).Single().First_Name));
-            return message.ToString();
+            return new OkObjectResult(new { firstname = _context.Users.Where(a => a.ID == id).Single().First_Name });
         }
 
         [HttpPut("{id:int}/firstname")] // working
