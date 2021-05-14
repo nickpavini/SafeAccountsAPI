@@ -38,7 +38,6 @@ namespace SafeAccountsAPI.Controllers
                 string newTokenStr = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email, _configuration.GetValue<string>("JwtTokenKey"));
                 RefreshToken newRefToken = HelperMethods.GenerateRefreshToken(user, _context);
                 LoginResponse rtrn = new LoginResponse { ID = user.ID, AccessToken = newTokenStr, RefreshToken = new ReturnableRefreshToken(newRefToken) };
-                _context.SaveChanges(); // save refresh token just before returning string to be safe
 
                 // append cookies after refresh
                 HelperMethods.SetCookies(Response, newTokenStr, newRefToken);

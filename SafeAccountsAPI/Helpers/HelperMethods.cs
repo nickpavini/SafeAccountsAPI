@@ -89,6 +89,7 @@ namespace SafeAccountsAPI.Controllers
 
             // Update the user along with the new refresh token
             context.Update(user);
+            context.SaveChanges(); // save last
             return refreshToken;
         }
 
