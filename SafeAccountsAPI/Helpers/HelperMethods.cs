@@ -104,6 +104,21 @@ namespace SafeAccountsAPI.Controllers
             }
         }
 
+        // make sure the refresh token is valid
+        public static bool ValidateRefreshToken(User user, string refreshToken)
+        {
+            if (user == null || !user.RefreshTokens.Exists(rt => rt.Token == refreshToken))
+                return false;
+
+            RefreshToken storedRefreshToken = user.RefreshTokens.Find(rt => rt.Token == refreshToken);
+
+            // Ensure that the refresh token that we got from storage is not yet expired.
+            if (DateTime.UtcNow > DateTime.Parse(storedRefreshToken.Expiration))
+                return false;
+
+            return true;
+        }
+
         // make sure this user is either admin or trying to access something they own
         public static bool ValidateIsUserOrAdmin(IHttpContextAccessor httpContextAccessor, APIContext context, int id)
         {
