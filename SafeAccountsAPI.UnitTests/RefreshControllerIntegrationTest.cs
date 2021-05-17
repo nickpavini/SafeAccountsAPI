@@ -3,13 +3,13 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using System.Web;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using SafeAccountsAPI.Controllers;
 using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Models;
+using SafeAccountsAPI.UnitTests.Helpers;
 using Xunit;
 
 namespace SafeAccountsAPI.UnitTests
@@ -48,21 +48,9 @@ namespace SafeAccountsAPI.UnitTests
             // send request to refresh and assert request is ok and new cookies are present
             var response = await _client.PostAsync("refresh", null);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            Assert.True(response.Headers.Contains("Set-Cookie"));
-            Assert.True(response.Headers.GetValues("Set-Cookie").Count() == 4); // 4 cookies
 
-            // get new cookie names
-            Dictionary<string, string> new_cookies = new Dictionary<string, string>();
-            foreach (string new_cookie in response.Headers.GetValues("Set-Cookie").ToList())
-            {
-                new_cookies.Add(new_cookie.Split(';')[0].Split('=')[0], HttpUtility.UrlDecode(new_cookie.Split(';')[0].Split('=')[1]));
-            }
-
-            // make sure the 4 cookies we recieved are as expected
-            Assert.Contains("AccessToken", new_cookies.Keys);
-            Assert.Contains("AccessTokenSameSite", new_cookies.Keys);
-            Assert.Contains("RefreshTokenSameSite", new_cookies.Keys);
-            Assert.Contains("RefreshToken", new_cookies.Keys);
+            // valid cookies presence and retrieve
+            Dictionary<string, string> new_cookies = TestingHelpingMethods.CheckForCookies(response);
 
             // set new access token in cookies
             _client.DefaultRequestHeaders.Remove("Cookie");
