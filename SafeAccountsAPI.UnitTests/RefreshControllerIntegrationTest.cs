@@ -24,7 +24,7 @@ namespace SafeAccountsAPI.UnitTests
         }
 
         [Fact]
-        public async Task Post_Should_Return_New_Valid_Cookies()
+        public async Task POST_Should_Return_New_Valid_Cookies()
         {
             /*
              * For this test we need a valid refresh token, and an access token that is expired or not.

@@ -18,7 +18,7 @@ namespace SafeAccountsAPI.UnitTests
         }
 
         [Fact]
-        public async Task Post_Should_Generate_Password_With_Default_Options()
+        public async Task POST_Should_Generate_Password_With_Default_Options()
         {
             var passwordOptions = new PasswordOptions();
             var content = new StringContent(JsonConvert.SerializeObject(passwordOptions), Encoding.UTF8, "application/json");
@@ -27,7 +27,7 @@ namespace SafeAccountsAPI.UnitTests
         }
 
         [Fact]
-        public async Task Post_Should_Generate_Password_With_Custom_Options()
+        public async Task POST_Should_Generate_Password_With_Custom_Options()
         {
             var passwordOptions = new PasswordOptions() { MaxLength = 100, MinLength = 20 };
             var content = new StringContent(JsonConvert.SerializeObject(passwordOptions), Encoding.UTF8, "application/json");

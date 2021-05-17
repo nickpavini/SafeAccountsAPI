@@ -39,7 +39,7 @@ namespace SafeAccountsAPI.UnitTests
         }
 
         [Fact]
-        public async Task Post_Should_Login_And_Return_Valid_Access_And_Refresh_Tokens()
+        public async Task POST_Should_Login_And_Return_Valid_Access_And_Refresh_Tokens()
         {
             /*
              * Login and use the newly recieved tokens to make api call and refresh.
@@ -87,7 +87,7 @@ namespace SafeAccountsAPI.UnitTests
         }
 
         [Fact]
-        public async Task Post_Should_Get_User_information()
+        public async Task GET_Should_Retrieve_User_information()
         {
             /*
              * Get the user information and validate that what is returned is as expected.
