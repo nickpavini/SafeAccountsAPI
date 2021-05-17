@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SafeAccountsAPI.Controllers;
 using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Models;
 using SafeAccountsAPI.UnitTests.Helpers;
@@ -81,24 +82,29 @@ namespace SafeAccountsAPI.UnitTests
              * Get the user information and validate that what is returned is as expected.
              */
 
-            //have to make sure this has happened or we dont have cookies
-            await Post_Should_Login_And_Return_Valid_Access_And_Refresh_Tokens();
+            using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, _client.BaseAddress + "users/" + _testUser.ID))
+            {
+                // generate access code and set header
+                string accessToken = HelperMethods.GenerateJWTAccessToken(_testUser.Role, _testUser.Email, _config["JwtTokenKey"]);
+                string cookie = "AccessToken=" + accessToken;
+                requestMessage.Headers.Add("Cookie", cookie);
 
-            // expected returned user
-            ReturnableUser expectedUserReturn = new ReturnableUser(_testUser);
+                // make request and validate status code
+                var response = await _client.SendAsync(requestMessage);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-            // make request and validate status code
-            var response = await _client.GetAsync("users/" + _testUser.ID);
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            ReturnableUser returnedUser = JsonConvert.DeserializeObject<ReturnableUser>(response.Content.ReadAsStringAsync().Result);
+                // expected and returned users
+                ReturnableUser expectedUserReturn = new ReturnableUser(_testUser);
+                ReturnableUser returnedUser = JsonConvert.DeserializeObject<ReturnableUser>(response.Content.ReadAsStringAsync().Result);
 
-            // check that the returned user is the user we were expecting
-            Assert.Equal(expectedUserReturn.ID, returnedUser.ID);
-            Assert.Equal(expectedUserReturn.Email, returnedUser.Email);
-            Assert.Equal(expectedUserReturn.Role, returnedUser.Role);
-            Assert.Equal(expectedUserReturn.NumAccs, returnedUser.NumAccs);
-            Assert.Equal(expectedUserReturn.First_Name, returnedUser.First_Name);
-            Assert.Equal(expectedUserReturn.Last_Name, returnedUser.Last_Name);
+                // check that the returned user is the user we were expecting
+                Assert.Equal(expectedUserReturn.ID, returnedUser.ID);
+                Assert.Equal(expectedUserReturn.Email, returnedUser.Email);
+                Assert.Equal(expectedUserReturn.Role, returnedUser.Role);
+                Assert.Equal(expectedUserReturn.NumAccs, returnedUser.NumAccs);
+                Assert.Equal(expectedUserReturn.First_Name, returnedUser.First_Name);
+                Assert.Equal(expectedUserReturn.Last_Name, returnedUser.Last_Name);
+            }
         }
     }
 }
