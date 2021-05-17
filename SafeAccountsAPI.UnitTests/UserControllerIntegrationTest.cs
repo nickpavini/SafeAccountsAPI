@@ -19,9 +19,21 @@ namespace SafeAccountsAPI.UnitTests
     public class UserControllerIntegrationTest : IClassFixture<WebApplicationFactory<SafeAccountsAPI.Startup>>
     {
         public HttpClient _client { get; }
+        public IConfigurationRoot _config { get; }
+        public APIContext _context { get; set; } // if we are updating things this might need to be disposed are reset
+        User _testUser { get; set; } // this is our user for testing... also may be updated during testing
+
         public UserControllerIntegrationTest(WebApplicationFactory<SafeAccountsAPI.Startup> fixture)
         {
             _client = fixture.CreateClient();
+
+            // get reference to app settings and local db
+            _config = new ConfigurationBuilder().AddJsonFile("appsettings.Development.json").Build();
+            DbContextOptions<APIContext> options = new DbContextOptions<APIContext>();
+            _context = new APIContext(options, _config);
+
+            // set reference to our user for testing
+            _testUser = _context.Users.Single(a => a.Email == "john@doe.com");
         }
 
         [Fact]
@@ -32,10 +44,12 @@ namespace SafeAccountsAPI.UnitTests
              * Similar to refresh accept in the method we get our tokens. In refresh we generate 
              * our first tokens through code and strictly test the refresh endpoint, then validate the tokens recieved from refresh.
              * Here, we get our tokens from the login endpoint and make sure they work as expected.
+             * NOTE: After this our _client variable has valid access tokens to make the rest of the tests as "john doe"
+             * 
              */
 
             // make a login request and validate response code
-            Login login = new Login { Email = "john@doe.com", Password = "useless" }; // the original user
+            Login login = new Login { Email = _testUser.Email, Password = "useless" }; // the original user
             StringContent content = new StringContent(JsonConvert.SerializeObject(login), Encoding.UTF8, "application/json");
             var response = await _client.PostAsync("users/login", content);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode); // make sure result is good
@@ -58,6 +72,33 @@ namespace SafeAccountsAPI.UnitTests
             // make a call to refresh and check for 200 status code.. we dont need to validate refesh in anyway here
             response = await _client.PostAsync("refresh", null);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task Post_Should_Get_User_information()
+        {
+            /*
+             * Get the user information and validate that what is returned is as expected.
+             */
+
+            //have to make sure this has happened or we dont have cookies
+            await Post_Should_Login_And_Return_Valid_Access_And_Refresh_Tokens();
+
+            // expected returned user
+            ReturnableUser expectedUserReturn = new ReturnableUser(_testUser);
+
+            // make request and validate status code
+            var response = await _client.GetAsync("users/" + _testUser.ID);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            ReturnableUser returnedUser = JsonConvert.DeserializeObject<ReturnableUser>(response.Content.ReadAsStringAsync().Result);
+
+            // check that the returned user is the user we were expecting
+            Assert.Equal(expectedUserReturn.ID, returnedUser.ID);
+            Assert.Equal(expectedUserReturn.Email, returnedUser.Email);
+            Assert.Equal(expectedUserReturn.Role, returnedUser.Role);
+            Assert.Equal(expectedUserReturn.NumAccs, returnedUser.NumAccs);
+            Assert.Equal(expectedUserReturn.First_Name, returnedUser.First_Name);
+            Assert.Equal(expectedUserReturn.Last_Name, returnedUser.Last_Name);
         }
     }
 }
