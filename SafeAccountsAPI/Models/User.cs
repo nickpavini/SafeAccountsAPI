@@ -42,6 +42,8 @@ namespace SafeAccountsAPI.Models
         public int NumAccs { get; set; }
         public string Role { get; set; }
 
+        public ReturnableUser() { }
+
         // constructor create a safe returnable user
         public ReturnableUser(User user)
         {
