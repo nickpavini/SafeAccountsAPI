@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Threading.Tasks;
 using System.Web;
+using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace SafeAccountsAPI.UnitTests.Helpers
@@ -28,6 +30,16 @@ namespace SafeAccountsAPI.UnitTests.Helpers
             Assert.Contains("RefreshToken", new_cookies.Keys);
 
             return new_cookies;
+        }
+
+        // used in login and refresh test to make sure that we recieved a valid login response
+        public static async Task<JObject> CheckForLoginResponse(HttpResponseMessage response)
+        {
+            JObject responseBody = JObject.Parse(await response.Content.ReadAsStringAsync());
+            Assert.NotNull(responseBody["id"]);
+            Assert.NotNull(responseBody["accessToken"]);
+            Assert.NotNull(responseBody["refreshToken"]);
+            return responseBody;
         }
     }
 }
