@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json.Linq;
 using SafeAccountsAPI.Controllers;
 using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Models;
@@ -52,13 +53,16 @@ namespace SafeAccountsAPI.UnitTests
             // valid cookies presence and retrieve
             Dictionary<string, string> new_cookies = TestingHelpingMethods.CheckForCookies(response);
 
+            // check that we recieved a valid login response
+            JObject responseBody = await TestingHelpingMethods.CheckForLoginResponse(response);
+
             // set new access token in cookies
             _client.DefaultRequestHeaders.Remove("Cookie");
             cookie = "AccessTokenSameSite=" + new_cookies.Single(a => a.Key == "AccessTokenSameSite").Value;
             _client.DefaultRequestHeaders.Add("Cookie", cookie);
 
             // make a call to the api to make sure we recieved a valid access token
-            response = await _client.GetAsync("users/" + user.ID.ToString());
+            response = await _client.GetAsync("users/" + responseBody["id"].ToString());
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             // and the last thing we need is to validate that the refresh token was stored in the DB
