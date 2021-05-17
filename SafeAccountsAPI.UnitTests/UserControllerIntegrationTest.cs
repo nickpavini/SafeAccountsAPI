@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -45,34 +46,44 @@ namespace SafeAccountsAPI.UnitTests
              * Similar to refresh accept in the method we get our tokens. In refresh we generate 
              * our first tokens through code and strictly test the refresh endpoint, then validate the tokens recieved from refresh.
              * Here, we get our tokens from the login endpoint and make sure they work as expected.
-             * NOTE: After this our _client variable has valid access tokens to make the rest of the tests as "john doe"
              * 
              */
 
-            // make a login request and validate response code
-            Login login = new Login { Email = _testUser.Email, Password = "useless" }; // the original user
-            StringContent content = new StringContent(JsonConvert.SerializeObject(login), Encoding.UTF8, "application/json");
-            var response = await _client.PostAsync("users/login", content);
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode); // make sure result is good
+            // variable for managing our responses
+            HttpResponseMessage response;
 
-            // valid cookies presence and retrieve
+            // make a login request and validate response code
+            using (var requestMessage = new HttpRequestMessage(HttpMethod.Post, _client.BaseAddress + "users/login"))
+            {
+                Login login = new Login { Email = _testUser.Email, Password = "useless" }; // the original user
+                requestMessage.Content = new StringContent(JsonConvert.SerializeObject(login), Encoding.UTF8, "application/json"); // set content
+                response = await _client.SendAsync(requestMessage);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+
+            // valid cookies presence, retrieve, and create a cookie header string
             Dictionary<string, string> new_cookies = TestingHelpingMethods.CheckForCookies(response);
+            string cookie = "AccessTokenSameSite=" + new_cookies.Single(a => a.Key == "AccessTokenSameSite").Value
+                                    + "; RefreshTokenSameSite=" + new_cookies.Single(a => a.Key == "RefreshTokenSameSite").Value;
 
             // check that we recieved a valid login response
             JObject responseBody = await TestingHelpingMethods.CheckForLoginResponse(response);
 
-            // set new access token in cookies
-            string cookie = "AccessTokenSameSite=" + new_cookies.Single(a => a.Key == "AccessTokenSameSite").Value
-                                + "; RefreshTokenSameSite=" + new_cookies.Single(a => a.Key == "RefreshTokenSameSite").Value;
-            _client.DefaultRequestHeaders.Add("Cookie", cookie);
-
             // make a call to the api to make sure we recieved a valid access token
-            response = await _client.GetAsync("users/" + responseBody["id"].ToString());
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, _client.BaseAddress + "users/" + responseBody["id"].ToString()))
+            {
+                requestMessage.Headers.Add("Cookie", cookie); // set new access and refresh tokens in cookies
+                response = await _client.SendAsync(requestMessage);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
 
             // make a call to refresh and check for 200 status code.. we dont need to validate refesh in anyway here
-            response = await _client.PostAsync("refresh", null);
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, _client.BaseAddress + "users/" + responseBody["id"].ToString()))
+            {
+                requestMessage.Headers.Add("Cookie", cookie); // set new access and refresh tokens in cookies
+                response = await _client.SendAsync(requestMessage);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
         }
 
         [Fact]
