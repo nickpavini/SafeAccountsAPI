@@ -34,6 +34,9 @@ namespace SafeAccountsAPI.UnitTests
             DbContextOptions<APIContext> options = new DbContextOptions<APIContext>();
             _context = new APIContext(options, _config);
 
+            // set default header for our api_key... Development key only, doesnt work with online api
+            _client.DefaultRequestHeaders.Add("ApiKey", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYXBpX2tleSIsImV4cCI6MTY1MjgzNTA4OCwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiYXVkIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIn0.zzsx9RKnVvQHgiMcgr1zq9FfElRcnSMms7XUkuKw2AI");
+
             // set reference to our user for testing
             _testUser = _context.Users.Single(a => a.Email == "john@doe.com");
         }
@@ -98,7 +101,7 @@ namespace SafeAccountsAPI.UnitTests
             using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, _client.BaseAddress + "users/" + _testUser.ID))
             {
                 // generate access code and set header
-                string accessToken = HelperMethods.GenerateJWTAccessToken(_testUser.Role, _testUser.Email, _config["JwtTokenKey"]);
+                string accessToken = HelperMethods.GenerateJWTAccessToken(_testUser.Role, _testUser.Email, _config["UserJwtTokenKey"]);
                 string cookie = "AccessToken=" + accessToken;
                 requestMessage.Headers.Add("Cookie", cookie);
 
@@ -131,7 +134,7 @@ namespace SafeAccountsAPI.UnitTests
             using (var requestMessage = new HttpRequestMessage(HttpMethod.Post, _client.BaseAddress + "users/logout"))
             {
                 // generate access code and set header
-                string accessToken = HelperMethods.GenerateJWTAccessToken(_testUser.Role, _testUser.Email, _config["JwtTokenKey"]);
+                string accessToken = HelperMethods.GenerateJWTAccessToken(_testUser.Role, _testUser.Email, _config["UserJwtTokenKey"]);
                 RefreshToken refToken = HelperMethods.GenerateRefreshToken(_testUser, _context);
                 string cookie = "AccessToken=" + accessToken + "; AccessTokenSameSite=" + accessToken + "; RefreshToken=" + refToken.Token + "; RefreshTokenSameSite=" + refToken.Token;
                 requestMessage.Headers.Add("Cookie", cookie);

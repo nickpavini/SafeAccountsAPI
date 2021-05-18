@@ -21,6 +21,9 @@ namespace SafeAccountsAPI.UnitTests
         public RefreshControllerIntegrationTest(WebApplicationFactory<SafeAccountsAPI.Startup> fixture)
         {
             _client = fixture.CreateClient();
+
+            // set default header for our api_key... Development key only, doesnt work with online api
+            _client.DefaultRequestHeaders.Add("ApiKey", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYXBpX2tleSIsImV4cCI6MTY1MjgzNTA4OCwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiYXVkIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIn0.zzsx9RKnVvQHgiMcgr1zq9FfElRcnSMms7XUkuKw2AI");
         }
 
         [Fact]
@@ -40,7 +43,7 @@ namespace SafeAccountsAPI.UnitTests
 
             // generate an access token and valid refresh token
             User user = context.Users.Single(a => a.Email == "john@doe.com");
-            string accessToken = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email, config["JwtTokenKey"]);
+            string accessToken = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email, config["UserJwtTokenKey"]);
             RefreshToken refToken = HelperMethods.GenerateRefreshToken(user, context);
 
             // set cookies in header
