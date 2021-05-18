@@ -27,6 +27,7 @@ namespace SafeAccountsAPI.UnitTests
         public async Task POST_Should_Return_New_Valid_Cookies()
         {
             /*
+             * HttpPost("refresh")
              * For this test we need a valid refresh token, and an access token that is expired or not.
              * Then make a call to refresh and use the received tokens to see if we can make a valid call to the api.
              * And finally we make a call to validateRefreshToken to make sure the newly generated refresh was stored in the DB
