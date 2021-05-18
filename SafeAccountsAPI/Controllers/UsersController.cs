@@ -16,7 +16,8 @@ using SafeAccountsAPI.Models;
 namespace SafeAccountsAPI.Controllers
 {
     [ApiController]
-    [Authorize]
+    [Authorize(Policy = "LoggedIn")]
+    [Authorize(Policy = "ApiJwtToken")]
     [Route("[controller]")]
     public class UsersController : Controller
     {
@@ -44,7 +45,7 @@ namespace SafeAccountsAPI.Controllers
                 // successful login.. compare user hash to the hash generated from the inputted password and salt
                 if (ValidatePassword(login.Password, user.Password))
                 {
-                    string tokenString = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email, _configuration.GetValue<string>("JwtTokenKey"));
+                    string tokenString = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email, _configuration.GetValue<string>("UserJwtTokenKey"));
                     RefreshToken refToken = HelperMethods.GenerateRefreshToken(user, _context);
                     LoginResponse rtrn = new LoginResponse { ID = user.ID, AccessToken = tokenString, RefreshToken = new ReturnableRefreshToken(refToken) };
                     _context.SaveChanges(); // always last on db to make sure nothing breaks and db has new info

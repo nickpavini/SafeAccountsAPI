@@ -3,10 +3,12 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using SafeAccountsAPI.Models;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Authorization;
 
 namespace SafeAccountsAPI.Controllers
 {
     [Route("[controller]")]
+    [Authorize(Policy = "ApiJwtToken")]
     [ApiController]
     public class PasswordsController : ControllerBase
     {
