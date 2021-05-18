@@ -42,6 +42,7 @@ namespace SafeAccountsAPI.UnitTests
         public async Task POST_Should_Login_And_Return_Valid_Access_And_Refresh_Tokens()
         {
             /*
+             * HttpPost("users/login")
              * Login and use the newly recieved tokens to make api call and refresh.
              * Similar to refresh accept in the method we get our tokens. In refresh we generate 
              * our first tokens through code and strictly test the refresh endpoint, then validate the tokens recieved from refresh.
@@ -90,6 +91,7 @@ namespace SafeAccountsAPI.UnitTests
         public async Task GET_Should_Retrieve_User_information()
         {
             /*
+             * HttpGet("users/{id}")
              * Get the user information and validate that what is returned is as expected.
              */
 
@@ -115,6 +117,38 @@ namespace SafeAccountsAPI.UnitTests
                 Assert.Equal(expectedUserReturn.NumAccs, returnedUser.NumAccs);
                 Assert.Equal(expectedUserReturn.First_Name, returnedUser.First_Name);
                 Assert.Equal(expectedUserReturn.Last_Name, returnedUser.Last_Name);
+            }
+        }
+
+        [Fact]
+        public async Task POST_SignOut_Should_Return_Expired_Set_Cookie_Headers()
+        {
+            /*
+             * HttpPost("users/logout")
+             * Signout and check that we got 4 empty and expired set cookie headers
+             */
+
+            using (var requestMessage = new HttpRequestMessage(HttpMethod.Post, _client.BaseAddress + "users/logout"))
+            {
+                // generate access code and set header
+                string accessToken = HelperMethods.GenerateJWTAccessToken(_testUser.Role, _testUser.Email, _config["JwtTokenKey"]);
+                RefreshToken refToken = HelperMethods.GenerateRefreshToken(_testUser, _context);
+                string cookie = "AccessToken=" + accessToken + "; AccessTokenSameSite=" + accessToken + "; RefreshToken=" + refToken.Token + "; RefreshTokenSameSite=" + refToken.Token;
+                requestMessage.Headers.Add("Cookie", cookie);
+
+                // make request and validate status code
+                var response = await _client.SendAsync(requestMessage);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                // make sure cookies exist, and then make sure all are expired and empty
+                Dictionary<string, string> cookiesToDelete = TestingHelpingMethods.CheckForCookies(response);
+                foreach (string delete_cookie in response.Headers.GetValues("Set-Cookie").ToList())
+                {
+                    string date = delete_cookie.Split(';')[1].Split('=')[1];
+                    DateTime expiringDate = DateTime.Parse(date);
+                    Assert.True(DateTime.Now > expiringDate); // make sure expired
+                    Assert.Equal("", cookiesToDelete[delete_cookie.Split(';')[0].Split('=')[0]]); // make sure each is empty
+                }
             }
         }
     }
