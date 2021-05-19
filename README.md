@@ -32,6 +32,8 @@ Download [Postman](https://www.postman.com/downloads/) and use SafeAccountsAPI.p
   * Post - Add new user.
 * **/users/login**
   * Post - Sign in with user credentials and retrieve tokens.
+* **/users/logout**
+  * Post - Log user out. Authorized user only
 * **/users/{id}**
   * Get - Retrieve user profile data. Admin or Authorized user only.
   * Delete - Remove a user and all associated data. Admin or Authorized user only
@@ -58,6 +60,8 @@ Download [Postman](https://www.postman.com/downloads/) and use SafeAccountsAPI.p
   * Put - Edit password of user's specific account. Admin or Authorized user only.
 * **/users/{id}/accounts/{account_id}/description**
   * Put - Edit description of user's specific account. Admin or Authorized user only.
+* **/users/{id}/accounts/{account_id}/folder**
+  * Put - Set the folder to associate an account with. Admin or Authorized user only.
 
 &nbsp;
 
