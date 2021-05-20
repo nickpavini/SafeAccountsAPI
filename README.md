@@ -13,8 +13,12 @@ Everyone is welcome to test pentest the software so long as the intent is non-ma
 
 &nbsp;
 
-<ins>**Important Development Note:**</ins> <br/>
-You must create your own local instance of MySql and update the connection string in `appsettings.development.json`. You can run `TableCreations_MySQL.sql` to setup your database and then it will populate with 5 users, 2 accounts and 2 folders each on first local run of the API.
+## Build:
+* Start MySQL locally.
+* Create a database called `safeaccountsapi_db`.
+* Use `SafeAccountsAPI/TableCreations_MySQL.sql` to build the tables and set relationships.
+* Now that your database is setup, update the connection string in `SafeAccountsAPI/appsettings.development.json`.
+* Finally, run the api. You will see that 5 new users have been added as well as some accounts and folders.
 
 &nbsp;
 
