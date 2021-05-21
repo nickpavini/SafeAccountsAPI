@@ -16,11 +16,11 @@ namespace SafeAccountsAPI.Data
                 // add base users if data base not populated
                 User[] users = new User[]
                 {
-                    new User { First_Name="John", Last_Name="Doe", Email="john@doe.com", Password=HelperMethods.ConcatenatedSaltAndSaltedHash("useless"), NumAccs=2, Role=UserRoles.User },
-                    new User { First_Name="Edwin", Last_Name="May", Email="edwin@may.com", Password=HelperMethods.ConcatenatedSaltAndSaltedHash("useless"), NumAccs=2, Role=UserRoles.User },
-                    new User { First_Name="Lucy", Last_Name="Vale", Email="lucy@vale.com", Password=HelperMethods.ConcatenatedSaltAndSaltedHash("useless"), NumAccs=2, Role=UserRoles.User },
-                    new User { First_Name="Pam", Last_Name="Willis", Email="pam@willis.com", Password=HelperMethods.ConcatenatedSaltAndSaltedHash("useless"), NumAccs=2, Role=UserRoles.User },
-                    new User { First_Name="Game", Last_Name="Stonk", Email="game@stonk.com", Password=HelperMethods.ConcatenatedSaltAndSaltedHash("useless"), NumAccs=2, Role=UserRoles.User }
+                    new User { First_Name="John", Last_Name="Doe", Email="john@doe.com", Password=HelperMethods.ConcatenatedSaltAndSaltedHash("useless"), NumAccs=2, Role=UserRoles.User, EmailVerified=true },
+                    new User { First_Name="Edwin", Last_Name="May", Email="edwin@may.com", Password=HelperMethods.ConcatenatedSaltAndSaltedHash("useless"), NumAccs=2, Role=UserRoles.User, EmailVerified=true },
+                    new User { First_Name="Lucy", Last_Name="Vale", Email="lucy@vale.com", Password=HelperMethods.ConcatenatedSaltAndSaltedHash("useless"), NumAccs=2, Role=UserRoles.User, EmailVerified=true },
+                    new User { First_Name="Pam", Last_Name="Willis", Email="pam@willis.com", Password=HelperMethods.ConcatenatedSaltAndSaltedHash("useless"), NumAccs=2, Role=UserRoles.User, EmailVerified=true },
+                    new User { First_Name="Game", Last_Name="Stonk", Email="game@stonk.com", Password=HelperMethods.ConcatenatedSaltAndSaltedHash("useless"), NumAccs=2, Role=UserRoles.User, EmailVerified=true }
                 };
 
                 foreach (User person in users)
