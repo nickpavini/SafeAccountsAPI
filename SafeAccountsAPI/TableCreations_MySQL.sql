@@ -14,7 +14,8 @@ Create Table Users
 	Email nvarchar(50) unique,
 	Password varbinary(200),
 	NumAccs int,
-	Role nvarchar(25)
+	Role nvarchar(25),
+    EmailVerified bool not null
 );
 
 Create Table Folders

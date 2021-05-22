@@ -20,6 +20,23 @@ namespace SafeAccountsAPI.Controllers
         private static readonly string keys_file = "keys.txt"; // file for securely storing user keys and ivs
         public static int salt_length = 16; // length of salts for password storage
 
+        // might want to combine JWT generation to a single function over time
+        public static string GenerateJWTEmailConfirmationToken(string email, string token_key)
+        {
+            SymmetricSecurityKey secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(token_key));
+            SigningCredentials signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
+
+            JwtSecurityToken tokeOptions = new JwtSecurityToken(
+                issuer: "http://localhost:5000",
+                audience: "http://localhost:5000",
+                claims: new List<Claim> { new Claim(ClaimTypes.Email, email) },
+                expires: DateTime.Now.AddDays(7), // 1 week to confirm
+                signingCredentials: signinCredentials
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(tokeOptions);
+        }
+
         public static string GenerateJWTAccessToken(string role, string email, string token_key)
         {
             SymmetricSecurityKey secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(token_key));

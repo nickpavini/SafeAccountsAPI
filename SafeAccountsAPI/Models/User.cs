@@ -14,6 +14,7 @@ namespace SafeAccountsAPI.Models
         public byte[] Password { get; set; }
         public int NumAccs { get; set; }
         public string Role { get; set; }
+        public bool EmailVerified { get; set; }
         public virtual List<Account> Accounts { get; set; }
         public virtual List<RefreshToken> RefreshTokens { get; set; }
         public virtual List<Folder> Folders { get; set; }
@@ -29,6 +30,7 @@ namespace SafeAccountsAPI.Models
             Password = HelperMethods.ConcatenatedSaltAndSaltedHash(newUser.Password);
             NumAccs = 0;
             Role = UserRoles.User;
+            EmailVerified = false;
         }
     }
 
