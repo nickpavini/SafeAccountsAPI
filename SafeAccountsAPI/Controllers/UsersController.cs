@@ -85,7 +85,7 @@ namespace SafeAccountsAPI.Controllers
             string body = "Hello " + user.First_Name + ",\n\n";
             body += "A new account has been registered with SafeAccounts using your email address.\n\n";
             body += "To confirm your new account, please go to this web address:\n\n";
-            body += "https://" + Request.Host.Value + "/users/confirm/?token=" + token + "&email=" + user.Email;
+            body += _configuration.GetValue<string>("WebsiteUrl") + "emailconfirmation/?token=" + token + "&email=" + user.Email;
             body += "\n\nThis should appear as a blue link which you can just click on. If that doesn't work,";
             body += "then cut and paste the address into the address line at the top of your web browser window.\n\n";
             body += "If you need help, please contact the site administrator.\n\n";
@@ -106,7 +106,7 @@ namespace SafeAccountsAPI.Controllers
             smtpClient.Send(mailMessage);
         }
 
-        [HttpGet("confirm"), AllowAnonymous] //working
+        [HttpPost("confirm"), AllowAnonymous] //working
         public ActionResult User_ConfirmEmail(string token, string email)
         {
             try
