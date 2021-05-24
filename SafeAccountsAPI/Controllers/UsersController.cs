@@ -1,12 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Mail;
 using System.Text;
+using System.Web;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json.Linq;
 using SafeAccountsAPI.Constants;
 using SafeAccountsAPI.Data;
@@ -33,6 +38,108 @@ namespace SafeAccountsAPI.Controllers
             _configuration = configuration;
         }
 
+        // register new user
+        [HttpPost, AllowAnonymous]
+        public IActionResult User_AddUser([FromBody] NewUser newUser)
+        {
+            // attempt to create new user and add to the database.
+            try
+            {
+                // if there is a user with this email already then we throw bad request error
+                if (_context.Users.SingleOrDefault(a => a.Email == newUser.Email) != null)
+                {
+                    ErrorMessage error = new ErrorMessage("Failed to create new user", "Email already in use.");
+                    return new BadRequestObjectResult(error);
+                }
+
+                User userToRegister = new User(newUser); // new user with no accounts and registered as user
+                _context.Users.Add(userToRegister);
+                _context.SaveChanges();
+
+                // after we save changes, we need to create unique key and iv, then send the confirmation email
+                HelperMethods.CreateUserKeyandIV(_context.Users.Single(a => a.Email == newUser.Email).ID);
+                SendConfirmationEmail(userToRegister);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Error creating new user", ex.Message);
+                return new InternalServerErrorResult(error);
+            }
+        }
+
+        private void SendConfirmationEmail(User user)
+        {
+            // generate token
+            string token = HelperMethods.GenerateJWTEmailConfirmationToken(user.Email, _configuration.GetValue<string>("EmailConfirmationTokenKey"));
+
+            // handle to our smtp client
+            var smtpClient = new SmtpClient(_configuration.GetValue<string>("Smtp:Host"))
+            {
+                Port = int.Parse(_configuration.GetValue<string>("Smtp:Port")),
+                Credentials = new NetworkCredential(_configuration.GetValue<string>("Smtp:Username"), _configuration.GetValue<string>("Smtp:Password")),
+                EnableSsl = true,
+            };
+
+            // format the body of the message
+            string body = "Hello " + user.First_Name + ",\n\n";
+            body += "A new account has been registered with SafeAccounts using your email address.\n\n";
+            body += "To confirm your new account, please go to this web address:\n\n";
+            body += _configuration.GetValue<string>("WebsiteUrl") + "emailconfirmation/?token=" + token + "&email=" + user.Email;
+            body += "\n\nThis should appear as a blue link which you can just click on. If that doesn't work,";
+            body += "then cut and paste the address into the address line at the top of your web browser window.\n\n";
+            body += "If you need help, please contact the site administrator.\n\n";
+            body += "SafeAccounts Administrator,\n";
+            body += _configuration.GetValue<string>("Smtp:Username");
+
+            // handle to our message settings
+            var mailMessage = new MailMessage
+            {
+                From = new MailAddress(_configuration.GetValue<string>("Smtp:Username")),
+                Subject = "Confirm Your SafeAccounts Registration",
+                Body = body,
+                IsBodyHtml = false,
+            };
+            mailMessage.To.Add(user.Email);
+
+            // send message
+            smtpClient.Send(mailMessage);
+        }
+
+        [HttpPost("confirm"), AllowAnonymous] //working
+        public ActionResult User_ConfirmEmail(string token, string email)
+        {
+            try
+            {
+                User userToConfirm = _context.Users.Single(a => a.Email == email);
+
+                // check if email is already verified
+                if (userToConfirm.EmailVerified)
+                {
+                    ErrorMessage error = new ErrorMessage("Failed to confirm email", "Email address is already confirmed.");
+                    return new BadRequestObjectResult(error);
+                }
+
+                // verify that the email provided matches the email in the token.
+                if (email != HelperMethods.GetUserFromAccessToken(token, _context, _configuration.GetValue<string>("EmailConfirmationTokenKey")).Email)
+                {
+                    ErrorMessage error = new ErrorMessage("Failed to confirm email", "Token is invalid.");
+                    return new BadRequestObjectResult(error);
+                }
+
+                // ok now we save the users email as verified
+                userToConfirm.EmailVerified = true;
+                _context.Users.Update(userToConfirm);
+                _context.SaveChanges();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Error confirming email", ex.Message);
+                return new InternalServerErrorResult(error);
+            }
+        }
+
         // login and get tokens...
         [HttpPost("login"), AllowAnonymous] //working
         public ActionResult User_Login([FromBody] Login login)
@@ -41,6 +148,13 @@ namespace SafeAccountsAPI.Controllers
             {
                 // get users saved password hash and salt
                 User user = _context.Users.Single(a => a.Email == login.Email);
+
+                // check if the user has a verified email or not
+                if (!user.EmailVerified)
+                {
+                    ErrorMessage error = new ErrorMessage("Email unconfirmed.", "Please confirm email first.");
+                    return new UnauthorizedObjectResult(error);
+                }
 
                 // successful login.. compare user hash to the hash generated from the inputted password and salt
                 if (ValidatePassword(login.Password, user.Password))
@@ -144,33 +258,6 @@ namespace SafeAccountsAPI.Controllers
             catch (Exception ex)
             {
                 ErrorMessage error = new ErrorMessage("Error retrieving users.", ex.Message);
-                return new InternalServerErrorResult(error);
-            }
-        }
-
-        // register new user
-        [HttpPost, AllowAnonymous]
-        public IActionResult User_AddUser([FromBody] NewUser newUser)
-        {
-            // attempt to create new user and add to the database... later we need to implement hashing
-            try
-            {
-                // if there is a user with this email already then we throw bad request error
-                if (_context.Users.Single(a => a.Email == newUser.Email) != null)
-                {
-                    ErrorMessage error = new ErrorMessage("Failed to create new user", "Email already in use.");
-                    return new BadRequestObjectResult(error);
-                }
-
-                User userToRegister = new User(newUser); // new user with no accounts and registered as user
-                _context.Users.Add(userToRegister);
-                _context.SaveChanges();
-                HelperMethods.CreateUserKeyandIV(_context.Users.Single(a => a.Email == newUser.Email).ID); // after we save changes, we need to get the user by their email and then use the id to create unique password and iv
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage error = new ErrorMessage("Error creating new user", ex.Message);
                 return new InternalServerErrorResult(error);
             }
         }
@@ -409,6 +496,40 @@ namespace SafeAccountsAPI.Controllers
             catch (Exception ex)
             {
                 ErrorMessage error = new ErrorMessage("Error creating new account.", ex.Message);
+                return new InternalServerErrorResult(error);
+            }
+        }
+
+        // this is different than calling delete account over and over. Here we only save once
+        [HttpDelete("{id:int}/accounts")] // working
+        public IActionResult User_DeleteMultipleAccounts(int id, [FromBody] List<int> account_ids)
+        {
+            try
+            {
+                // verify that the user is either admin or is requesting their own data
+                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                    return new UnauthorizedObjectResult(error);
+                }
+
+                foreach (int acc_id in account_ids)
+                {
+                    // validate ownership of said account
+                    if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == acc_id))
+                    {
+                        ErrorMessage error = new ErrorMessage("Failed to delete accounts", "User does not have an account matching ID: " + acc_id);
+                        return new BadRequestObjectResult(error);
+                    }
+
+                    _context.Accounts.Remove(_context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == acc_id)); // fist match user id to ensure ownership
+                }
+                _context.SaveChanges();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Error deleting accounts.", ex.Message);
                 return new InternalServerErrorResult(error);
             }
         }

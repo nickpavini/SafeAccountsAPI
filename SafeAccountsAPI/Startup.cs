@@ -102,6 +102,7 @@ namespace SafeAccountsAPI
                 // additional is that a user is signed in
                 options.AddPolicy("LoggedIn", new AuthorizationPolicyBuilder()
                     .RequireAuthenticatedUser()
+                    .RequireClaim(ClaimTypes.Name, "access_token")
                     .AddAuthenticationSchemes("UserJwtFromCookie")
                     .Build());
             });
