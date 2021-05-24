@@ -500,6 +500,40 @@ namespace SafeAccountsAPI.Controllers
             }
         }
 
+        // this is different than calling delete account over and over. Here we only save once
+        [HttpDelete("{id:int}/accounts")] // working
+        public IActionResult User_DeleteMultipleAccounts(int id, [FromBody] List<int> account_ids)
+        {
+            try
+            {
+                // verify that the user is either admin or is requesting their own data
+                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                    return new UnauthorizedObjectResult(error);
+                }
+
+                foreach (int acc_id in account_ids)
+                {
+                    // validate ownership of said account
+                    if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == acc_id))
+                    {
+                        ErrorMessage error = new ErrorMessage("Failed to delete accounts", "User does not have an account matching ID: " + acc_id);
+                        return new BadRequestObjectResult(error);
+                    }
+
+                    _context.Accounts.Remove(_context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == acc_id)); // fist match user id to ensure ownership
+                }
+                _context.SaveChanges();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Error deleting accounts.", ex.Message);
+                return new InternalServerErrorResult(error);
+            }
+        }
+
         [HttpDelete("{id:int}/accounts/{account_id:int}")] // working
         public IActionResult User_DeleteAccount(int id, int account_id)
         {
