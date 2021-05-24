@@ -39,7 +39,10 @@ namespace SafeAccountsAPI.Controllers
 
                 // make sure this is a valid token for the user
                 if (!HelperMethods.ValidateRefreshToken(user, Request.Cookies["RefreshTokenSameSite"] ?? Request.Cookies["RefreshToken"]))
-                    throw new SecurityTokenException("Invalid refresh token!");
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid refresh token", "Refrsh token could not be validated.");
+                    return new BadRequestObjectResult(error);
+                }
 
                 string newTokenStr = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email, _configuration.GetValue<string>("UserJwtTokenKey"));
                 RefreshToken newRefToken = HelperMethods.GenerateRefreshToken(user, _context);
