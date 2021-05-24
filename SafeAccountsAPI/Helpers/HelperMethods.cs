@@ -45,7 +45,7 @@ namespace SafeAccountsAPI.Controllers
             JwtSecurityToken tokeOptions = new JwtSecurityToken(
                 issuer: "http://localhost:5000",
                 audience: "http://localhost:5000",
-                claims: new List<Claim> { new Claim(ClaimTypes.Role, role), new Claim(ClaimTypes.Email, email) },
+                claims: new List<Claim> { new Claim(ClaimTypes.Role, role), new Claim(ClaimTypes.Email, email), new Claim(ClaimTypes.Name, "access_token") },
                 expires: DateTime.Now.AddMinutes(15),
                 signingCredentials: signinCredentials
             );
