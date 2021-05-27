@@ -1,13 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SafeAccountsAPI.Data;
-using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 
 namespace SafeAccountsAPI
 {
@@ -43,6 +40,7 @@ namespace SafeAccountsAPI
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                });
+                }).UseSerilog((hostingContext, loggerConfiguration) =>
+                loggerConfiguration.ReadFrom.Configuration(hostingContext.Configuration));
     }
 }

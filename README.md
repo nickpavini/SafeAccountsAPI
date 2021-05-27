@@ -14,11 +14,17 @@ Everyone is welcome to test pentest the software so long as the intent is non-ma
 &nbsp;
 
 ## Build:
-* Start MySQL locally.
+* Start MySQL locally or use the provided docker compose file by running `docker compose up`
+
 * Create a database called `safeaccountsapi_db`.
+
 * Use `SafeAccountsAPI/TableCreations_MySQL.sql` to build the tables and set relationships.
-* Now that your database is setup, update the connection string in `SafeAccountsAPI/appsettings.development.json`.
+
+* Now that your database is setup, update the connection string in `SafeAccountsAPI/appsettings.development.json`. In case the docker-compose.yml is being used remember to update the password in the  connection string .
+
 * Finally, run the api. You will see that 5 new users have been added as well as some accounts and folders.
+
+  
 
 &nbsp;
 
@@ -75,7 +81,7 @@ Download [Postman](https://www.postman.com/downloads/) and use SafeAccountsAPI.p
   * Post - Add a new folder to the user's profile. Admin or Authorized user only.
 * **/users/{id}/folders/{folder_id}**
   * Delete - Delete a folder and all contents. Admin or Authorized user only.
- 
+
 &nbsp;
 
 * **/passwords/generate**
