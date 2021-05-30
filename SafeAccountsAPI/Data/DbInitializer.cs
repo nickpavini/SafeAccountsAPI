@@ -38,16 +38,16 @@ namespace SafeAccountsAPI.Data
                 // add 2 base accounts to each user for testing
                 Account[] accs = new Account[]
                 {
-                    new Account { UserID=1, Title="gmail", Login="johndoe", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(1)), Description="Add description here.." },
-                    new Account { UserID=1, Title="yahoo", Login="johndoe", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(1)), Description="Add description here.." },
-                    new Account { UserID=2, Title="paypal", Login="edwinmay", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(2)), Description="Add description here.." },
-                    new Account { UserID=2, Title="zoom", Login="edwinmay", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(2)), Description="Add description here.." },
-                    new Account { UserID=3, Title="chase", Login="lucyvale", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(3)), Description="Add description here.."},
-                    new Account { UserID=3, Title="netflix", Login="lucyvale", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(3)), Description="Add description here.." },
-                    new Account { UserID=4, Title="hulu", Login="pamwillis", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(4)), Description="Add description here.." },
-                    new Account { UserID=4, Title="amazon", Login="pamwillis", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(4)), Description="Add description here.." },
-                    new Account { UserID=5, Title="spotify", Login="gamestonk", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(5)), Description="Add description here.." },
-                    new Account { UserID=5, Title="bestbuy", Login="gamestonk", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(5)), Description="Add description here.."}
+                    new Account { UserID=1, Title="gmail", Login="johndoe", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(1)), Url="testurl.com", Description="Add description here.." },
+                    new Account { UserID=1, Title="yahoo", Login="johndoe", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(1)), Url="testurl.com", Description="Add description here.." },
+                    new Account { UserID=2, Title="paypal", Login="edwinmay", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(2)), Url="testurl.com", Description="Add description here.." },
+                    new Account { UserID=2, Title="zoom", Login="edwinmay", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(2)), Url="testurl.com", Description="Add description here.." },
+                    new Account { UserID=3, Title="chase", Login="lucyvale", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(3)), Url="testurl.com", Description="Add description here.."},
+                    new Account { UserID=3, Title="netflix", Login="lucyvale", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(3)), Url="testurl.com", Description="Add description here.." },
+                    new Account { UserID=4, Title="hulu", Login="pamwillis", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(4)), Url="testurl.com", Description="Add description here.." },
+                    new Account { UserID=4, Title="amazon", Login="pamwillis", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(4)), Url="testurl.com", Description="Add description here.." },
+                    new Account { UserID=5, Title="spotify", Login="gamestonk", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(5)), Url="testurl.com", Description="Add description here.." },
+                    new Account { UserID=5, Title="bestbuy", Login="gamestonk", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(5)), Url="testurl.com", Description="Add description here.."}
                 };
 
                 foreach (Account acc in accs) { context.Accounts.Add(acc); } // add each account to the table

@@ -18,6 +18,7 @@ namespace SafeAccountsAPI.Models
         public string Title { get; set; }
         public string Login { get; set; }
         public byte[] Password { get; set; }
+        public string Url { get; set; }
         public string Description { get; set; }
 
         public Account() { } // blank constructor needed for db initializer
@@ -29,6 +30,7 @@ namespace SafeAccountsAPI.Models
             Title = newAcc.Title;
             Login = newAcc.Login;
             Password = HelperMethods.EncryptStringToBytes_Aes(newAcc.Password, HelperMethods.GetUserKeyAndIV(uid));
+            Url = newAcc.Url;
             Description = newAcc.Description;
             FolderID = newAcc.FolderID;
         }
@@ -40,6 +42,7 @@ namespace SafeAccountsAPI.Models
         public string Title { get; set; }
         public string Login { get; set; }
         public string Password { get; set; }
+        public string Url { get; set; }
         public string Description { get; set; }
         public int? FolderID { get; set; }
 
@@ -49,6 +52,7 @@ namespace SafeAccountsAPI.Models
             Title = acc.Title;
             Login = acc.Login;
             Password = HelperMethods.DecryptStringFromBytes_Aes(acc.Password, HelperMethods.GetUserKeyAndIV(acc.UserID));
+            Url = acc.Url;
             Description = acc.Description;
 
             if (acc.FolderID != null)
@@ -64,6 +68,8 @@ namespace SafeAccountsAPI.Models
         public string Login { get; set; }
         [JsonProperty]
         public string Password { get; set; }
+        [JsonProperty]
+        public string Url { get; set; }
         [JsonProperty]
         public string Description { get; set; }
         [JsonProperty]

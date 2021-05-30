@@ -39,6 +39,7 @@ Create Table Accounts
 	Title nvarchar(50),
 	Login nvarchar(50),
 	Password varbinary(200),
+    Url nvarchar(50),
 	Description nvarchar(250),
     CONSTRAINT FK_Accounts_UserID FOREIGN KEY (UserID)
     REFERENCES Users(ID),
