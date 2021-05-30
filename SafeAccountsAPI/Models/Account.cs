@@ -20,6 +20,7 @@ namespace SafeAccountsAPI.Models
         public byte[] Password { get; set; }
         public string Url { get; set; }
         public string Description { get; set; }
+        public string LastModified { get; set; }
 
         public Account() { } // blank constructor needed for db initializer
 
@@ -44,6 +45,7 @@ namespace SafeAccountsAPI.Models
         public string Password { get; set; }
         public string Url { get; set; }
         public string Description { get; set; }
+        public string LastModified { get; set; }
         public int? FolderID { get; set; }
 
         public ReturnableAccount(Account acc)
@@ -54,6 +56,7 @@ namespace SafeAccountsAPI.Models
             Password = HelperMethods.DecryptStringFromBytes_Aes(acc.Password, HelperMethods.GetUserKeyAndIV(acc.UserID));
             Url = acc.Url;
             Description = acc.Description;
+            LastModified = acc.LastModified;
 
             if (acc.FolderID != null)
                 FolderID = acc.FolderID;

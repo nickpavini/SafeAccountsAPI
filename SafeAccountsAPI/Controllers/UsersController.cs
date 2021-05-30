@@ -489,6 +489,7 @@ namespace SafeAccountsAPI.Controllers
 
                 // create new account and save it
                 Account new_account = new Account(accToAdd, id);
+                new_account.LastModified = DateTime.Now.ToString();
                 _context.Accounts.Add(new_account);
                 _context.SaveChanges();
                 return Ok();
@@ -614,9 +615,13 @@ namespace SafeAccountsAPI.Controllers
                     return new BadRequestObjectResult(error);
                 }
 
-                _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id).Title = title;
+                // get account and modify
+                Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
+                accToEdit.Title = title;
+                accToEdit.LastModified = DateTime.Now.ToString();
                 _context.SaveChanges();
-                return new OkObjectResult(new { new_title = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id).Title }); // return new title from db to confirm
+
+                return Ok();
             }
             catch (Exception ex)
             {
@@ -646,9 +651,13 @@ namespace SafeAccountsAPI.Controllers
                     return new BadRequestObjectResult(error);
                 }
 
-                _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id).Login = login;
+                // get account and modify
+                Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
+                accToEdit.Login = login;
+                accToEdit.LastModified = DateTime.Now.ToString();
                 _context.SaveChanges();
-                return new OkObjectResult(new { new_login = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id).Login });
+
+                return Ok();
             }
             catch (Exception ex)
             {
@@ -677,8 +686,13 @@ namespace SafeAccountsAPI.Controllers
                     return new BadRequestObjectResult(error);
                 }
 
-                _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id).Password = HelperMethods.EncryptStringToBytes_Aes(password, HelperMethods.GetUserKeyAndIV(id));
+
+                // get account and modify
+                Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
+                accToEdit.Password = HelperMethods.EncryptStringToBytes_Aes(password, HelperMethods.GetUserKeyAndIV(id));
+                accToEdit.LastModified = DateTime.Now.ToString();
                 _context.SaveChanges();
+
                 return Ok();
             }
             catch (Exception ex)
@@ -709,9 +723,13 @@ namespace SafeAccountsAPI.Controllers
                     return new BadRequestObjectResult(error);
                 }
 
-                _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id).Description = description;
+                // get account and modify
+                Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
+                accToEdit.Description = description;
+                accToEdit.LastModified = DateTime.Now.ToString();
                 _context.SaveChanges();
-                return new OkObjectResult(new { new_description = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id).Description });
+
+                return Ok();
             }
             catch (Exception ex)
             {

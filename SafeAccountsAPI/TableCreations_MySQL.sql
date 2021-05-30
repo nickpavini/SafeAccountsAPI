@@ -41,6 +41,7 @@ Create Table Accounts
 	Password varbinary(200),
     Url nvarchar(50),
 	Description nvarchar(250),
+    LastModified nvarchar(150),
     CONSTRAINT FK_Accounts_UserID FOREIGN KEY (UserID)
     REFERENCES Users(ID),
     CONSTRAINT FK_Accounts_FolderID FOREIGN KEY (FolderID)
