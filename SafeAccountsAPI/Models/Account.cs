@@ -1,10 +1,5 @@
 ﻿using Newtonsoft.Json;
 using SafeAccountsAPI.Controllers;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace SafeAccountsAPI.Models
 {
