@@ -589,6 +589,41 @@ namespace SafeAccountsAPI.Controllers
             }
         }
 
+        // set whether the specific account is a favorite or not
+        [HttpPut("{id:int}/accounts/{account_id:int}/favorite")]
+        public IActionResult User_EditAccountIsFavorite(int id, int account_id, [FromBody] bool isFavorite)
+        {
+            // attempt to set account to be favorite or not
+            try
+            {
+                // verify that the user is either admin or is requesting their own data
+                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                    return new UnauthorizedObjectResult(error);
+                }
+
+                // validate ownership of said account
+                if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == account_id))
+                {
+                    ErrorMessage error = new ErrorMessage("Invalid account", "User does not have an account matching that ID.");
+                    return new BadRequestObjectResult(error);
+                }
+
+                // get account and set favorite setting.. here we wont see it as the account has been modified
+                Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
+                accToEdit.IsFavorite = isFavorite;
+                _context.SaveChanges();
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage error = new ErrorMessage("Error favoriting the account.", ex.Message);
+                return new InternalServerErrorResult(error);
+            }
+        }
+
         // edit a specific accounts info
         [HttpPut("{id:int}/accounts/{account_id:int}/title")] // in progress
         public IActionResult User_EditAccountTitle(int id, int account_id, [FromBody] string title)

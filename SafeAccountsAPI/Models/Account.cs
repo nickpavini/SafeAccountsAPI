@@ -16,6 +16,7 @@ namespace SafeAccountsAPI.Models
         public string Url { get; set; }
         public string Description { get; set; }
         public string LastModified { get; set; }
+        public bool IsFavorite { get; set; }
 
         public Account() { } // blank constructor needed for db initializer
 
@@ -29,6 +30,7 @@ namespace SafeAccountsAPI.Models
             Url = newAcc.Url;
             Description = newAcc.Description;
             FolderID = newAcc.FolderID;
+            IsFavorite = false;
         }
     }
 
@@ -42,6 +44,7 @@ namespace SafeAccountsAPI.Models
         public string Description { get; set; }
         public string LastModified { get; set; }
         public int? FolderID { get; set; }
+        public bool IsFavorite { get; set; }
 
         public ReturnableAccount(Account acc)
         {
@@ -52,6 +55,7 @@ namespace SafeAccountsAPI.Models
             Url = acc.Url;
             Description = acc.Description;
             LastModified = acc.LastModified;
+            IsFavorite = acc.IsFavorite;
 
             if (acc.FolderID != null)
                 FolderID = acc.FolderID;
