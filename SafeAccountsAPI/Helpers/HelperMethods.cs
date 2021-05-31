@@ -9,7 +9,6 @@ using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json.Linq;
-using SafeAccountsAPI.Constants;
 using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Models;
 

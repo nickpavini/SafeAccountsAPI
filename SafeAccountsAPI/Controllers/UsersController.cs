@@ -13,7 +13,6 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json.Linq;
-using SafeAccountsAPI.Constants;
 using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Helpers;
 using SafeAccountsAPI.Models;
