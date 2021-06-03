@@ -10,7 +10,7 @@ namespace SafeAccountsAPI.Logging
         }
 
         public DateTime TimeStamp { get; private set; }
-        public string Message { get; set; }
+        public string Operation { get; set; }
 
         public string Layer { get; set; }
 

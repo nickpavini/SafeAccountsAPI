@@ -10,8 +10,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Tokens;
 using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Models;
+using SafeAccountsAPI.Logging;
 
-namespace SafeAccountsAPI.Controllers
+namespace SafeAccountsAPI.Helpers
 {
     public static class HelperMethods
     {
@@ -345,5 +346,40 @@ namespace SafeAccountsAPI.Controllers
             if (sameSite) options.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.None; // for cross site requests
             return options;
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="ex"></param>
+        /// <returns></returns>
+        /// <remarks>Add more fields for better analysis</remarks>
+        public static LoggingInfo GetLoggingInfo(Exception ex) =>
+            new LoggingInfo()
+            {
+                Exception = ex,
+                HostName = Environment.MachineName
+            };
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="operation"></param>
+        /// <param name="routeValues"></param>
+        /// <returns></returns>
+        public static LoggingInfo GetLoggingInfo(string operation, IDictionary<string, object> routeValues)
+        {
+            var additionalInfo = new Dictionary<string, object>();
+            foreach (var item in routeValues)
+            {
+                additionalInfo.Add(item.Key, item.Value);
+            }
+            return new LoggingInfo()
+            {
+                Operation = operation,
+                HostName = Environment.MachineName,
+                AdditionalInfo = additionalInfo
+            };
+        }
+
     }
 }

@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using SafeAccountsAPI.Data;
-
+using SafeAccountsAPI.Filters;
 namespace SafeAccountsAPI
 {
     public class Startup
@@ -107,7 +107,11 @@ namespace SafeAccountsAPI
             });
 
             services.AddHttpContextAccessor();
-            services.AddControllers();
+            //Enable API Exception Filters for all controllers
+            services.AddControllers(options =>
+            {
+                options.Filters.Add(typeof(ApiExceptionFilter));
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
