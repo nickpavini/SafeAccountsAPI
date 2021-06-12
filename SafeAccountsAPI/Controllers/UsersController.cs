@@ -12,6 +12,7 @@ using Microsoft.Extensions.Configuration;
 using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Helpers;
 using SafeAccountsAPI.Models;
+using SafeAccountsAPI.Filters;
 
 namespace SafeAccountsAPI.Controllers
 {
@@ -63,6 +64,11 @@ namespace SafeAccountsAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="user"></param>
+        /// <remarks>TODO Move this to the helpers</remarks>
         private void SendConfirmationEmail(User user)
         {
             // generate token
@@ -101,82 +107,77 @@ namespace SafeAccountsAPI.Controllers
             smtpClient.Send(mailMessage);
         }
 
+        [ApiExceptionFilter("Error confirming email")]
         [HttpPost("confirm"), AllowAnonymous] //working
         public ActionResult User_ConfirmEmail(string token, string email)
         {
-            try
+
+            User userToConfirm = _context.Users.Single(a => a.Email == email);
+
+            // check if email is already verified
+            if (userToConfirm.EmailVerified)
             {
-                User userToConfirm = _context.Users.Single(a => a.Email == email);
-
-                // check if email is already verified
-                if (userToConfirm.EmailVerified)
-                {
-                    ErrorMessage error = new ErrorMessage("Failed to confirm email", "Email address is already confirmed.");
-                    return new BadRequestObjectResult(error);
-                }
-
-                // verify that the email provided matches the email in the token.
-                if (email != HelperMethods.GetUserFromAccessToken(token, _context, _configuration.GetValue<string>("EmailConfirmationTokenKey")).Email)
-                {
-                    ErrorMessage error = new ErrorMessage("Failed to confirm email", "Token is invalid.");
-                    return new BadRequestObjectResult(error);
-                }
-
-                // ok now we save the users email as verified
-                userToConfirm.EmailVerified = true;
-                _context.Users.Update(userToConfirm);
-                _context.SaveChanges();
-                return Ok();
+                ErrorMessage error = new ErrorMessage("Failed to confirm email", "Email address is already confirmed.");
+                return new BadRequestObjectResult(error);
             }
-            catch (Exception ex)
+
+            // verify that the email provided matches the email in the token.
+            if (email != HelperMethods.GetUserFromAccessToken(token, _context, _configuration.GetValue<string>("EmailConfirmationTokenKey")).Email)
             {
-                ErrorMessage error = new ErrorMessage("Error confirming email", ex.Message);
-                return new InternalServerErrorResult(error);
+                ErrorMessage error = new ErrorMessage("Failed to confirm email", "Token is invalid.");
+                return new BadRequestObjectResult(error);
             }
+
+            // ok now we save the users email as verified
+            userToConfirm.EmailVerified = true;
+            _context.Users.Update(userToConfirm);
+            _context.SaveChanges();
+            return Ok();
+
         }
 
         // login and get tokens...
+        [ApiExceptionFilter("Error validating credentials")]
         [HttpPost("login"), AllowAnonymous] //working
         public ActionResult User_Login([FromBody] Login login)
         {
-            try
+            // get users saved password hash and salt
+            User user = _context.Users.Single(a => a.Email == login.Email);
+
+            // check if the user has a verified email or not
+            if (!user.EmailVerified)
             {
-                // get users saved password hash and salt
-                User user = _context.Users.Single(a => a.Email == login.Email);
-
-                // check if the user has a verified email or not
-                if (!user.EmailVerified)
-                {
-                    ErrorMessage error = new ErrorMessage("Email unconfirmed.", "Please confirm email first.");
-                    return new UnauthorizedObjectResult(error);
-                }
-
-                // successful login.. compare user hash to the hash generated from the inputted password and salt
-                if (ValidatePassword(login.Password, user.Password))
-                {
-                    string tokenString = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email, _configuration.GetValue<string>("UserJwtTokenKey"));
-                    RefreshToken refToken = HelperMethods.GenerateRefreshToken(user, _context);
-                    LoginResponse rtrn = new LoginResponse { ID = user.ID, AccessToken = tokenString, RefreshToken = new ReturnableRefreshToken(refToken) };
-                    _context.SaveChanges(); // always last on db to make sure nothing breaks and db has new info
-
-                    // append cookies to response after login
-                    HelperMethods.SetCookies(Response, tokenString, refToken);
-                    return new OkObjectResult(rtrn);
-                }
-                else
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid Credentials.", "Email or Password does not match.");
-                    return new UnauthorizedObjectResult(error);
-                }
+                ErrorMessage error = new ErrorMessage("Email unconfirmed.", "Please confirm email first.");
+                return new UnauthorizedObjectResult(error);
             }
-            catch (Exception ex)
+
+            // successful login.. compare user hash to the hash generated from the inputted password and salt
+            if (ValidatePassword(login.Password, user.Password))
             {
-                ErrorMessage error = new ErrorMessage("Error validating credentials", ex.Message);
-                return new InternalServerErrorResult(error);
+                string tokenString = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email, _configuration.GetValue<string>("UserJwtTokenKey"));
+                RefreshToken refToken = HelperMethods.GenerateRefreshToken(user, _context);
+                LoginResponse rtrn = new LoginResponse { ID = user.ID, AccessToken = tokenString, RefreshToken = new ReturnableRefreshToken(refToken) };
+                _context.SaveChanges(); // always last on db to make sure nothing breaks and db has new info
+
+                // append cookies to response after login
+                HelperMethods.SetCookies(Response, tokenString, refToken);
+                return new OkObjectResult(rtrn);
+            }
+            else
+            {
+                ErrorMessage error = new ErrorMessage("Invalid Credentials.", "Email or Password does not match.");
+                return new UnauthorizedObjectResult(error);
             }
         }
 
-        // compare string input to store hash and salt combo
+
+        /// <summary>
+        /// Compare string input to store hash and salt combo 
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="storedPassword"></param>
+        /// <returns></returns>
+        /// <remarks> TODO move this to Helper</remarks>
         private bool ValidatePassword(string input, byte[] storedPassword)
         {
             byte[] passwordHash = new byte[storedPassword.Length - HelperMethods.salt_length];
@@ -192,274 +193,223 @@ namespace SafeAccountsAPI.Controllers
         }
 
         // logout and reset cookies.. I dont think here the ID of the user matters because we just delete all the associated cookies.
+        [ApiExceptionFilter("Error removing users cookies.")]
         [HttpPost("logout")] //working
         public IActionResult User_Logout()
         {
-            try
+            // delete cookies
+            foreach (var cookie in Request.Cookies)
             {
-                // delete cookies
-                foreach (var cookie in Request.Cookies)
+                if (cookie.Key.Contains("SameSite"))
                 {
-                    if (cookie.Key.Contains("SameSite"))
+                    Response.Cookies.Delete(cookie.Key, new CookieOptions
                     {
-                        Response.Cookies.Delete(cookie.Key, new CookieOptions
-                        {
-                            HttpOnly = true,
-                            Secure = true,
-                            SameSite = Microsoft.AspNetCore.Http.SameSiteMode.None
-                        });
-                    }
-                    else
+                        HttpOnly = true,
+                        Secure = true,
+                        SameSite = Microsoft.AspNetCore.Http.SameSiteMode.None
+                    });
+                }
+                else
+                {
+                    Response.Cookies.Delete(cookie.Key, new CookieOptions
                     {
-                        Response.Cookies.Delete(cookie.Key, new CookieOptions
-                        {
-                            HttpOnly = true,
-                            Secure = true
-                        });
-                    }
+                        HttpOnly = true,
+                        Secure = true
+                    });
                 }
             }
-            catch (Exception ex)
-            {
-                ErrorMessage error = new ErrorMessage("Error removing users cookies.", ex.Message);
-                return new InternalServerErrorResult(error);
-            }
-
             return Ok();
         }
 
-        // Get all available users.. might change later as it might not make sense to grab all accounts if there are tons
+
         [HttpGet] //working
+        [ApiExceptionFilter("Error retrieving users.")]
+        /// <summary>
+        /// Get all available users.. might change later as it might not make sense to grab all accounts if there are tons
+        /// </summary>
+        /// <returns></returns>
         public IActionResult GetAllUsers()
         {
-            try
+            if (!HelperMethods.ValidateIsAdmin(_httpContextAccessor))
             {
-                if (!HelperMethods.ValidateIsAdmin(_httpContextAccessor))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid Role", "Caller must have admin role.");
-                    return new UnauthorizedObjectResult(error);
-                }
-
-                // get and return all users
-                List<ReturnableUser> users = new List<ReturnableUser>();
-                foreach (User user in _context.Users.ToArray())
-                {
-                    ReturnableUser retUser = new ReturnableUser(user);
-                    users.Add(retUser);
-                }
-
-                return new OkObjectResult(users);
+                ErrorMessage error = new ErrorMessage("Invalid Role", "Caller must have admin role.");
+                return new UnauthorizedObjectResult(error);
             }
-            catch (Exception ex)
+
+            // get and return all users
+            List<ReturnableUser> users = new List<ReturnableUser>();
+            foreach (User user in _context.Users.ToArray())
             {
-                ErrorMessage error = new ErrorMessage("Error retrieving users.", ex.Message);
-                return new InternalServerErrorResult(error);
+                ReturnableUser retUser = new ReturnableUser(user);
+                users.Add(retUser);
             }
+
+            return new OkObjectResult(users);
         }
 
         // Get a specific user.
         [HttpGet("{id:int}")] // working
+        [ApiExceptionFilter("Failed to get user.")]
         public IActionResult User_GetUser(int id)
         {
-            try
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                // verify that the user is either admin or is requesting their own data
-                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                    return new UnauthorizedObjectResult(error);
-                }
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
+            }
 
-                // strips out private data that is never to be sent back and returns user info
-                ReturnableUser retUser = new ReturnableUser(_context.Users.Where(a => a.ID == id).Single());
-                return new OkObjectResult(retUser);
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage error = new ErrorMessage("Failed to get user.", ex.Message);
-                return new InternalServerErrorResult(error);
-            }
+            // strips out private data that is never to be sent back and returns user info
+            ReturnableUser retUser = new ReturnableUser(_context.Users.Where(a => a.ID == id).Single());
+            return new OkObjectResult(retUser);
         }
 
-        [HttpDelete("{id:int}")] // working
+
+        [HttpDelete("{id:int}")]// working
+        [ApiExceptionFilter("Failed to delete user.")]
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         public IActionResult User_DeleteUser(int id)
         {
-            try
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                // verify that the user is either admin or is requesting their own data
-                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                    return new UnauthorizedObjectResult(error);
-                }
-
-                // attempt to remove all data and update changes
-                _context.Accounts.RemoveRange(_context.Accounts.Where(a => a.UserID == id));
-                _context.RefreshTokens.RemoveRange(_context.RefreshTokens.Where(a => a.UserID == id));
-                _context.Users.Remove(_context.Users.Single(a => a.ID == id));
-                _context.SaveChanges();
-
-                return Ok();
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
-            catch (Exception ex)
-            {
-                ErrorMessage error = new ErrorMessage("Failed to delete user.", ex.Message);
-                return new InternalServerErrorResult(error);
-            }
+
+            // attempt to remove all data and update changes
+            _context.Accounts.RemoveRange(_context.Accounts.Where(a => a.UserID == id));
+            _context.RefreshTokens.RemoveRange(_context.RefreshTokens.Where(a => a.UserID == id));
+            _context.Users.Remove(_context.Users.Single(a => a.ID == id));
+            _context.SaveChanges();
+            return Ok();
         }
 
         [HttpGet("{id:int}/firstname")] // working
+        [ApiExceptionFilter("Failed to get first name.")]
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         public IActionResult User_GetFirstName(int id)
         {
-            try
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                // verify that the user is either admin or is requesting their own data
-                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                    return new UnauthorizedObjectResult(error);
-                }
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
+            }
 
-                return new OkObjectResult(new { firstname = _context.Users.Where(a => a.ID == id).Single().First_Name });
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage error = new ErrorMessage("Failed to get first name.", ex.Message);
-                return new InternalServerErrorResult(error);
-            }
+            return new OkObjectResult(new { firstname = _context.Users.Where(a => a.ID == id).Single().First_Name });
+
         }
 
+        [ApiExceptionFilter("Failed to update first name.")]
         [HttpPut("{id:int}/firstname")] // working
         public IActionResult User_EditFirstName(int id, [FromBody] string firstname)
         {
-            try
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                // verify that the user is either admin or is requesting their own data
-                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                    return new UnauthorizedObjectResult(error);
-                }
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
+            }
 
-                _context.Users.Where(a => a.ID == id).Single().First_Name = firstname;
-                _context.SaveChanges();
-                return new OkObjectResult(new { new_firstname = _context.Users.Where(a => a.ID == id).Single().First_Name });
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage error = new ErrorMessage("Failed to update first name.", ex.Message);
-                return new InternalServerErrorResult(error);
-            }
+            _context.Users.Where(a => a.ID == id).Single().First_Name = firstname;
+            _context.SaveChanges();
+            return new OkObjectResult(new { new_firstname = _context.Users.Where(a => a.ID == id).Single().First_Name });
+
         }
 
         [HttpGet("{id:int}/lastname")] // working
+        [ApiExceptionFilter("Failed to get last name.")]
         public IActionResult User_GetLastName(int id)
         {
-            try
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                // verify that the user is either admin or is requesting their own data
-                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                    return new UnauthorizedObjectResult(error);
-                }
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
+            }
+            return new OkObjectResult(new { lastname = _context.Users.Where(a => a.ID == id).Single().Last_Name });
 
-                return new OkObjectResult(new { lastname = _context.Users.Where(a => a.ID == id).Single().Last_Name });
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage error = new ErrorMessage("Failed to get last name.", ex.Message);
-                return new InternalServerErrorResult(error);
-            }
         }
 
         [HttpPut("{id:int}/lastname")] // working
+        [ApiExceptionFilter("Failed to update last name.")]
         public IActionResult User_EditLastName(int id, [FromBody] string lastname)
         {
-            try
-            {
-                // verify that the user is either admin or is requesting their own data
-                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                    return new UnauthorizedObjectResult(error);
-                }
 
-                _context.Users.Where(a => a.ID == id).Single().Last_Name = lastname;
-                _context.SaveChanges();
-                return new OkObjectResult(new { new_lastname = _context.Users.Where(a => a.ID == id).Single().Last_Name });
-            }
-            catch (Exception ex)
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                ErrorMessage error = new ErrorMessage("Failed to update last name.", ex.Message);
-                return new InternalServerErrorResult(error);
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
+
+            _context.Users.Where(a => a.ID == id).Single().Last_Name = lastname;
+            _context.SaveChanges();
+            return new OkObjectResult(new { new_lastname = _context.Users.Where(a => a.ID == id).Single().Last_Name });
+
         }
 
         [HttpPut("{id:int}/password")]
+        [ApiExceptionFilter("Failed to update with new password")]
         public IActionResult User_EditPassword(int id, [FromBody] PasswordReset psw_reset)
         {
-            try
-            {
-                // verify that the user is either admin or is requesting their own data
-                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                    return new UnauthorizedObjectResult(error);
-                }
 
-                // get user from db
-                User user = _context.Users.Single(a => a.ID == id);
-
-                // if password is valid then we change it and update db
-                if (ValidatePassword(psw_reset.Current_Password, user.Password))
-                {
-                    user.Password = HelperMethods.ConcatenatedSaltAndSaltedHash(psw_reset.New_Password);
-                    _context.Update(user);
-                    _context.SaveChanges();
-                    return Ok();
-                }
-                else
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid Password", "Your current password does not match.");
-                    return new BadRequestObjectResult(error);
-                }
-            }
-            catch (Exception ex)
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                ErrorMessage error = new ErrorMessage("Failed to update with new password", ex.Message);
-                return new InternalServerErrorResult(error);
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
+
+            // get user from db
+            User user = _context.Users.Single(a => a.ID == id);
+
+            // if password is valid then we change it and update db
+            if (ValidatePassword(psw_reset.Current_Password, user.Password))
+            {
+                user.Password = HelperMethods.ConcatenatedSaltAndSaltedHash(psw_reset.New_Password);
+                _context.Update(user);
+                _context.SaveChanges();
+                return Ok();
+            }
+            else
+            {
+                ErrorMessage error = new ErrorMessage("Invalid Password", "Your current password does not match.");
+                return new BadRequestObjectResult(error);
+            }
+
         }
 
         // get all of the user's accounts
         [HttpGet("{id:int}/accounts")] // working
+        [ApiExceptionFilter("Error retrieving accounts.")]
         public IActionResult User_GetAccounts(int id)
         {
-            try
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                // verify that the user is either admin or is requesting their own data
-                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                    return new UnauthorizedObjectResult(error);
-                }
-
-                // get and return all this user's accounts
-                List<ReturnableAccount> accs = new List<ReturnableAccount>();
-                foreach (Account acc in _context.Users.Single(a => a.ID == id).Accounts.ToArray())
-                {
-                    ReturnableAccount retAcc = new ReturnableAccount(acc);
-                    accs.Add(retAcc);
-                }
-
-                return new OkObjectResult(accs);
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
-            catch (Exception ex)
+
+            // get and return all this user's accounts
+            List<ReturnableAccount> accs = new List<ReturnableAccount>();
+            foreach (Account acc in _context.Users.Single(a => a.ID == id).Accounts.ToArray())
             {
-                ErrorMessage error = new ErrorMessage("Error retrieving accounts.", ex.Message);
-                return new InternalServerErrorResult(error);
+                ReturnableAccount retAcc = new ReturnableAccount(acc);
+                accs.Add(retAcc);
             }
+            return new OkObjectResult(accs);
+
         }
 
         // add account.. input format is json

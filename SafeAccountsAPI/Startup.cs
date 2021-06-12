@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Filters;
+using SafeAccountsAPI.Logging;
+using SafeAccountsAPI.Helpers;
 namespace SafeAccountsAPI
 {
     public class Startup
@@ -27,6 +30,8 @@ namespace SafeAccountsAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            // probaby add exception logging somewhere here
+            services.AddControllers();
             services.AddDbContext<APIContext>(options =>
                 options.UseMySql(Configuration.GetValue<string>("ConnectionStrings:DefaultConnection"), ServerVersion.AutoDetect(Configuration.GetValue<string>("ConnectionStrings:DefaultConnection"))));
 
@@ -107,21 +112,11 @@ namespace SafeAccountsAPI
             });
 
             services.AddHttpContextAccessor();
-            //Enable API Exception Filters for all controllers
-            services.AddControllers(options =>
-            {
-                options.Filters.Add(typeof(ApiExceptionFilter));
-            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHostApplicationLifetime applicationLifetime)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-
             app.UseHttpsRedirection();
 
             app.UseRouting();

@@ -353,11 +353,12 @@ namespace SafeAccountsAPI.Helpers
         /// <param name="ex"></param>
         /// <returns></returns>
         /// <remarks>Add more fields for better analysis</remarks>
-        public static LoggingInfo GetLoggingInfo(Exception ex) =>
+        public static LoggingInfo GetLoggingInfo(Exception ex, Guid correlationID) =>
             new LoggingInfo()
             {
                 Exception = ex,
-                HostName = Environment.MachineName
+                HostName = Environment.MachineName,
+                CorrelationID = correlationID
             };
 
         /// <summary>
