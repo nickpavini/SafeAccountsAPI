@@ -36,32 +36,26 @@ namespace SafeAccountsAPI.Controllers
 
         // register new user
         [HttpPost, AllowAnonymous]
+        [ApiExceptionFilter("Error creating new user")]
         public IActionResult User_AddUser([FromBody] NewUser newUser)
         {
             // attempt to create new user and add to the database.
-            try
-            {
-                // if there is a user with this email already then we throw bad request error
-                if (_context.Users.SingleOrDefault(a => a.Email == newUser.Email) != null)
-                {
-                    ErrorMessage error = new ErrorMessage("Failed to create new user", "Email already in use.");
-                    return new BadRequestObjectResult(error);
-                }
 
-                User userToRegister = new User(newUser); // new user with no accounts and registered as user
-                _context.Users.Add(userToRegister);
-                _context.SaveChanges();
-
-                // after we save changes, we need to create unique key and iv, then send the confirmation email
-                HelperMethods.CreateUserKeyandIV(_context.Users.Single(a => a.Email == newUser.Email).ID);
-                SendConfirmationEmail(userToRegister);
-                return Ok();
-            }
-            catch (Exception ex)
+            // if there is a user with this email already then we throw bad request error
+            if (_context.Users.SingleOrDefault(a => a.Email == newUser.Email) != null)
             {
-                ErrorMessage error = new ErrorMessage("Error creating new user", ex.Message);
-                return new InternalServerErrorResult(error);
+                ErrorMessage error = new ErrorMessage("Failed to create new user", "Email already in use.");
+                return new BadRequestObjectResult(error);
             }
+
+            User userToRegister = new User(newUser); // new user with no accounts and registered as user
+            _context.Users.Add(userToRegister);
+            _context.SaveChanges();
+
+            // after we save changes, we need to create unique key and iv, then send the confirmation email
+            HelperMethods.CreateUserKeyandIV(_context.Users.Single(a => a.Email == newUser.Email).ID);
+            SendConfirmationEmail(userToRegister);
+            return Ok();
         }
 
         /// <summary>
@@ -414,497 +408,410 @@ namespace SafeAccountsAPI.Controllers
 
         // add account.. input format is json
         [HttpPost("{id:int}/accounts")] // working
+        [ApiExceptionFilter("Error creating new account.")]
         public IActionResult User_AddAccount(int id, [FromBody] NewAccount accToAdd)
         {
-            try
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                // verify that the user is either admin or is requesting their own data
-                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                    return new UnauthorizedObjectResult(error);
-                }
-
-                // if this user does not own the folder we are adding to, then error
-                if (accToAdd.FolderID != null && !_context.Users.Single(a => a.ID == id).Folders.Exists(b => b.ID == accToAdd.FolderID))
-                {
-                    ErrorMessage error = new ErrorMessage("Failed to create new account", "User does not have a folder matching that ID.");
-                    return new BadRequestObjectResult(error);
-                }
-
-                // create new account and save it
-                Account new_account = new Account(accToAdd, id);
-                new_account.LastModified = DateTime.Now.ToString();
-                _context.Accounts.Add(new_account);
-                _context.SaveChanges();
-                return Ok();
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
-            catch (Exception ex)
+
+            // if this user does not own the folder we are adding to, then error
+            if (accToAdd.FolderID != null && !_context.Users.Single(a => a.ID == id).Folders.Exists(b => b.ID == accToAdd.FolderID))
             {
-                ErrorMessage error = new ErrorMessage("Error creating new account.", ex.Message);
-                return new InternalServerErrorResult(error);
+                ErrorMessage error = new ErrorMessage("Failed to create new account", "User does not have a folder matching that ID.");
+                return new BadRequestObjectResult(error);
             }
+
+            // create new account and save it
+            Account new_account = new Account(accToAdd, id);
+            new_account.LastModified = DateTime.Now.ToString();
+            _context.Accounts.Add(new_account);
+            _context.SaveChanges();
+            return Ok();
         }
 
         // this is different than calling delete account over and over. Here we only save once
         [HttpDelete("{id:int}/accounts")] // working
+        [ApiExceptionFilter("Error deleting accounts.")]
         public IActionResult User_DeleteMultipleAccounts(int id, [FromBody] List<int> account_ids)
         {
-            try
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                // verify that the user is either admin or is requesting their own data
-                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                    return new UnauthorizedObjectResult(error);
-                }
-
-                foreach (int acc_id in account_ids)
-                {
-                    // validate ownership of said account
-                    if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == acc_id))
-                    {
-                        ErrorMessage error = new ErrorMessage("Failed to delete accounts", "User does not have an account matching ID: " + acc_id);
-                        return new BadRequestObjectResult(error);
-                    }
-
-                    _context.Accounts.Remove(_context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == acc_id)); // fist match user id to ensure ownership
-                }
-                _context.SaveChanges();
-                return Ok();
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
-            catch (Exception ex)
-            {
-                ErrorMessage error = new ErrorMessage("Error deleting accounts.", ex.Message);
-                return new InternalServerErrorResult(error);
-            }
-        }
 
-        [HttpDelete("{id:int}/accounts/{account_id:int}")] // working
-        public IActionResult User_DeleteAccount(int id, int account_id)
-        {
-            try
+            foreach (int acc_id in account_ids)
             {
-                // verify that the user is either admin or is requesting their own data
-                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                    return new UnauthorizedObjectResult(error);
-                }
-
                 // validate ownership of said account
-                if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == account_id))
+                if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == acc_id))
                 {
-                    ErrorMessage error = new ErrorMessage("Failed to delete account", "User does not have an account matching that ID.");
+                    ErrorMessage error = new ErrorMessage("Failed to delete accounts", "User does not have an account matching ID: " + acc_id);
                     return new BadRequestObjectResult(error);
                 }
 
-                _context.Accounts.Remove(_context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id)); // fist match user id to ensure ownership
-                _context.SaveChanges();
-                return Ok();
+                _context.Accounts.Remove(_context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == acc_id)); // fist match user id to ensure ownership
             }
-            catch (Exception ex)
+            _context.SaveChanges();
+            return Ok();
+        }
+
+        [HttpDelete("{id:int}/accounts/{account_id:int}")] // working
+        [ApiExceptionFilter("Error deleting account.")]
+        public IActionResult User_DeleteAccount(int id, int account_id)
+        {
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                ErrorMessage error = new ErrorMessage("Error deleting account.", ex.Message);
-                return new InternalServerErrorResult(error);
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
+
+            // validate ownership of said account
+            if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == account_id))
+            {
+                ErrorMessage error = new ErrorMessage("Failed to delete account", "User does not have an account matching that ID.");
+                return new BadRequestObjectResult(error);
+            }
+
+            _context.Accounts.Remove(_context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id)); // fist match user id to ensure ownership
+            _context.SaveChanges();
+            return Ok();
         }
 
         // get a specific accounts info
         [HttpGet("{id:int}/accounts/{account_id:int}")]
+        [ApiExceptionFilter("Error deleting account.")]
         public IActionResult User_GetSingleAccount(int id, int account_id)
         {
-            try
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                // verify that the user is either admin or is requesting their own data
-                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                    return new UnauthorizedObjectResult(error);
-                }
-
-                // validate ownership of said account
-                if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == account_id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid account", "User does not have an account matching that ID.");
-                    return new BadRequestObjectResult(error);
-                }
-
-                return new OkObjectResult(new ReturnableAccount(_context.Accounts.Single(a => a.ID == account_id)));
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
-            catch (Exception ex)
+
+            // validate ownership of said account
+            if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == account_id))
             {
-                ErrorMessage error = new ErrorMessage("Error getting account", ex.Message);
-                return new InternalServerErrorResult(error);
+                ErrorMessage error = new ErrorMessage("Invalid account", "User does not have an account matching that ID.");
+                return new BadRequestObjectResult(error);
             }
+
+            return new OkObjectResult(new ReturnableAccount(_context.Accounts.Single(a => a.ID == account_id)));
+
         }
 
         // set whether the specific account is a favorite or not
         [HttpPut("{id:int}/accounts/{account_id:int}/favorite")]
+        [ApiExceptionFilter("Error favoriting the account.")]
         public IActionResult User_EditAccountIsFavorite(int id, int account_id, [FromBody] bool isFavorite)
         {
             // attempt to set account to be favorite or not
-            try
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                // verify that the user is either admin or is requesting their own data
-                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                    return new UnauthorizedObjectResult(error);
-                }
-
-                // validate ownership of said account
-                if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == account_id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid account", "User does not have an account matching that ID.");
-                    return new BadRequestObjectResult(error);
-                }
-
-                // get account and set favorite setting.. here we wont see it as the account has been modified
-                Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
-                accToEdit.IsFavorite = isFavorite;
-                _context.SaveChanges();
-
-                return Ok();
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
-            catch (Exception ex)
+
+            // validate ownership of said account
+            if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == account_id))
             {
-                ErrorMessage error = new ErrorMessage("Error favoriting the account.", ex.Message);
-                return new InternalServerErrorResult(error);
+                ErrorMessage error = new ErrorMessage("Invalid account", "User does not have an account matching that ID.");
+                return new BadRequestObjectResult(error);
             }
+
+            // get account and set favorite setting.. here we wont see it as the account has been modified
+            Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
+            accToEdit.IsFavorite = isFavorite;
+            _context.SaveChanges();
+
+            return Ok();
         }
 
         // edit a specific accounts info
         [HttpPut("{id:int}/accounts/{account_id:int}/title")] // in progress
+        [ApiExceptionFilter("Error editing title")]
         public IActionResult User_EditAccountTitle(int id, int account_id, [FromBody] string title)
         {
             // attempt to edit the title
-            try
+
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                // verify that the user is either admin or is requesting their own data
-                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                    return new UnauthorizedObjectResult(error);
-                }
-
-                // validate ownership of said account
-                if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == account_id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid account", "User does not have an account matching that ID.");
-                    return new BadRequestObjectResult(error);
-                }
-
-                // get account and modify
-                Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
-                accToEdit.Title = title;
-                accToEdit.LastModified = DateTime.Now.ToString();
-                _context.SaveChanges();
-
-                return Ok();
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
-            catch (Exception ex)
+
+            // validate ownership of said account
+            if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == account_id))
             {
-                ErrorMessage error = new ErrorMessage("Error editing title", ex.Message);
-                return new InternalServerErrorResult(error);
+                ErrorMessage error = new ErrorMessage("Invalid account", "User does not have an account matching that ID.");
+                return new BadRequestObjectResult(error);
             }
+
+            // get account and modify
+            Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
+            accToEdit.Title = title;
+            accToEdit.LastModified = DateTime.Now.ToString();
+            _context.SaveChanges();
+            return Ok();
         }
 
         // edit a specific accounts info
         [HttpPut("{id:int}/accounts/{account_id:int}/login")]
+        [ApiExceptionFilter("Error editing login")]
         public IActionResult User_EditAccountLogin(int id, int account_id, [FromBody] string login)
         {
             // attempt to edit the login
-            try
+
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                // verify that the user is either admin or is requesting their own data
-                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                    return new UnauthorizedObjectResult(error);
-                }
-
-                // validate ownership of said account
-                if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == account_id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid account", "User does not have an account matching that ID.");
-                    return new BadRequestObjectResult(error);
-                }
-
-                // get account and modify
-                Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
-                accToEdit.Login = login;
-                accToEdit.LastModified = DateTime.Now.ToString();
-                _context.SaveChanges();
-
-                return Ok();
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
-            catch (Exception ex)
+
+            // validate ownership of said account
+            if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == account_id))
             {
-                ErrorMessage error = new ErrorMessage("Error editing login", ex.Message);
-                return new InternalServerErrorResult(error);
+                ErrorMessage error = new ErrorMessage("Invalid account", "User does not have an account matching that ID.");
+                return new BadRequestObjectResult(error);
             }
+
+            // get account and modify
+            Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
+            accToEdit.Login = login;
+            accToEdit.LastModified = DateTime.Now.ToString();
+            _context.SaveChanges();
+            return Ok();
         }
 
         // edit a specific accounts info
         [HttpPut("{id:int}/accounts/{account_id:int}/password")] // in progress
+        [ApiExceptionFilter("Error editing password")]
         public IActionResult User_EditAccountPassword(int id, int account_id, [FromBody] string password)
         {
-            try
+
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                // verify that the user is either admin or is requesting their own data
-                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                    return new UnauthorizedObjectResult(error);
-                }
-
-                // validate ownership of said account
-                if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == account_id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid account", "User does not have an account matching that ID.");
-                    return new BadRequestObjectResult(error);
-                }
-
-
-                // get account and modify
-                Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
-                accToEdit.Password = HelperMethods.EncryptStringToBytes_Aes(password, HelperMethods.GetUserKeyAndIV(id));
-                accToEdit.LastModified = DateTime.Now.ToString();
-                _context.SaveChanges();
-
-                return Ok();
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
-            catch (Exception ex)
+
+            // validate ownership of said account
+            if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == account_id))
             {
-                ErrorMessage error = new ErrorMessage("Error editing password", ex.Message);
-                return new InternalServerErrorResult(error);
+                ErrorMessage error = new ErrorMessage("Invalid account", "User does not have an account matching that ID.");
+                return new BadRequestObjectResult(error);
             }
+
+
+            // get account and modify
+            Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
+            accToEdit.Password = HelperMethods.EncryptStringToBytes_Aes(password, HelperMethods.GetUserKeyAndIV(id));
+            accToEdit.LastModified = DateTime.Now.ToString();
+            _context.SaveChanges();
+            return Ok();
         }
 
         // edit a specific accounts info
         [HttpPut("{id:int}/accounts/{account_id:int}/description")]
+        [ApiExceptionFilter("Error editing description")]
         public IActionResult User_EditAccountDesc(int id, int account_id, [FromBody] string description)
         {
             // attempt to edit the description
-            try
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                // verify that the user is either admin or is requesting their own data
-                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                    return new UnauthorizedObjectResult(error);
-                }
-
-                // validate ownership of said account
-                if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == account_id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid account", "User does not have an account matching that ID.");
-                    return new BadRequestObjectResult(error);
-                }
-
-                // get account and modify
-                Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
-                accToEdit.Description = description;
-                accToEdit.LastModified = DateTime.Now.ToString();
-                _context.SaveChanges();
-
-                return Ok();
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
-            catch (Exception ex)
+
+            // validate ownership of said account
+            if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == account_id))
             {
-                ErrorMessage error = new ErrorMessage("Error editing description", ex.Message);
-                return new InternalServerErrorResult(error);
+                ErrorMessage error = new ErrorMessage("Invalid account", "User does not have an account matching that ID.");
+                return new BadRequestObjectResult(error);
             }
+
+            // get account and modify
+            Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
+            accToEdit.Description = description;
+            accToEdit.LastModified = DateTime.Now.ToString();
+            _context.SaveChanges();
+
+            return Ok();
         }
 
         [HttpPut("{id:int}/accounts/{account_id:int}/folder")]
+        [ApiExceptionFilter("Error settting folder")]
         public IActionResult User_AccountSetFolder(int id, int account_id, [FromBody] int? folder_id)
         {
             // attempt to edit the description
-            try
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                // verify that the user is either admin or is requesting their own data
-                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                    return new UnauthorizedObjectResult(error);
-                }
-
-                // validate ownership of said account
-                if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == account_id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid account", "User does not have an account matching that ID.");
-                    return new BadRequestObjectResult(error);
-                }
-
-                // use zero to mean null since body paramter must be present
-                if (folder_id == 0)
-                    folder_id = null;
-
-                // if this user does not own the folder we are adding to, then error
-                if (folder_id != null && !_context.Users.Single(a => a.ID == id).Folders.Exists(b => b.ID == folder_id))
-                {
-                    ErrorMessage error = new ErrorMessage("Failed to create new account", "User does not have a folder matching that ID.");
-                    return new BadRequestObjectResult(error);
-                }
-                else
-                {
-                    _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id).FolderID = folder_id;
-                    _context.SaveChanges();
-                }
-
-                return new OkObjectResult(new { new_folder = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id).FolderID });
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
-            catch (Exception ex)
+
+            // validate ownership of said account
+            if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == account_id))
             {
-                ErrorMessage error = new ErrorMessage("Error settting folder", ex.Message);
-                return new InternalServerErrorResult(error);
+                ErrorMessage error = new ErrorMessage("Invalid account", "User does not have an account matching that ID.");
+                return new BadRequestObjectResult(error);
             }
+
+            // use zero to mean null since body paramter must be present
+            if (folder_id == 0)
+                folder_id = null;
+
+            // if this user does not own the folder we are adding to, then error
+            if (folder_id != null && !_context.Users.Single(a => a.ID == id).Folders.Exists(b => b.ID == folder_id))
+            {
+                ErrorMessage error = new ErrorMessage("Failed to create new account", "User does not have a folder matching that ID.");
+                return new BadRequestObjectResult(error);
+            }
+            else
+            {
+                _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id).FolderID = folder_id;
+                _context.SaveChanges();
+            }
+
+            return new OkObjectResult(new { new_folder = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id).FolderID });
+
         }
 
         [HttpGet("{id:int}/folders")]
+        [ApiExceptionFilter("Error getting folders")]
         public IActionResult User_GetFolders(int id)
         {
-            try
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                // verify that the user is either admin or is requesting their own data
-                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                    return new UnauthorizedObjectResult(error);
-                }
-
-                // get and return all this user's accounts
-                List<ReturnableFolder> folders = new List<ReturnableFolder>();
-                foreach (Folder fold in _context.Users.Single(a => a.ID == id).Folders.ToArray())
-                {
-                    ReturnableFolder retFold = new ReturnableFolder(fold);
-                    folders.Add(retFold);
-                }
-
-                return new OkObjectResult(folders);
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
-            catch (Exception ex)
+
+            // get and return all this user's accounts
+            List<ReturnableFolder> folders = new List<ReturnableFolder>();
+            foreach (Folder fold in _context.Users.Single(a => a.ID == id).Folders.ToArray())
             {
-                ErrorMessage error = new ErrorMessage("Error getting folders", ex.Message);
-                return new InternalServerErrorResult(error);
+                ReturnableFolder retFold = new ReturnableFolder(fold);
+                folders.Add(retFold);
             }
+            return new OkObjectResult(folders);
+
         }
 
         [HttpPost("{id:int}/folders")] // working
+        [ApiExceptionFilter("Error creating new folder.")]
         public IActionResult User_AddFolder(int id, [FromBody] NewFolder folderToAdd)
         {
-            try
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                // verify that the user is either admin or is requesting their own data
-                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                    return new UnauthorizedObjectResult(error);
-                }
-
-                folderToAdd.Parent_ID = folderToAdd.Parent_ID == 0 ? null : folderToAdd.Parent_ID; // parent id goes from 0 to null for simplicity
-
-                // if user doesnt own the parent we throw error
-                if (folderToAdd.Parent_ID != null && !_context.Users.Single(a => a.ID == id).Folders.Exists(b => b.ID == folderToAdd.Parent_ID))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid parent ID", "User does not have a folder with that ID");
-                    return new BadRequestObjectResult(error);
-                }
-
-                // use token in header to to 
-                Folder new_folder = new Folder(folderToAdd, id);
-                _context.Folders.Add(new_folder); // add new folder
-
-                // only update parent if needed
-                if (new_folder.ParentID != null)
-                    _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == new_folder.ParentID).HasChild = true;// set parent to having child
-
-                _context.SaveChanges();
-                return Ok();
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
-            catch (Exception ex)
+
+            folderToAdd.Parent_ID = folderToAdd.Parent_ID == 0 ? null : folderToAdd.Parent_ID; // parent id goes from 0 to null for simplicity
+
+            // if user doesnt own the parent we throw error
+            if (folderToAdd.Parent_ID != null && !_context.Users.Single(a => a.ID == id).Folders.Exists(b => b.ID == folderToAdd.Parent_ID))
             {
-                ErrorMessage error = new ErrorMessage("Error creating new folder.", ex.Message);
-                return new InternalServerErrorResult(error);
+                ErrorMessage error = new ErrorMessage("Invalid parent ID", "User does not have a folder with that ID");
+                return new BadRequestObjectResult(error);
             }
+
+            // use token in header to to 
+            Folder new_folder = new Folder(folderToAdd, id);
+            _context.Folders.Add(new_folder); // add new folder
+
+            // only update parent if needed
+            if (new_folder.ParentID != null)
+                _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == new_folder.ParentID).HasChild = true;// set parent to having child
+
+            _context.SaveChanges();
+            return Ok();
+
+
         }
 
         // delete a folder and all contents if it is not empty
         [HttpDelete("{id:int}/folders/{folder_id:int}")] // working
+        [ApiExceptionFilter("Error deleting folder")]
         public IActionResult User_DeleteFolder(int id, int folder_id)
         {
-            try
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
             {
-                // verify that the user is either admin or is requesting their own data
-                if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                    return new UnauthorizedObjectResult(error);
-                }
-
-                // validate ownership of said folder
-                if (!_context.Users.Single(a => a.ID == id).Folders.Exists(b => b.ID == folder_id))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid folder", "User does not have a folder matching that ID.");
-                    return new BadRequestObjectResult(error);
-                }
-
-                Folder folderToDelete = _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == folder_id);
-                // if this folder has children, then we need to call DeleteFolder on all children
-                if (folderToDelete.HasChild)
-                {
-                    List<Folder> folders = _context.Users.Single(a => a.ID == id).Folders.ToList<Folder>();
-                    foreach (Folder folder in folders)
-                    {
-                        if (folder.ParentID == folderToDelete.ID)
-                        {
-                            User_DeleteFolder(id, folder.ID); // recursive call to go down the tree and delete children
-                        }
-                    }
-                }
-
-                // delete the accounts in the folder
-                List<Account> accounts = _context.Users.Single(a => a.ID == id).Accounts.ToList<Account>();
-                foreach (Account account in accounts)
-                {
-                    if (account.FolderID == folderToDelete.ID)
-                    {
-                        _context.Accounts.Remove(account); // no need to call User_DeleteAccount because identity and access token have already been verifies
-                    }
-                }
-                _context.SaveChanges(); // save the accounts being deleted
-                _context.Folders.Remove(folderToDelete); // remove the folder
-                _context.SaveChanges(); // save the folder being deleted.. must be done seperate because of foreign keys
-
-                // if parent isnt root, then check if parent still has children
-                if (folderToDelete.ParentID != null)
-                {
-                    bool parent_has_children = false;
-                    List<Folder> folders = _context.Users.Single(a => a.ID == id).Folders.ToList<Folder>();
-                    foreach (Folder fold in folders)
-                    {
-                        // if this folders parent is the same as the one we were just deleting than the original parent still has kids
-                        if (fold.ParentID == folderToDelete.ParentID)
-                            parent_has_children = true;
-                    }
-
-                    // update parent if needed
-                    if (!parent_has_children)
-                    {
-                        _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == folderToDelete.ParentID).HasChild = false;
-                        _context.SaveChanges();
-                    }
-                }
-
-                return Ok();
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
             }
-            catch (Exception ex)
+
+            // validate ownership of said folder
+            if (!_context.Users.Single(a => a.ID == id).Folders.Exists(b => b.ID == folder_id))
             {
-                ErrorMessage error = new ErrorMessage("Error deleting folder.", ex.Message);
-                return new InternalServerErrorResult(error);
+                ErrorMessage error = new ErrorMessage("Invalid folder", "User does not have a folder matching that ID.");
+                return new BadRequestObjectResult(error);
             }
+
+            Folder folderToDelete = _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == folder_id);
+            // if this folder has children, then we need to call DeleteFolder on all children
+            if (folderToDelete.HasChild)
+            {
+                List<Folder> folders = _context.Users.Single(a => a.ID == id).Folders.ToList<Folder>();
+                foreach (Folder folder in folders)
+                {
+                    if (folder.ParentID == folderToDelete.ID)
+                    {
+                        User_DeleteFolder(id, folder.ID); // recursive call to go down the tree and delete children
+                    }
+                }
+            }
+
+            // delete the accounts in the folder
+            List<Account> accounts = _context.Users.Single(a => a.ID == id).Accounts.ToList<Account>();
+            foreach (Account account in accounts)
+            {
+                if (account.FolderID == folderToDelete.ID)
+                {
+                    _context.Accounts.Remove(account); // no need to call User_DeleteAccount because identity and access token have already been verifies
+                }
+            }
+            _context.SaveChanges(); // save the accounts being deleted
+            _context.Folders.Remove(folderToDelete); // remove the folder
+            _context.SaveChanges(); // save the folder being deleted.. must be done seperate because of foreign keys
+
+            // if parent isnt root, then check if parent still has children
+            if (folderToDelete.ParentID != null)
+            {
+                bool parent_has_children = false;
+                List<Folder> folders = _context.Users.Single(a => a.ID == id).Folders.ToList<Folder>();
+                foreach (Folder fold in folders)
+                {
+                    // if this folders parent is the same as the one we were just deleting than the original parent still has kids
+                    if (fold.ParentID == folderToDelete.ParentID)
+                        parent_has_children = true;
+                }
+
+                // update parent if needed
+                if (!parent_has_children)
+                {
+                    _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == folderToDelete.ParentID).HasChild = false;
+                    _context.SaveChanges();
+                }
+            }
+
+            return Ok();
         }
     }
 }
