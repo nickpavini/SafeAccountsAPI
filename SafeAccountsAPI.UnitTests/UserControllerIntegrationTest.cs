@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using SafeAccountsAPI.Controllers;
+using SafeAccountsAPI.Helpers;
 using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Models;
 using SafeAccountsAPI.UnitTests.Helpers;
