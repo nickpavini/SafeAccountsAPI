@@ -8,6 +8,7 @@ using Microsoft.Win32.SafeHandles;
 using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Helpers;
 using SafeAccountsAPI.Models;
+using SafeAccountsAPI.Filters;
 
 namespace SafeAccountsAPI.Controllers
 {
@@ -30,33 +31,26 @@ namespace SafeAccountsAPI.Controllers
 
         // GET: api/RefreshToken
         [HttpPost]
+        [ApiExceptionFilter("Error refreshing access.")]
         public IActionResult Refresh()
         {
-            try
+            // attempt getting user from claims
+            User user = HelperMethods.GetUserFromAccessToken(Request.Cookies["AccessTokenSameSite"] ?? Request.Cookies["AccessToken"], _context, _configuration.GetValue<string>("UserJwtTokenKey"));
+
+            // make sure this is a valid token for the user
+            if (!HelperMethods.ValidateRefreshToken(user, Request.Cookies["RefreshTokenSameSite"] ?? Request.Cookies["RefreshToken"]))
             {
-                // attempt getting user from claims
-                User user = HelperMethods.GetUserFromAccessToken(Request.Cookies["AccessTokenSameSite"] ?? Request.Cookies["AccessToken"], _context, _configuration.GetValue<string>("UserJwtTokenKey"));
-
-                // make sure this is a valid token for the user
-                if (!HelperMethods.ValidateRefreshToken(user, Request.Cookies["RefreshTokenSameSite"] ?? Request.Cookies["RefreshToken"]))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid refresh token", "Refrsh token could not be validated.");
-                    return new BadRequestObjectResult(error);
-                }
-
-                string newTokenStr = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email, _configuration.GetValue<string>("UserJwtTokenKey"));
-                RefreshToken newRefToken = HelperMethods.GenerateRefreshToken(user, _context);
-                LoginResponse rtrn = new LoginResponse { ID = user.ID, AccessToken = newTokenStr, RefreshToken = new ReturnableRefreshToken(newRefToken) };
-
-                // append cookies after refresh
-                HelperMethods.SetCookies(Response, newTokenStr, newRefToken);
-                return new OkObjectResult(rtrn);
+                ErrorMessage error = new ErrorMessage("Invalid refresh token", "Refrsh token could not be validated.");
+                return new BadRequestObjectResult(error);
             }
-            catch (Exception ex)
-            {
-                ErrorMessage error = new ErrorMessage("Error refreshing access.", ex.Message);
-                return new InternalServerErrorResult(error);
-            }
+
+            string newTokenStr = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email, _configuration.GetValue<string>("UserJwtTokenKey"));
+            RefreshToken newRefToken = HelperMethods.GenerateRefreshToken(user, _context);
+            LoginResponse rtrn = new LoginResponse { ID = user.ID, AccessToken = newTokenStr, RefreshToken = new ReturnableRefreshToken(newRefToken) };
+
+            // append cookies after refresh
+            HelperMethods.SetCookies(Response, newTokenStr, newRefToken);
+            return new OkObjectResult(rtrn);
         }
     }
 }

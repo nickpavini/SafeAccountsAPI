@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-using SafeAccountsAPI.Controllers;
+using SafeAccountsAPI.Helpers;
 using SafeAccountsAPI.Models;
 
 namespace SafeAccountsAPI.Data

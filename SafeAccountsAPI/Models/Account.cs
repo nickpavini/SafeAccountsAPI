@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json;
-using SafeAccountsAPI.Controllers;
+using SafeAccountsAPI.Helpers;
 
 namespace SafeAccountsAPI.Models
 {
