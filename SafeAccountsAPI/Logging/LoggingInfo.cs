@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+
 namespace SafeAccountsAPI.Logging
 {
     public class LoggingInfo
