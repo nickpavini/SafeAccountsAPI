@@ -803,5 +803,81 @@ namespace SafeAccountsAPI.Controllers
 
             return Ok();
         }
+
+        // set a folders parent
+        [HttpPut("{id:int}/folders/{folder_id:int}/parent")]
+        [ApiExceptionFilter("Error editing the folders parent.")]
+        public IActionResult User_SetFolderParent(int id, int folder_id, [FromBody] int? newParentID)
+        {
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            {
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
+            }
+
+            // validate ownership of child
+            if (!_context.Users.Single(a => a.ID == id).Folders.Exists(b => b.ID == folder_id))
+            {
+                ErrorMessage error = new ErrorMessage("Invalid folder", "User does not have a folder matching that ID.");
+                return new BadRequestObjectResult(error);
+            }
+
+            // use zero to mean null since body paramter must be present
+            if (newParentID == 0)
+                newParentID = null;
+
+            // validate ownership of parent
+            if (newParentID != null && !_context.Users.Single(a => a.ID == id).Folders.Exists(b => b.ID == newParentID))
+            {
+                ErrorMessage error = new ErrorMessage("Invalid folder", "User does not have a folder matching the ID of the new parent.");
+                return new BadRequestObjectResult(error);
+            }
+
+            /*
+             * We need to be careful here that there are no issues when we move up the tree.
+             * The new parent cannot be a child of the folder we wish to give a new parent.
+             */
+            if (CheckFolderForParentClash(id, folder_id, newParentID))
+            {
+                ErrorMessage error = new ErrorMessage("Invalid new parent folder", "Folder cannot be a child of itself or one of its children.");
+                return new BadRequestObjectResult(error);
+            }
+
+            // get reference to child old parent
+            Folder child = _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == folder_id);
+            Folder oldParent = child.ParentID != null ? _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == child.ParentID) : null;
+
+            // set the childs new parentID, and set new parent to have a child
+            child.ParentID = newParentID;
+            if (newParentID != null)
+                _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == newParentID).HasChild = true;
+
+            // Here we will want to check the old parent to make sure it still has children
+            if (oldParent != null)
+            {
+                // if no other folder exists with their parent id the same as the old parent id, we update it to not have children
+                if (!_context.Users.Single(a => a.ID == id).Folders.Exists(b => b.ParentID == oldParent.ID && b.ID != child.ID))
+                    oldParent.HasChild = false;
+            }
+
+            _context.SaveChanges();
+            return Ok();
+        }
+
+        // returns true if their is a clash of parents, and false if no clashes
+        private bool CheckFolderForParentClash(int uid, int folder_id, int? parentID)
+        {
+            // if we want to set the parent as null, then no clash
+            if (parentID == null)
+                return false;
+
+            // if the parent id is the folder, clash because a folder cannot be a child of itself or one of its children..
+            if (parentID == folder_id)
+                return true;
+
+            // get parent and call recursively on the next level up parent id
+            return CheckFolderForParentClash(uid, folder_id, _context.Users.Single(a => a.ID == uid).Folders.Single(b => b.ID == parentID).ParentID);
+        }
     }
 }
