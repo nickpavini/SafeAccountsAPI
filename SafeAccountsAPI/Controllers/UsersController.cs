@@ -101,8 +101,8 @@ namespace SafeAccountsAPI.Controllers
             smtpClient.Send(mailMessage);
         }
 
-        [ApiExceptionFilter("Error confirming email")]
         [HttpPost("confirm"), AllowAnonymous] //working
+        [ApiExceptionFilter("Error confirming email")]
         public ActionResult User_ConfirmEmail(string token, string email)
         {
 
@@ -131,8 +131,8 @@ namespace SafeAccountsAPI.Controllers
         }
 
         // login and get tokens...
-        [ApiExceptionFilter("Error validating credentials")]
         [HttpPost("login"), AllowAnonymous] //working
+        [ApiExceptionFilter("Error validating credentials")]
         public ActionResult User_Login([FromBody] Login login)
         {
             // get users saved password hash and salt
@@ -187,8 +187,8 @@ namespace SafeAccountsAPI.Controllers
         }
 
         // logout and reset cookies.. I dont think here the ID of the user matters because we just delete all the associated cookies.
-        [ApiExceptionFilter("Error removing users cookies.")]
         [HttpPost("logout")] //working
+        [ApiExceptionFilter("Error removing users cookies.")]
         public IActionResult User_Logout()
         {
             // delete cookies
@@ -216,12 +216,12 @@ namespace SafeAccountsAPI.Controllers
         }
 
 
-        [HttpGet] //working
-        [ApiExceptionFilter("Error retrieving users.")]
-        /// <summary>
+        // <summary>
         /// Get all available users.. might change later as it might not make sense to grab all accounts if there are tons
         /// </summary>
         /// <returns></returns>
+        [HttpGet] //working
+        [ApiExceptionFilter("Error retrieving users.")]
         public IActionResult GetAllUsers()
         {
             if (!HelperMethods.ValidateIsAdmin(_httpContextAccessor))
@@ -261,11 +261,6 @@ namespace SafeAccountsAPI.Controllers
 
         [HttpDelete("{id:int}")]// working
         [ApiExceptionFilter("Failed to delete user.")]
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
         public IActionResult User_DeleteUser(int id)
         {
             // verify that the user is either admin or is requesting their own data
@@ -285,11 +280,6 @@ namespace SafeAccountsAPI.Controllers
 
         [HttpGet("{id:int}/firstname")] // working
         [ApiExceptionFilter("Failed to get first name.")]
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
         public IActionResult User_GetFirstName(int id)
         {
             // verify that the user is either admin or is requesting their own data
@@ -303,8 +293,8 @@ namespace SafeAccountsAPI.Controllers
 
         }
 
-        [ApiExceptionFilter("Failed to update first name.")]
         [HttpPut("{id:int}/firstname")] // working
+        [ApiExceptionFilter("Failed to update first name.")]
         public IActionResult User_EditFirstName(int id, [FromBody] string firstname)
         {
             // verify that the user is either admin or is requesting their own data
@@ -485,7 +475,7 @@ namespace SafeAccountsAPI.Controllers
 
         // get a specific accounts info
         [HttpGet("{id:int}/accounts/{account_id:int}")]
-        [ApiExceptionFilter("Error deleting account.")]
+        [ApiExceptionFilter("Error getting account.")]
         public IActionResult User_GetSingleAccount(int id, int account_id)
         {
             // verify that the user is either admin or is requesting their own data
