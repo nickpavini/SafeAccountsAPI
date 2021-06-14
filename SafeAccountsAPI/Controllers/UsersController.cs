@@ -862,7 +862,17 @@ namespace SafeAccountsAPI.Controllers
             }
 
             _context.SaveChanges();
-            return Ok();
+
+            // get and return all this user's folders...
+            // this is helpful to have here because changin one folder could affect others and we dont
+            // want to redo the parsing logic UI side
+            List<ReturnableFolder> folders = new List<ReturnableFolder>();
+            foreach (Folder fold in _context.Users.Single(a => a.ID == id).Folders.ToArray())
+            {
+                ReturnableFolder retFold = new ReturnableFolder(fold);
+                folders.Add(retFold);
+            }
+            return new OkObjectResult(folders);
         }
 
         // returns true if their is a clash of parents, and false if no clashes
