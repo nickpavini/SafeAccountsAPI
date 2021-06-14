@@ -1,7 +1,5 @@
 using Serilog;
 using Serilog.Events;
-using System;
-using System.Configuration;
 
 namespace SafeAccountsAPI.Logging
 {
