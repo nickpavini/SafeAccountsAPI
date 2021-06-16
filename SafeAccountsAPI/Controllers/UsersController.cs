@@ -801,7 +801,27 @@ namespace SafeAccountsAPI.Controllers
                 }
             }
 
-            return Ok();
+            // get and return all this user's folders...
+            // this is helpful to have here because deleting one folder could affect others and we dont
+            // want to redo the parsing logic UI side or make more api calls
+            List<ReturnableFolder> updatedFolders = new List<ReturnableFolder>();
+            foreach (Folder fold in _context.Users.Single(a => a.ID == id).Folders.ToArray())
+            {
+                ReturnableFolder retFold = new ReturnableFolder(fold);
+                updatedFolders.Add(retFold);
+            }
+
+            // get and return all this user's accounts
+            List<ReturnableAccount> safe = new List<ReturnableAccount>();
+            foreach (Account acc in _context.Users.Single(a => a.ID == id).Accounts.ToArray())
+            {
+                ReturnableAccount retAcc = new ReturnableAccount(acc);
+                safe.Add(retAcc);
+            }
+
+            // return both as an anonomous type
+            var test = new { safe, updatedFolders };
+            return new OkObjectResult(test);
         }
 
         // set a folders parent
