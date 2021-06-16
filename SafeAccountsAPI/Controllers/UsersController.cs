@@ -824,6 +824,33 @@ namespace SafeAccountsAPI.Controllers
             return new OkObjectResult(test);
         }
 
+        // edit a specific folders name
+        [HttpPut("{id:int}/folders/{folder_id:int}/name")] // in progress
+        [ApiExceptionFilter("Error editing folder name")]
+        public IActionResult User_EditFolderName(int id, int folder_id, [FromBody] string name)
+        {
+            // attempt to edit the title
+
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            {
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
+            }
+
+            // validate ownership of said folder
+            if (!_context.Users.Single(a => a.ID == id).Folders.Exists(b => b.ID == folder_id))
+            {
+                ErrorMessage error = new ErrorMessage("Invalid Folder", "User does not have a folder matching that ID.");
+                return new BadRequestObjectResult(error);
+            }
+
+            // modify
+            _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == folder_id).FolderName = name;
+            _context.SaveChanges();
+            return Ok();
+        }
+
         // set a folders parent
         [HttpPut("{id:int}/folders/{folder_id:int}/parent")]
         [ApiExceptionFilter("Error editing the folders parent.")]
