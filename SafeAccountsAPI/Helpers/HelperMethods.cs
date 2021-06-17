@@ -45,7 +45,7 @@ namespace SafeAccountsAPI.Helpers
                 issuer: "http://localhost:5000",
                 audience: "http://localhost:5000",
                 claims: new List<Claim> { new Claim(ClaimTypes.Role, role), new Claim(ClaimTypes.Email, email), new Claim(ClaimTypes.Name, "access_token") },
-                expires: DateTime.Now.AddMinutes(15),
+                expires: DateTime.Now.AddMinutes(15), // these reset regularly
                 signingCredentials: signinCredentials
             );
 
@@ -97,7 +97,7 @@ namespace SafeAccountsAPI.Helpers
             {
                 UserID = user.ID,
                 Token = GenerateRefreshToken(),
-                Expiration = DateTime.UtcNow.AddDays(1).ToString() // 1 day for reresh tokens
+                Expiration = DateTime.UtcNow.AddDays(200).ToString() // 200 days for reresh tokens
             };
 
             // Add it to the list of of refresh tokens for the user
