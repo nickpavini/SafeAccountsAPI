@@ -719,6 +719,13 @@ namespace SafeAccountsAPI.Controllers
                 return new UnauthorizedObjectResult(error);
             }
 
+            // folder limit is 10 for now
+            if (_context.Users.Single(a => a.ID == id).Folders.Count >= 10)
+            {
+                ErrorMessage error = new ErrorMessage("Failed to create new account", "User cannot have more than 50 passwords saved at once.");
+                return new BadRequestObjectResult(error);
+            }
+
             folderToAdd.Parent_ID = folderToAdd.Parent_ID == 0 ? null : folderToAdd.Parent_ID; // parent id goes from 0 to null for simplicity
 
             // if user doesnt own the parent we throw error
