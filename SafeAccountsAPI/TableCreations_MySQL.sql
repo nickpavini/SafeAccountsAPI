@@ -13,7 +13,6 @@ Create Table Users
 	Last_Name nvarchar(30),
 	Email nvarchar(50) unique,
 	Password varbinary(200),
-	NumAccs int,
 	Role nvarchar(25),
     EmailVerified bool not null
 );

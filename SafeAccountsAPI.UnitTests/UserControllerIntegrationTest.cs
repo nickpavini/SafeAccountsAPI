@@ -117,7 +117,6 @@ namespace SafeAccountsAPI.UnitTests
                 Assert.Equal(expectedUserReturn.ID, returnedUser.ID);
                 Assert.Equal(expectedUserReturn.Email, returnedUser.Email);
                 Assert.Equal(expectedUserReturn.Role, returnedUser.Role);
-                Assert.Equal(expectedUserReturn.NumAccs, returnedUser.NumAccs);
                 Assert.Equal(expectedUserReturn.First_Name, returnedUser.First_Name);
                 Assert.Equal(expectedUserReturn.Last_Name, returnedUser.Last_Name);
             }

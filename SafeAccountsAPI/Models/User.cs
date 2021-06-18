@@ -11,7 +11,6 @@ namespace SafeAccountsAPI.Models
         public string Last_Name { get; set; }
         public string Email { get; set; }
         public byte[] Password { get; set; }
-        public int NumAccs { get; set; }
         public string Role { get; set; }
         public bool EmailVerified { get; set; }
         public virtual List<Account> Accounts { get; set; }
@@ -27,7 +26,6 @@ namespace SafeAccountsAPI.Models
             Last_Name = newUser.Last_Name;
             Email = newUser.Email;
             Password = HelperMethods.ConcatenatedSaltAndSaltedHash(newUser.Password);
-            NumAccs = 0;
             Role = UserRoles.User;
             EmailVerified = false;
         }
@@ -40,7 +38,6 @@ namespace SafeAccountsAPI.Models
         public string First_Name { get; set; }
         public string Last_Name { get; set; }
         public string Email { get; set; }
-        public int NumAccs { get; set; }
         public string Role { get; set; }
 
         public ReturnableUser() { }
@@ -52,7 +49,6 @@ namespace SafeAccountsAPI.Models
             First_Name = user.First_Name;
             Last_Name = user.Last_Name;
             Email = user.Email;
-            NumAccs = user.NumAccs;
             Role = user.Role;
         }
     }
