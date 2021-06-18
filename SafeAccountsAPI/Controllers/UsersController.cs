@@ -408,6 +408,13 @@ namespace SafeAccountsAPI.Controllers
                 return new UnauthorizedObjectResult(error);
             }
 
+            // account limit is 50 for now
+            if (_context.Users.Single(a => a.ID == id).Accounts.Count >= 50)
+            {
+                ErrorMessage error = new ErrorMessage("Failed to create new account", "User cannot have more than 50 passwords saved at once.");
+                return new BadRequestObjectResult(error);
+            }
+
             // if this user does not own the folder we are adding to, then error
             if (accToAdd.FolderID != null && !_context.Users.Single(a => a.ID == id).Folders.Exists(b => b.ID == accToAdd.FolderID))
             {
