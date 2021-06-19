@@ -427,7 +427,9 @@ namespace SafeAccountsAPI.Controllers
             new_account.LastModified = DateTime.Now.ToString();
             _context.Accounts.Add(new_account);
             _context.SaveChanges();
-            return Ok();
+
+            // return the new object to easily update on frontend without making another api call
+            return new OkObjectResult(new ReturnableAccount(new_account));
         }
 
         // use this to edit a whole account with a single api call
@@ -459,7 +461,8 @@ namespace SafeAccountsAPI.Controllers
             accToEdit.LastModified = DateTime.Now.ToString();
             _context.SaveChanges();
 
-            return Ok();
+            // return the new object to easily update on frontend without making another api call
+            return new OkObjectResult(new ReturnableAccount(accToEdit));
         }
 
         // this is different than calling delete account over and over. Here we only save once
