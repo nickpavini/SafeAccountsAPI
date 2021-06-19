@@ -39,16 +39,106 @@ namespace SafeAccountsAPI.Data
                 // add 2 base accounts to each user for testing
                 Account[] accs = new Account[]
                 {
-                    new Account { UserID=1, Title="gmail", Login="johndoe", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(1)), Url="testurl.com", Description="Add description here..", LastModified=DateTime.Now.ToString(), IsFavorite=false },
-                    new Account { UserID=1, Title="yahoo", Login="johndoe", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(1)), Url="testurl.com", Description="Add description here..", LastModified=DateTime.Now.ToString(), IsFavorite=false },
-                    new Account { UserID=2, Title="paypal", Login="edwinmay", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(2)), Url="testurl.com", Description="Add description here..", LastModified=DateTime.Now.ToString(), IsFavorite=false },
-                    new Account { UserID=2, Title="zoom", Login="edwinmay", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(2)), Url="testurl.com", Description="Add description here..", LastModified=DateTime.Now.ToString(), IsFavorite=false },
-                    new Account { UserID=3, Title="chase", Login="lucyvale", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(3)), Url="testurl.com", Description="Add description here..", LastModified=DateTime.Now.ToString(), IsFavorite=false },
-                    new Account { UserID=3, Title="netflix", Login="lucyvale", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(3)), Url="testurl.com", Description="Add description here..", LastModified=DateTime.Now.ToString(), IsFavorite=false },
-                    new Account { UserID=4, Title="hulu", Login="pamwillis", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(4)), Url="testurl.com", Description="Add description here..", LastModified=DateTime.Now.ToString(), IsFavorite=false },
-                    new Account { UserID=4, Title="amazon", Login="pamwillis", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(4)), Url="testurl.com", Description="Add description here..", LastModified=DateTime.Now.ToString(), IsFavorite=false },
-                    new Account { UserID=5, Title="spotify", Login="gamestonk", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(5)), Url="testurl.com", Description="Add description here..", LastModified=DateTime.Now.ToString(), IsFavorite=false },
-                    new Account { UserID=5, Title="bestbuy", Login="gamestonk", Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(5)), Url="testurl.com", Description="Add description here..", LastModified=DateTime.Now.ToString(), IsFavorite=false }
+                    new Account {
+                        UserID=1,
+                        Title=HelperMethods.EncryptStringToBytes_Aes("gmail", HelperMethods.GetUserKeyAndIV(1)),
+                        Login=HelperMethods.EncryptStringToBytes_Aes("johndoe", HelperMethods.GetUserKeyAndIV(1)),
+                        Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(1)),
+                        Url=HelperMethods.EncryptStringToBytes_Aes("testurl.com", HelperMethods.GetUserKeyAndIV(1)),
+                        Description=HelperMethods.EncryptStringToBytes_Aes("description...", HelperMethods.GetUserKeyAndIV(1)),
+                        LastModified=HelperMethods.EncryptStringToBytes_Aes(DateTime.Now.ToString(), HelperMethods.GetUserKeyAndIV(1)),
+                        IsFavorite=false
+                    },
+                    new Account {
+                        UserID=1,
+                        Title=HelperMethods.EncryptStringToBytes_Aes("yahoo", HelperMethods.GetUserKeyAndIV(1)),
+                        Login=HelperMethods.EncryptStringToBytes_Aes("johndoe", HelperMethods.GetUserKeyAndIV(1)),
+                        Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(1)),
+                        Url=HelperMethods.EncryptStringToBytes_Aes("testurl.com", HelperMethods.GetUserKeyAndIV(1)),
+                        Description=HelperMethods.EncryptStringToBytes_Aes("description...", HelperMethods.GetUserKeyAndIV(1)),
+                        LastModified=HelperMethods.EncryptStringToBytes_Aes(DateTime.Now.ToString(), HelperMethods.GetUserKeyAndIV(1)),
+                        IsFavorite=false
+                    },
+                    new Account {
+                        UserID=2,
+                        Title=HelperMethods.EncryptStringToBytes_Aes("paypal", HelperMethods.GetUserKeyAndIV(2)),
+                        Login=HelperMethods.EncryptStringToBytes_Aes("edwinmay", HelperMethods.GetUserKeyAndIV(2)),
+                        Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(2)),
+                        Url=HelperMethods.EncryptStringToBytes_Aes("testurl.com", HelperMethods.GetUserKeyAndIV(2)),
+                        Description=HelperMethods.EncryptStringToBytes_Aes("description...", HelperMethods.GetUserKeyAndIV(2)),
+                        LastModified=HelperMethods.EncryptStringToBytes_Aes(DateTime.Now.ToString(), HelperMethods.GetUserKeyAndIV(2)),
+                        IsFavorite=false
+                    },
+                    new Account {
+                        UserID=2,
+                        Title=HelperMethods.EncryptStringToBytes_Aes("zoom", HelperMethods.GetUserKeyAndIV(2)),
+                        Login=HelperMethods.EncryptStringToBytes_Aes("edwinmay", HelperMethods.GetUserKeyAndIV(2)),
+                        Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(2)),
+                        Url=HelperMethods.EncryptStringToBytes_Aes("testurl.com", HelperMethods.GetUserKeyAndIV(2)),
+                        Description=HelperMethods.EncryptStringToBytes_Aes("description...", HelperMethods.GetUserKeyAndIV(2)),
+                        LastModified=HelperMethods.EncryptStringToBytes_Aes(DateTime.Now.ToString(), HelperMethods.GetUserKeyAndIV(2)),
+                        IsFavorite=false
+                    },
+                    new Account {
+                        UserID=3,
+                        Title=HelperMethods.EncryptStringToBytes_Aes("chase", HelperMethods.GetUserKeyAndIV(3)),
+                        Login=HelperMethods.EncryptStringToBytes_Aes("lucyvale", HelperMethods.GetUserKeyAndIV(3)),
+                        Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(3)),
+                        Url=HelperMethods.EncryptStringToBytes_Aes("testurl.com", HelperMethods.GetUserKeyAndIV(3)),
+                        Description=HelperMethods.EncryptStringToBytes_Aes("description...", HelperMethods.GetUserKeyAndIV(3)),
+                        LastModified=HelperMethods.EncryptStringToBytes_Aes(DateTime.Now.ToString(), HelperMethods.GetUserKeyAndIV(3)),
+                        IsFavorite=false
+                    },
+                    new Account {
+                        UserID=3,
+                        Title=HelperMethods.EncryptStringToBytes_Aes("netflix", HelperMethods.GetUserKeyAndIV(3)),
+                        Login=HelperMethods.EncryptStringToBytes_Aes("lucyvale", HelperMethods.GetUserKeyAndIV(3)),
+                        Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(3)),
+                        Url=HelperMethods.EncryptStringToBytes_Aes("testurl.com", HelperMethods.GetUserKeyAndIV(3)),
+                        Description=HelperMethods.EncryptStringToBytes_Aes("description...", HelperMethods.GetUserKeyAndIV(3)),
+                        LastModified=HelperMethods.EncryptStringToBytes_Aes(DateTime.Now.ToString(), HelperMethods.GetUserKeyAndIV(3)),
+                        IsFavorite=false
+                    },
+                    new Account {
+                        UserID=4,
+                        Title=HelperMethods.EncryptStringToBytes_Aes("hulu", HelperMethods.GetUserKeyAndIV(4)),
+                        Login=HelperMethods.EncryptStringToBytes_Aes("pamwillis", HelperMethods.GetUserKeyAndIV(4)),
+                        Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(4)),
+                        Url=HelperMethods.EncryptStringToBytes_Aes("testurl.com", HelperMethods.GetUserKeyAndIV(4)),
+                        Description=HelperMethods.EncryptStringToBytes_Aes("description...", HelperMethods.GetUserKeyAndIV(4)),
+                        LastModified=HelperMethods.EncryptStringToBytes_Aes(DateTime.Now.ToString(), HelperMethods.GetUserKeyAndIV(4)),
+                        IsFavorite=false
+                    },
+                    new Account {
+                        UserID=4,
+                        Title=HelperMethods.EncryptStringToBytes_Aes("amazon", HelperMethods.GetUserKeyAndIV(4)),
+                        Login=HelperMethods.EncryptStringToBytes_Aes("pamwillis", HelperMethods.GetUserKeyAndIV(4)),
+                        Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(4)),
+                        Url=HelperMethods.EncryptStringToBytes_Aes("testurl.com", HelperMethods.GetUserKeyAndIV(4)),
+                        Description=HelperMethods.EncryptStringToBytes_Aes("description...", HelperMethods.GetUserKeyAndIV(4)),
+                        LastModified=HelperMethods.EncryptStringToBytes_Aes(DateTime.Now.ToString(), HelperMethods.GetUserKeyAndIV(4)),
+                        IsFavorite=false
+                    },
+                    new Account {
+                        UserID=5,
+                        Title=HelperMethods.EncryptStringToBytes_Aes("spotify", HelperMethods.GetUserKeyAndIV(5)),
+                        Login=HelperMethods.EncryptStringToBytes_Aes("gamestonk", HelperMethods.GetUserKeyAndIV(5)),
+                        Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(5)),
+                        Url=HelperMethods.EncryptStringToBytes_Aes("testurl.com", HelperMethods.GetUserKeyAndIV(5)),
+                        Description=HelperMethods.EncryptStringToBytes_Aes("description...", HelperMethods.GetUserKeyAndIV(5)),
+                        LastModified=HelperMethods.EncryptStringToBytes_Aes(DateTime.Now.ToString(), HelperMethods.GetUserKeyAndIV(5)),
+                        IsFavorite=false
+                    },
+                    new Account {
+                        UserID=5,
+                        Title=HelperMethods.EncryptStringToBytes_Aes("bestbuy", HelperMethods.GetUserKeyAndIV(5)),
+                        Login=HelperMethods.EncryptStringToBytes_Aes("gamestonk", HelperMethods.GetUserKeyAndIV(5)),
+                        Password=HelperMethods.EncryptStringToBytes_Aes("useless", HelperMethods.GetUserKeyAndIV(5)),
+                        Url=HelperMethods.EncryptStringToBytes_Aes("testurl.com", HelperMethods.GetUserKeyAndIV(5)),
+                        Description=HelperMethods.EncryptStringToBytes_Aes("description...", HelperMethods.GetUserKeyAndIV(5)),
+                        LastModified=HelperMethods.EncryptStringToBytes_Aes(DateTime.Now.ToString(), HelperMethods.GetUserKeyAndIV(5)),
+                        IsFavorite=false
+                    },
                 };
 
                 foreach (Account acc in accs) { context.Accounts.Add(acc); } // add each account to the table
