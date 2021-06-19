@@ -424,7 +424,7 @@ namespace SafeAccountsAPI.Controllers
 
             // create new account and save it
             Account new_account = new Account(accToAdd, id);
-            new_account.LastModified = DateTime.Now.ToString();
+            new_account.LastModified = HelperMethods.EncryptStringToBytes_Aes(DateTime.Now.ToString(), HelperMethods.GetUserKeyAndIV(id));
             _context.Accounts.Add(new_account);
             _context.SaveChanges();
 
@@ -453,12 +453,12 @@ namespace SafeAccountsAPI.Controllers
 
             // get account and modify
             Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == acc_id);
-            accToEdit.Title = acc.Title;
-            accToEdit.Login = acc.Login;
+            accToEdit.Title = HelperMethods.EncryptStringToBytes_Aes(acc.Title, HelperMethods.GetUserKeyAndIV(id));
+            accToEdit.Login = HelperMethods.EncryptStringToBytes_Aes(acc.Login, HelperMethods.GetUserKeyAndIV(id));
             accToEdit.Password = HelperMethods.EncryptStringToBytes_Aes(acc.Password, HelperMethods.GetUserKeyAndIV(id));
-            accToEdit.Url = acc.Url;
-            accToEdit.Description = acc.Description;
-            accToEdit.LastModified = DateTime.Now.ToString();
+            accToEdit.Url = HelperMethods.EncryptStringToBytes_Aes(acc.Url, HelperMethods.GetUserKeyAndIV(id));
+            accToEdit.Description = HelperMethods.EncryptStringToBytes_Aes(acc.Description, HelperMethods.GetUserKeyAndIV(id));
+            accToEdit.LastModified = HelperMethods.EncryptStringToBytes_Aes(DateTime.Now.ToString(), HelperMethods.GetUserKeyAndIV(id));
             _context.SaveChanges();
 
             // return the new object to easily update on frontend without making another api call
@@ -589,8 +589,8 @@ namespace SafeAccountsAPI.Controllers
 
             // get account and modify
             Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
-            accToEdit.Title = title;
-            accToEdit.LastModified = DateTime.Now.ToString();
+            accToEdit.Title = HelperMethods.EncryptStringToBytes_Aes(title, HelperMethods.GetUserKeyAndIV(id)); ;
+            accToEdit.LastModified = HelperMethods.EncryptStringToBytes_Aes(DateTime.Now.ToString(), HelperMethods.GetUserKeyAndIV(id));
             _context.SaveChanges();
             return Ok();
         }
@@ -618,8 +618,8 @@ namespace SafeAccountsAPI.Controllers
 
             // get account and modify
             Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
-            accToEdit.Login = login;
-            accToEdit.LastModified = DateTime.Now.ToString();
+            accToEdit.Login = HelperMethods.EncryptStringToBytes_Aes(login, HelperMethods.GetUserKeyAndIV(id)); ;
+            accToEdit.LastModified = HelperMethods.EncryptStringToBytes_Aes(DateTime.Now.ToString(), HelperMethods.GetUserKeyAndIV(id));
             _context.SaveChanges();
             return Ok();
         }
@@ -647,8 +647,8 @@ namespace SafeAccountsAPI.Controllers
 
             // get account and modify
             Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
-            accToEdit.Password = HelperMethods.EncryptStringToBytes_Aes(password, HelperMethods.GetUserKeyAndIV(id));
-            accToEdit.LastModified = DateTime.Now.ToString();
+            accToEdit.Password = HelperMethods.EncryptStringToBytes_Aes(password, HelperMethods.GetUserKeyAndIV(id)); ;
+            accToEdit.LastModified = HelperMethods.EncryptStringToBytes_Aes(DateTime.Now.ToString(), HelperMethods.GetUserKeyAndIV(id));
             _context.SaveChanges();
             return Ok();
         }
@@ -675,8 +675,8 @@ namespace SafeAccountsAPI.Controllers
 
             // get account and modify
             Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
-            accToEdit.Description = description;
-            accToEdit.LastModified = DateTime.Now.ToString();
+            accToEdit.Description = HelperMethods.EncryptStringToBytes_Aes(description, HelperMethods.GetUserKeyAndIV(id)); ;
+            accToEdit.LastModified = HelperMethods.EncryptStringToBytes_Aes(DateTime.Now.ToString(), HelperMethods.GetUserKeyAndIV(id));
             _context.SaveChanges();
 
             return Ok();
