@@ -150,20 +150,20 @@ namespace SafeAccountsAPI.Data
                 // add base folders
                 Folder[] base_folds = new Folder[]
                 {
-                    new Folder { UserID=1, FolderName="Folder", HasChild=true },
-                    new Folder { UserID=2, FolderName="Folder", HasChild=true },
-                    new Folder { UserID=3, FolderName="Folder", HasChild=true },
-                    new Folder { UserID=4, FolderName="Folder", HasChild=true },
-                    new Folder { UserID=5, FolderName="Folder", HasChild=true }
+                    new Folder { UserID=1, FolderName=HelperMethods.EncryptStringToBytes_Aes("Folder", HelperMethods.GetUserKeyAndIV(1)), HasChild =true },
+                    new Folder { UserID=2, FolderName=HelperMethods.EncryptStringToBytes_Aes("Folder", HelperMethods.GetUserKeyAndIV(2)), HasChild=true },
+                    new Folder { UserID=3, FolderName=HelperMethods.EncryptStringToBytes_Aes("Folder", HelperMethods.GetUserKeyAndIV(3)), HasChild=true },
+                    new Folder { UserID=4, FolderName=HelperMethods.EncryptStringToBytes_Aes("Folder", HelperMethods.GetUserKeyAndIV(4)), HasChild=true },
+                    new Folder { UserID=5, FolderName=HelperMethods.EncryptStringToBytes_Aes("Folder", HelperMethods.GetUserKeyAndIV(5)), HasChild=true }
                 };
 
                 Folder[] sub_folds = new Folder[]
                 {
-                    new Folder { UserID=1, FolderName="Sub-Folder", HasChild=false, ParentID=5 },
-                    new Folder { UserID=2, FolderName="Sub-Folder", HasChild=false, ParentID=4 },
-                    new Folder { UserID=3, FolderName="Sub-Folder", HasChild=false, ParentID=3 },
-                    new Folder { UserID=4, FolderName="Sub-Folder", HasChild=false, ParentID=2 },
-                    new Folder { UserID=5, FolderName="Sub-Folder", HasChild=false, ParentID=1 }
+                    new Folder { UserID=1, FolderName=HelperMethods.EncryptStringToBytes_Aes("Sub-Folder", HelperMethods.GetUserKeyAndIV(1)), HasChild=false, ParentID=5 },
+                    new Folder { UserID=2, FolderName=HelperMethods.EncryptStringToBytes_Aes("Sub-Folder", HelperMethods.GetUserKeyAndIV(2)), HasChild=false, ParentID=4 },
+                    new Folder { UserID=3, FolderName=HelperMethods.EncryptStringToBytes_Aes("Sub-Folder", HelperMethods.GetUserKeyAndIV(3)), HasChild=false, ParentID=3 },
+                    new Folder { UserID=4, FolderName=HelperMethods.EncryptStringToBytes_Aes("Sub-Folder", HelperMethods.GetUserKeyAndIV(4)), HasChild=false, ParentID=2 },
+                    new Folder { UserID=5, FolderName=HelperMethods.EncryptStringToBytes_Aes("Sub-Folder", HelperMethods.GetUserKeyAndIV(5)), HasChild=false, ParentID=1 }
                 };
 
                 foreach (Folder fold in base_folds) { context.Folders.Add(fold); } // add each account to the table

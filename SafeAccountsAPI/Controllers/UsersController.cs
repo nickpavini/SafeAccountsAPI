@@ -895,7 +895,7 @@ namespace SafeAccountsAPI.Controllers
             }
 
             // modify
-            _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == folder_id).FolderName = name;
+            _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == folder_id).FolderName = HelperMethods.EncryptStringToBytes_Aes(name, HelperMethods.GetUserKeyAndIV(id));
             _context.SaveChanges();
             return Ok();
         }

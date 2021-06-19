@@ -23,7 +23,7 @@ Create Table Folders
     UserID int not null,
     ParentID int,
     HasChild bool not null,
-    FolderName nvarchar(50),
+    FolderName varbinary(200),
     Constraint FK_Folders_UserID foreign key (UserID)
     references Users(ID),
     Constraint FK_Folders_ParentID foreign key (ParentID)
