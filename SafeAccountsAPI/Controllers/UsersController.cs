@@ -13,6 +13,7 @@ using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Helpers;
 using SafeAccountsAPI.Models;
 using SafeAccountsAPI.Filters;
+using System.Security.Claims;
 
 namespace SafeAccountsAPI.Controllers
 {
@@ -25,6 +26,7 @@ namespace SafeAccountsAPI.Controllers
         private readonly APIContext _context; // database handle
         private readonly IHttpContextAccessor _httpContextAccessor; // handle to all http information.. used for authorization
         public IConfiguration _configuration; //
+        public string[] _keyAndIV; // this is the key that is used at the top level for user profile data encryption
 
         // get an instance of a database and http handle
         public UsersController(APIContext context, IHttpContextAccessor httpContextAccessor, IConfiguration configuration)
@@ -32,6 +34,7 @@ namespace SafeAccountsAPI.Controllers
             _context = context;
             _httpContextAccessor = httpContextAccessor;
             _configuration = configuration;
+            _keyAndIV = new string[] { _configuration.GetValue<string>("UserEncryptionKey"), _configuration.GetValue<string>("UserEncryptionIV") };
         }
 
         // register new user
@@ -40,20 +43,19 @@ namespace SafeAccountsAPI.Controllers
         public IActionResult User_AddUser([FromBody] NewUser newUser)
         {
             // attempt to create new user and add to the database.
-
             // if there is a user with this email already then we throw bad request error
-            if (_context.Users.SingleOrDefault(a => a.Email == newUser.Email) != null)
+            if (_context.Users.SingleOrDefault(a => a.Email.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes(newUser.Email, _keyAndIV))) != null)
             {
                 ErrorMessage error = new ErrorMessage("Failed to create new user", "Email already in use.");
                 return new BadRequestObjectResult(error);
             }
 
-            User userToRegister = new User(newUser); // new user with no accounts and registered as user
+            User userToRegister = new User(newUser, _keyAndIV); // new user with no accounts and registered as user
             _context.Users.Add(userToRegister);
             _context.SaveChanges();
 
             // after we save changes, we need to create unique key and iv, then send the confirmation email
-            HelperMethods.CreateUserKeyandIV(_context.Users.Single(a => a.Email == newUser.Email).ID);
+            HelperMethods.CreateUserKeyandIV(userToRegister.ID);
             SendConfirmationEmail(userToRegister);
             return Ok();
         }
@@ -65,8 +67,10 @@ namespace SafeAccountsAPI.Controllers
         /// <remarks>TODO Move this to the helpers</remarks>
         private void SendConfirmationEmail(User user)
         {
+            ReturnableUser retUser = new ReturnableUser(user, _keyAndIV); // decrypt user data
+
             // generate token
-            string token = HelperMethods.GenerateJWTEmailConfirmationToken(user.Email, _configuration.GetValue<string>("EmailConfirmationTokenKey"));
+            string token = HelperMethods.GenerateJWTEmailConfirmationToken(retUser.ID, _configuration.GetValue<string>("EmailConfirmationTokenKey"));
 
             // handle to our smtp client
             var smtpClient = new SmtpClient(_configuration.GetValue<string>("Smtp:Host"))
@@ -77,10 +81,10 @@ namespace SafeAccountsAPI.Controllers
             };
 
             // format the body of the message
-            string body = "Hello " + user.First_Name + ",\n\n";
+            string body = "Hello " + retUser.First_Name + ",\n\n";
             body += "A new account has been registered with SafeAccounts using your email address.\n\n";
             body += "To confirm your new account, please go to this web address:\n\n";
-            body += _configuration.GetValue<string>("WebsiteUrl") + "emailconfirmation/?token=" + token + "&email=" + user.Email;
+            body += _configuration.GetValue<string>("WebsiteUrl") + "emailconfirmation/?token=" + token + "&email=" + retUser.Email;
             body += "\n\nThis should appear as a blue link which you can just click on. If that doesn't work,";
             body += "then cut and paste the address into the address line at the top of your web browser window.\n\n";
             body += "If you need help, please contact the site administrator.\n\n";
@@ -95,7 +99,7 @@ namespace SafeAccountsAPI.Controllers
                 Body = body,
                 IsBodyHtml = false,
             };
-            mailMessage.To.Add(user.Email);
+            mailMessage.To.Add(retUser.Email);
 
             // send message
             smtpClient.Send(mailMessage);
@@ -105,8 +109,8 @@ namespace SafeAccountsAPI.Controllers
         [ApiExceptionFilter("Error confirming email")]
         public ActionResult User_ConfirmEmail(string token, string email)
         {
-
-            User userToConfirm = _context.Users.Single(a => a.Email == email);
+            byte[] encryptedEmail = HelperMethods.EncryptStringToBytes_Aes(email, _keyAndIV);
+            User userToConfirm = _context.Users.Single(a => a.Email.SequenceEqual(encryptedEmail));
 
             // check if email is already verified
             if (userToConfirm.EmailVerified)
@@ -116,7 +120,7 @@ namespace SafeAccountsAPI.Controllers
             }
 
             // verify that the email provided matches the email in the token.
-            if (email != HelperMethods.GetUserFromAccessToken(token, _context, _configuration.GetValue<string>("EmailConfirmationTokenKey")).Email)
+            if (!encryptedEmail.SequenceEqual(HelperMethods.GetUserFromAccessToken(token, _context, _configuration.GetValue<string>("EmailConfirmationTokenKey")).Email))
             {
                 ErrorMessage error = new ErrorMessage("Failed to confirm email", "Token is invalid.");
                 return new BadRequestObjectResult(error);
@@ -136,7 +140,7 @@ namespace SafeAccountsAPI.Controllers
         public ActionResult User_Login([FromBody] Login login)
         {
             // get users saved password hash and salt
-            User user = _context.Users.Single(a => a.Email == login.Email);
+            User user = _context.Users.Single(a => a.Email.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes(login.Email, _keyAndIV)));
 
             // check if the user has a verified email or not
             if (!user.EmailVerified)
@@ -148,7 +152,7 @@ namespace SafeAccountsAPI.Controllers
             // successful login.. compare user hash to the hash generated from the inputted password and salt
             if (ValidatePassword(login.Password, user.Password))
             {
-                string tokenString = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email, _configuration.GetValue<string>("UserJwtTokenKey"));
+                string tokenString = HelperMethods.GenerateJWTAccessToken(user.ID, _configuration.GetValue<string>("UserJwtTokenKey"));
                 RefreshToken refToken = HelperMethods.GenerateRefreshToken(user, _context);
                 LoginResponse rtrn = new LoginResponse { ID = user.ID, AccessToken = tokenString, RefreshToken = new ReturnableRefreshToken(refToken) };
                 _context.SaveChanges(); // always last on db to make sure nothing breaks and db has new info
@@ -224,7 +228,7 @@ namespace SafeAccountsAPI.Controllers
         [ApiExceptionFilter("Error retrieving users.")]
         public IActionResult GetAllUsers()
         {
-            if (!HelperMethods.ValidateIsAdmin(_httpContextAccessor))
+            if (!HelperMethods.ValidateIsAdmin(_context, int.Parse(_httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Actor).Value), _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid Role", "Caller must have admin role.");
                 return new UnauthorizedObjectResult(error);
@@ -234,7 +238,7 @@ namespace SafeAccountsAPI.Controllers
             List<ReturnableUser> users = new List<ReturnableUser>();
             foreach (User user in _context.Users.ToArray())
             {
-                ReturnableUser retUser = new ReturnableUser(user);
+                ReturnableUser retUser = new ReturnableUser(user, _keyAndIV);
                 users.Add(retUser);
             }
 
@@ -247,14 +251,14 @@ namespace SafeAccountsAPI.Controllers
         public IActionResult User_GetUser(int id)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
             }
 
             // strips out private data that is never to be sent back and returns user info
-            ReturnableUser retUser = new ReturnableUser(_context.Users.Where(a => a.ID == id).Single());
+            ReturnableUser retUser = new ReturnableUser(_context.Users.Where(a => a.ID == id).Single(), _keyAndIV);
             return new OkObjectResult(retUser);
         }
 
@@ -264,7 +268,7 @@ namespace SafeAccountsAPI.Controllers
         public IActionResult User_DeleteUser(int id)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
@@ -283,7 +287,7 @@ namespace SafeAccountsAPI.Controllers
         public IActionResult User_GetFirstName(int id)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
@@ -298,15 +302,16 @@ namespace SafeAccountsAPI.Controllers
         public IActionResult User_EditFirstName(int id, [FromBody] string firstname)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
             }
 
-            _context.Users.Where(a => a.ID == id).Single().First_Name = firstname;
+            // edit name and save
+            _context.Users.Where(a => a.ID == id).Single().First_Name = HelperMethods.EncryptStringToBytes_Aes(firstname, _keyAndIV);
             _context.SaveChanges();
-            return new OkObjectResult(new { new_firstname = _context.Users.Where(a => a.ID == id).Single().First_Name });
+            return Ok();
 
         }
 
@@ -315,7 +320,7 @@ namespace SafeAccountsAPI.Controllers
         public IActionResult User_GetLastName(int id)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
@@ -330,15 +335,15 @@ namespace SafeAccountsAPI.Controllers
         {
 
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
             }
 
-            _context.Users.Where(a => a.ID == id).Single().Last_Name = lastname;
+            _context.Users.Where(a => a.ID == id).Single().Last_Name = HelperMethods.EncryptStringToBytes_Aes(lastname, _keyAndIV); ;
             _context.SaveChanges();
-            return new OkObjectResult(new { new_lastname = _context.Users.Where(a => a.ID == id).Single().Last_Name });
+            return Ok();
 
         }
 
@@ -348,7 +353,7 @@ namespace SafeAccountsAPI.Controllers
         {
 
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
@@ -379,7 +384,7 @@ namespace SafeAccountsAPI.Controllers
         public IActionResult User_GetAccounts(int id)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
@@ -402,7 +407,7 @@ namespace SafeAccountsAPI.Controllers
         public IActionResult User_AddAccount(int id, [FromBody] NewAccount accToAdd)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
@@ -438,7 +443,7 @@ namespace SafeAccountsAPI.Controllers
         public IActionResult User_EditAccount(int id, int acc_id, [FromBody] NewAccount acc)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
@@ -471,7 +476,7 @@ namespace SafeAccountsAPI.Controllers
         public IActionResult User_DeleteMultipleAccounts(int id, [FromBody] List<int> account_ids)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
@@ -497,7 +502,7 @@ namespace SafeAccountsAPI.Controllers
         public IActionResult User_DeleteAccount(int id, int account_id)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
@@ -521,7 +526,7 @@ namespace SafeAccountsAPI.Controllers
         public IActionResult User_GetSingleAccount(int id, int account_id)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
@@ -545,7 +550,7 @@ namespace SafeAccountsAPI.Controllers
         {
             // attempt to set account to be favorite or not
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
@@ -574,7 +579,7 @@ namespace SafeAccountsAPI.Controllers
             // attempt to edit the title
 
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
@@ -603,7 +608,7 @@ namespace SafeAccountsAPI.Controllers
             // attempt to edit the login
 
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
@@ -631,7 +636,7 @@ namespace SafeAccountsAPI.Controllers
         {
 
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
@@ -660,7 +665,7 @@ namespace SafeAccountsAPI.Controllers
         {
             // attempt to edit the description
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
@@ -688,7 +693,7 @@ namespace SafeAccountsAPI.Controllers
         {
             // attempt to edit the description
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
@@ -726,7 +731,7 @@ namespace SafeAccountsAPI.Controllers
         public IActionResult User_GetFolders(int id)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
@@ -748,7 +753,7 @@ namespace SafeAccountsAPI.Controllers
         public IActionResult User_AddFolder(int id, [FromBody] NewFolder folderToAdd)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
@@ -790,7 +795,7 @@ namespace SafeAccountsAPI.Controllers
         public IActionResult User_DeleteFolder(int id, int folder_id)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
@@ -881,7 +886,7 @@ namespace SafeAccountsAPI.Controllers
             // attempt to edit the title
 
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);
@@ -906,7 +911,7 @@ namespace SafeAccountsAPI.Controllers
         public IActionResult User_SetFolderParent(int id, int folder_id, [FromBody] int? newParentID)
         {
             // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id))
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
                 return new UnauthorizedObjectResult(error);

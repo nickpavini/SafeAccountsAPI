@@ -44,7 +44,7 @@ namespace SafeAccountsAPI.Controllers
                 return new BadRequestObjectResult(error);
             }
 
-            string newTokenStr = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email, _configuration.GetValue<string>("UserJwtTokenKey"));
+            string newTokenStr = HelperMethods.GenerateJWTAccessToken(user.ID, _configuration.GetValue<string>("UserJwtTokenKey"));
             RefreshToken newRefToken = HelperMethods.GenerateRefreshToken(user, _context);
             LoginResponse rtrn = new LoginResponse { ID = user.ID, AccessToken = newTokenStr, RefreshToken = new ReturnableRefreshToken(newRefToken) };
 

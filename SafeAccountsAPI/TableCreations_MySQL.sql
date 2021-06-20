@@ -9,11 +9,11 @@ drop table users;
 Create Table Users
 (
 	ID int primary key auto_increment,
-	First_Name nvarchar(20),
-	Last_Name nvarchar(30),
-	Email nvarchar(50) unique,
+	First_Name varbinary(80),
+	Last_Name varbinary(80),
+	Email varbinary(200) unique,
 	Password varbinary(200),
-	Role nvarchar(25),
+	Role varbinary(80),
     EmailVerified bool not null
 );
 

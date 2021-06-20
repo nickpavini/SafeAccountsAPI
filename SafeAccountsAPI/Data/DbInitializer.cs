@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using Microsoft.Extensions.Configuration;
 using SafeAccountsAPI.Helpers;
 using SafeAccountsAPI.Models;
 
@@ -7,21 +8,59 @@ namespace SafeAccountsAPI.Data
 {
     public static class DbInitializer
     {
-        public static void Initialize(APIContext context)
+        public static void Initialize(APIContext context, IConfiguration config)
         {
             context.Database.EnsureCreated();
 
             // Look for any students.
             if (!context.Users.Any())
             {
+                // set key and IV
+                string[] keyAndIV = new string[] { config.GetValue<string>("UserEncryptionKey"), config.GetValue<string>("UserEncryptionIV") };
+
                 // add base users if data base not populated
                 User[] users = new User[]
                 {
-                    new User { First_Name="John", Last_Name="Doe", Email="john@doe.com", Password=HelperMethods.ConcatenatedSaltAndSaltedHash("useless"), Role=UserRoles.User, EmailVerified=true },
-                    new User { First_Name="Edwin", Last_Name="May", Email="edwin@may.com", Password=HelperMethods.ConcatenatedSaltAndSaltedHash("useless"), Role=UserRoles.User, EmailVerified=true },
-                    new User { First_Name="Lucy", Last_Name="Vale", Email="lucy@vale.com", Password=HelperMethods.ConcatenatedSaltAndSaltedHash("useless"), Role=UserRoles.User, EmailVerified=true },
-                    new User { First_Name="Pam", Last_Name="Willis", Email="pam@willis.com", Password=HelperMethods.ConcatenatedSaltAndSaltedHash("useless"), Role=UserRoles.User, EmailVerified=true },
-                    new User { First_Name="Game", Last_Name="Stonk", Email="game@stonk.com", Password=HelperMethods.ConcatenatedSaltAndSaltedHash("useless"), Role=UserRoles.User, EmailVerified=true }
+                    new User {
+                        First_Name=HelperMethods.EncryptStringToBytes_Aes("John", keyAndIV),
+                        Last_Name=HelperMethods.EncryptStringToBytes_Aes("Doe", keyAndIV),
+                        Email=HelperMethods.EncryptStringToBytes_Aes("john@doe.com", keyAndIV),
+                        Password=HelperMethods.ConcatenatedSaltAndSaltedHash("useless"),
+                        Role=HelperMethods.EncryptStringToBytes_Aes(UserRoles.User, keyAndIV),
+                        EmailVerified=true
+                    },
+                    new User {
+                        First_Name=HelperMethods.EncryptStringToBytes_Aes("Edwin", keyAndIV),
+                        Last_Name=HelperMethods.EncryptStringToBytes_Aes("May", keyAndIV),
+                        Email=HelperMethods.EncryptStringToBytes_Aes("edwin@may.com", keyAndIV),
+                        Password=HelperMethods.ConcatenatedSaltAndSaltedHash("useless"),
+                        Role=HelperMethods.EncryptStringToBytes_Aes(UserRoles.User, keyAndIV),
+                        EmailVerified=true
+                    },
+                    new User {
+                        First_Name=HelperMethods.EncryptStringToBytes_Aes("Lucy", keyAndIV),
+                        Last_Name=HelperMethods.EncryptStringToBytes_Aes("Vale", keyAndIV),
+                        Email=HelperMethods.EncryptStringToBytes_Aes("lucy@vale.com", keyAndIV),
+                        Password=HelperMethods.ConcatenatedSaltAndSaltedHash("useless"),
+                        Role=HelperMethods.EncryptStringToBytes_Aes(UserRoles.User, keyAndIV),
+                        EmailVerified=true
+                    },
+                    new User {
+                        First_Name=HelperMethods.EncryptStringToBytes_Aes("Pam", keyAndIV),
+                        Last_Name=HelperMethods.EncryptStringToBytes_Aes("Willis", keyAndIV),
+                        Email=HelperMethods.EncryptStringToBytes_Aes("pam@willis.com", keyAndIV),
+                        Password=HelperMethods.ConcatenatedSaltAndSaltedHash("useless"),
+                        Role=HelperMethods.EncryptStringToBytes_Aes(UserRoles.User, keyAndIV),
+                        EmailVerified=true
+                    },
+                    new User {
+                        First_Name=HelperMethods.EncryptStringToBytes_Aes("Game", keyAndIV),
+                        Last_Name=HelperMethods.EncryptStringToBytes_Aes("Stonk", keyAndIV),
+                        Email=HelperMethods.EncryptStringToBytes_Aes("game@stonk.com", keyAndIV),
+                        Password=HelperMethods.ConcatenatedSaltAndSaltedHash("useless"),
+                        Role=HelperMethods.EncryptStringToBytes_Aes(UserRoles.User, keyAndIV),
+                        EmailVerified=true
+                    }
                 };
 
                 foreach (User person in users)
