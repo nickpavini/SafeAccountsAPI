@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -25,7 +26,8 @@ namespace SafeAccountsAPI
                 try
                 {
                     var context = services.GetRequiredService<APIContext>();
-                    DbInitializer.Initialize(context);
+                    var config = services.GetRequiredService<IConfiguration>();
+                    DbInitializer.Initialize(context, config);
                 }
                 catch (Exception ex)
                 {

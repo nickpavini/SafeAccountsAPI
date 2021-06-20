@@ -24,6 +24,7 @@ namespace SafeAccountsAPI.UnitTests
         public IConfigurationRoot _config { get; }
         public APIContext _context { get; set; } // if we are updating things this might need to be disposed are reset
         User _testUser { get; set; } // this is our user for testing... also may be updated during testing
+        ReturnableUser _retTestUser { get; set; } // decrypted user
 
         public UserControllerIntegrationTest(WebApplicationFactory<SafeAccountsAPI.Startup> fixture)
         {
@@ -38,7 +39,9 @@ namespace SafeAccountsAPI.UnitTests
             _client.DefaultRequestHeaders.Add("ApiKey", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYXBpX2tleSIsImV4cCI6MTY1MzkxODQyNiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiYXVkIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIn0.ZBagEGyp7dJBozJ7HoQ8nZVNpK-h-rzjXL9SmEvIYgA");
 
             // set reference to our user for testing
-            _testUser = _context.Users.Single(a => a.Email == "john@doe.com");
+            string[] keyAndIV = { _config.GetValue<string>("UserEncryptionKey"), _config.GetValue<string>("UserEncryptionIV") }; // for user encryption there is a single key
+            _testUser = _context.Users.Single(a => a.Email.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes("john@doe.com", keyAndIV)));
+            _retTestUser = new ReturnableUser(_testUser, keyAndIV);
         }
 
         [Fact]
@@ -59,7 +62,7 @@ namespace SafeAccountsAPI.UnitTests
             // make a login request and validate response code
             using (var requestMessage = new HttpRequestMessage(HttpMethod.Post, _client.BaseAddress + "users/login"))
             {
-                Login login = new Login { Email = _testUser.Email, Password = "useless" }; // the original user
+                Login login = new Login { Email = _retTestUser.Email, Password = "useless" }; // the original user
                 requestMessage.Content = new StringContent(JsonConvert.SerializeObject(login), Encoding.UTF8, "application/json"); // set content
                 response = await _client.SendAsync(requestMessage);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -101,7 +104,7 @@ namespace SafeAccountsAPI.UnitTests
             using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, _client.BaseAddress + "users/" + _testUser.ID))
             {
                 // generate access code and set header
-                string accessToken = HelperMethods.GenerateJWTAccessToken(_testUser.Role, _testUser.Email, _config["UserJwtTokenKey"]);
+                string accessToken = HelperMethods.GenerateJWTAccessToken(_testUser.ID, _config["UserJwtTokenKey"]);
                 string cookie = "AccessToken=" + accessToken;
                 requestMessage.Headers.Add("Cookie", cookie);
 
@@ -110,15 +113,14 @@ namespace SafeAccountsAPI.UnitTests
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
                 // expected and returned users
-                ReturnableUser expectedUserReturn = new ReturnableUser(_testUser);
                 ReturnableUser returnedUser = JsonConvert.DeserializeObject<ReturnableUser>(response.Content.ReadAsStringAsync().Result);
 
                 // check that the returned user is the user we were expecting
-                Assert.Equal(expectedUserReturn.ID, returnedUser.ID);
-                Assert.Equal(expectedUserReturn.Email, returnedUser.Email);
-                Assert.Equal(expectedUserReturn.Role, returnedUser.Role);
-                Assert.Equal(expectedUserReturn.First_Name, returnedUser.First_Name);
-                Assert.Equal(expectedUserReturn.Last_Name, returnedUser.Last_Name);
+                Assert.Equal(_retTestUser.ID, returnedUser.ID);
+                Assert.Equal(_retTestUser.Email, returnedUser.Email);
+                Assert.Equal(_retTestUser.Role, returnedUser.Role);
+                Assert.Equal(_retTestUser.First_Name, returnedUser.First_Name);
+                Assert.Equal(_retTestUser.Last_Name, returnedUser.Last_Name);
             }
         }
 
@@ -133,7 +135,7 @@ namespace SafeAccountsAPI.UnitTests
             using (var requestMessage = new HttpRequestMessage(HttpMethod.Post, _client.BaseAddress + "users/logout"))
             {
                 // generate access code and set header
-                string accessToken = HelperMethods.GenerateJWTAccessToken(_testUser.Role, _testUser.Email, _config["UserJwtTokenKey"]);
+                string accessToken = HelperMethods.GenerateJWTAccessToken(_testUser.ID, _config["UserJwtTokenKey"]);
                 RefreshToken refToken = HelperMethods.GenerateRefreshToken(_testUser, _context);
                 string cookie = "AccessToken=" + accessToken + "; AccessTokenSameSite=" + accessToken + "; RefreshToken=" + refToken.Token + "; RefreshTokenSameSite=" + refToken.Token;
                 requestMessage.Headers.Add("Cookie", cookie);

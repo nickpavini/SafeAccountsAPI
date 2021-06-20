@@ -20,7 +20,7 @@ namespace SafeAccountsAPI.Helpers
         public static int salt_length = 16; // length of salts for password storage
 
         // might want to combine JWT generation to a single function over time
-        public static string GenerateJWTEmailConfirmationToken(string email, string token_key)
+        public static string GenerateJWTEmailConfirmationToken(int id, string token_key)
         {
             SymmetricSecurityKey secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(token_key));
             SigningCredentials signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
@@ -28,7 +28,7 @@ namespace SafeAccountsAPI.Helpers
             JwtSecurityToken tokeOptions = new JwtSecurityToken(
                 issuer: "http://localhost:5000",
                 audience: "http://localhost:5000",
-                claims: new List<Claim> { new Claim(ClaimTypes.Email, email) },
+                claims: new List<Claim> { new Claim(ClaimTypes.Actor, id.ToString()) },
                 expires: DateTime.Now.AddDays(7), // 1 week to confirm
                 signingCredentials: signinCredentials
             );
@@ -36,7 +36,7 @@ namespace SafeAccountsAPI.Helpers
             return new JwtSecurityTokenHandler().WriteToken(tokeOptions);
         }
 
-        public static string GenerateJWTAccessToken(string role, string email, string token_key)
+        public static string GenerateJWTAccessToken(int id, string token_key)
         {
             SymmetricSecurityKey secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(token_key));
             SigningCredentials signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
@@ -44,7 +44,7 @@ namespace SafeAccountsAPI.Helpers
             JwtSecurityToken tokeOptions = new JwtSecurityToken(
                 issuer: "http://localhost:5000",
                 audience: "http://localhost:5000",
-                claims: new List<Claim> { new Claim(ClaimTypes.Role, role), new Claim(ClaimTypes.Email, email), new Claim(ClaimTypes.Name, "access_token") },
+                claims: new List<Claim> { new Claim(ClaimTypes.Actor, id.ToString()), new Claim(ClaimTypes.Name, "access_token") },
                 expires: DateTime.Now.AddMinutes(15), // these reset regularly
                 signingCredentials: signinCredentials
             );
@@ -78,14 +78,14 @@ namespace SafeAccountsAPI.Helpers
                 throw new SecurityTokenException("Invalid token!");
             }
 
-            // get the email from the token
-            string email = principal.FindFirst(ClaimTypes.Email)?.Value;
-            if (string.IsNullOrEmpty(email))
+            // get the id from the token
+            string id = principal.FindFirst(ClaimTypes.Actor)?.Value;
+            if (string.IsNullOrEmpty(id))
             {
-                throw new SecurityTokenException($"Missing claim: {ClaimTypes.Email}!");
+                throw new SecurityTokenException($"Missing claim: {ClaimTypes.Actor}!");
             }
 
-            User user = _context.Users.Single(a => a.Email == email);
+            User user = _context.Users.Single(a => a.ID == int.Parse(id));
             return user;
         }
 
@@ -136,33 +136,30 @@ namespace SafeAccountsAPI.Helpers
         }
 
         // make sure this user is either admin or trying to access something they own
-        public static bool ValidateIsUserOrAdmin(IHttpContextAccessor httpContextAccessor, APIContext context, int id)
+        public static bool ValidateIsUserOrAdmin(IHttpContextAccessor httpContextAccessor, APIContext context, int id, string[] keyAndIV)
         {
             // verify that the user is either admin or is requesting their own data
-            if (ValidateIsUser(httpContextAccessor, context, id) || ValidateIsAdmin(httpContextAccessor))
+            if (ValidateIsUser(httpContextAccessor, id) || ValidateIsAdmin(context, id, keyAndIV))
                 return true;
             else
                 return false;
         }
 
-        // validate that this use is an Admin
-        public static bool ValidateIsAdmin(IHttpContextAccessor httpContextAccessor)
+        /* validate that this use is an Admin... here we dont check the token.
+         * I think it is better to use the db because if the token is compromised, they still would have to have the id
+         * of someone who is forsure an admin to get through this
+         */
+        public static bool ValidateIsAdmin(APIContext context, int id, string[] keyAndIV)
         {
-            string callerRole = httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Role).Value;
-            if (callerRole == UserRoles.Admin)
-                return true;
-            else
-                return false;
+            string callerRole = DecryptStringFromBytes_Aes(context.Users.Single(a => a.ID == id).Role, keyAndIV);
+            return (callerRole == UserRoles.Admin) ? true : false;
         }
 
         // validate that the user trying to be accessed is the same as the user making the call
-        public static bool ValidateIsUser(IHttpContextAccessor httpContextAccessor, APIContext context, int id)
+        public static bool ValidateIsUser(IHttpContextAccessor httpContextAccessor, int id)
         {
-            string callerEmail = httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Email).Value;
-            if (callerEmail == context.Users.Single(a => a.ID == id).Email)
-                return true;
-            else
-                return false;
+            int idFromToken = int.Parse(httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Actor).Value);
+            return (idFromToken == id) ? true : false;
         }
 
         // create a salt for hashing

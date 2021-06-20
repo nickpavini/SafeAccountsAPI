@@ -42,8 +42,9 @@ namespace SafeAccountsAPI.UnitTests
             APIContext context = new APIContext(options, config);
 
             // generate an access token and valid refresh token
-            User user = context.Users.Single(a => a.Email == "john@doe.com");
-            string accessToken = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email, config["UserJwtTokenKey"]);
+            string[] keyAndIV = { config.GetValue<string>("UserEncryptionKey"), config.GetValue<string>("UserEncryptionIV") }; // for user encryption there is a single key
+            User user = context.Users.Single(a => a.Email.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes("john@doe.com", keyAndIV)));
+            string accessToken = HelperMethods.GenerateJWTAccessToken(user.ID, config["UserJwtTokenKey"]);
             RefreshToken refToken = HelperMethods.GenerateRefreshToken(user, context);
 
             // set cookies in header
@@ -71,7 +72,7 @@ namespace SafeAccountsAPI.UnitTests
 
             // and the last thing we need is to validate that the refresh token was stored in the DB
             context.Dispose(); // close old connection
-            user = new APIContext(options, config).Users.Single(a => a.Email == "john@doe.com"); // get fresh handle of user from the DB
+            user = new APIContext(options, config).Users.Single(a => a.Email.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes("john@doe.com", keyAndIV))); // get fresh handle of user from the DB
             Assert.True(HelperMethods.ValidateRefreshToken(user, new_cookies.Single(a => a.Key == "RefreshTokenSameSite").Value));
         }
     }
