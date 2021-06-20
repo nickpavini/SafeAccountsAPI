@@ -15,6 +15,7 @@ using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Models;
 using SafeAccountsAPI.UnitTests.Helpers;
 using Xunit;
+using System.IO;
 
 namespace SafeAccountsAPI.UnitTests
 {
@@ -42,6 +43,14 @@ namespace SafeAccountsAPI.UnitTests
             string[] keyAndIV = { _config.GetValue<string>("UserEncryptionKey"), _config.GetValue<string>("UserEncryptionIV") }; // for user encryption there is a single key
             _testUser = _context.Users.Single(a => a.Email.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes("john@doe.com", keyAndIV)));
             _retTestUser = new ReturnableUser(_testUser, keyAndIV);
+
+            // if we dont have the keys file, lets copy it over for testing
+            if (!File.Exists(HelperMethods.keys_file))
+            {
+                // Use static Path methods to extract only the file name from the path.
+                string destFile = System.IO.Path.Combine(Directory.GetCurrentDirectory(), HelperMethods.keys_file);
+                System.IO.File.Copy("../../../../SafeAccountsAPI/" + HelperMethods.keys_file, destFile, true);
+            }
         }
 
         [Fact]

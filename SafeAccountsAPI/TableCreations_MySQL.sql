@@ -52,8 +52,8 @@ Create Table RefreshTokens
 (
 	ID int primary key auto_increment,
 	UserID int not null,
-	Token nvarchar(100),
-	Expiration nvarchar(150),
+	Token varbinary(200),
+	Expiration varbinary(100),
     CONSTRAINT FK_RefTokens_UserID FOREIGN KEY (UserID)
     REFERENCES Users(ID)
 );
