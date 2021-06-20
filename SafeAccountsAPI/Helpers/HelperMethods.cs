@@ -16,7 +16,7 @@ namespace SafeAccountsAPI.Helpers
 {
     public static class HelperMethods
     {
-        private static readonly string keys_file = "keys.txt"; // file for securely storing user keys and ivs
+        public static string keys_file = "keys.txt"; // file for securely storing user keys and ivs
         public static int salt_length = 16; // length of salts for password storage
 
         // might want to combine JWT generation to a single function over time
@@ -96,8 +96,8 @@ namespace SafeAccountsAPI.Helpers
             RefreshToken refreshToken = new RefreshToken()
             {
                 UserID = user.ID,
-                Token = GenerateRefreshToken(),
-                Expiration = DateTime.UtcNow.AddDays(200).ToString() // 200 days for reresh tokens
+                Token = HelperMethods.EncryptStringToBytes_Aes(GenerateRefreshToken(), HelperMethods.GetUserKeyAndIV(user.ID)),
+                Expiration = HelperMethods.EncryptStringToBytes_Aes(DateTime.UtcNow.AddDays(200).ToString(), HelperMethods.GetUserKeyAndIV(user.ID)) // 200 days for reresh tokens
             };
 
             // Add it to the list of of refresh tokens for the user
@@ -123,13 +123,13 @@ namespace SafeAccountsAPI.Helpers
         // make sure the refresh token is valid
         public static bool ValidateRefreshToken(User user, string refreshToken)
         {
-            if (user == null || !user.RefreshTokens.Exists(rt => rt.Token == refreshToken))
+            if (user == null || !user.RefreshTokens.Exists(rt => rt.Token.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes(refreshToken, HelperMethods.GetUserKeyAndIV(user.ID)))))
                 return false;
 
-            RefreshToken storedRefreshToken = user.RefreshTokens.Find(rt => rt.Token == refreshToken);
+            RefreshToken storedRefreshToken = user.RefreshTokens.Find(rt => rt.Token.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes(refreshToken, HelperMethods.GetUserKeyAndIV(user.ID))));
 
             // Ensure that the refresh token that we got from storage is not yet expired.
-            if (DateTime.UtcNow > DateTime.Parse(storedRefreshToken.Expiration))
+            if (DateTime.UtcNow > DateTime.Parse(HelperMethods.DecryptStringFromBytes_Aes(storedRefreshToken.Expiration, HelperMethods.GetUserKeyAndIV(storedRefreshToken.UserID))))
                 return false;
 
             return true;
@@ -325,11 +325,13 @@ namespace SafeAccountsAPI.Helpers
 
         public static void SetCookies(HttpResponse Response, string tokenString, RefreshToken refToken)
         {
+            ReturnableRefreshToken retToken = new ReturnableRefreshToken(refToken); // decrypt the token
+
             // append cookies after login
             Response.Cookies.Append("AccessToken", tokenString, HelperMethods.GetCookieOptions(false));
-            Response.Cookies.Append("RefreshToken", refToken.Token, HelperMethods.GetCookieOptions(false));
+            Response.Cookies.Append("RefreshToken", retToken.Token, HelperMethods.GetCookieOptions(false));
             Response.Cookies.Append("AccessTokenSameSite", tokenString, HelperMethods.GetCookieOptions(true));
-            Response.Cookies.Append("RefreshTokenSameSite", refToken.Token, HelperMethods.GetCookieOptions(true));
+            Response.Cookies.Append("RefreshTokenSameSite", retToken.Token, HelperMethods.GetCookieOptions(true));
         }
 
         public static CookieOptions GetCookieOptions(bool sameSite = false)
