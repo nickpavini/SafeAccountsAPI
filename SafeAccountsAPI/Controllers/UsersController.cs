@@ -282,21 +282,6 @@ namespace SafeAccountsAPI.Controllers
             return Ok();
         }
 
-        [HttpGet("{id:int}/firstname")] // working
-        [ApiExceptionFilter("Failed to get first name.")]
-        public IActionResult User_GetFirstName(int id)
-        {
-            // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
-            {
-                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                return new UnauthorizedObjectResult(error);
-            }
-
-            return new OkObjectResult(new { firstname = _context.Users.Where(a => a.ID == id).Single().First_Name });
-
-        }
-
         [HttpPut("{id:int}/firstname")] // working
         [ApiExceptionFilter("Failed to update first name.")]
         public IActionResult User_EditFirstName(int id, [FromBody] string firstname)
@@ -312,20 +297,6 @@ namespace SafeAccountsAPI.Controllers
             _context.Users.Where(a => a.ID == id).Single().First_Name = HelperMethods.EncryptStringToBytes_Aes(firstname, _keyAndIV);
             _context.SaveChanges();
             return Ok();
-
-        }
-
-        [HttpGet("{id:int}/lastname")] // working
-        [ApiExceptionFilter("Failed to get last name.")]
-        public IActionResult User_GetLastName(int id)
-        {
-            // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
-            {
-                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                return new UnauthorizedObjectResult(error);
-            }
-            return new OkObjectResult(new { lastname = _context.Users.Where(a => a.ID == id).Single().Last_Name });
 
         }
 
