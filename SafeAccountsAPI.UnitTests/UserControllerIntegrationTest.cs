@@ -145,7 +145,7 @@ namespace SafeAccountsAPI.UnitTests
             {
                 // generate access code and set header
                 string accessToken = HelperMethods.GenerateJWTAccessToken(_testUser.ID, _config["UserJwtTokenKey"]);
-                RefreshToken refToken = HelperMethods.GenerateRefreshToken(_testUser, _context);
+                ReturnableRefreshToken refToken = new ReturnableRefreshToken(HelperMethods.GenerateRefreshToken(_testUser, _context));
                 string cookie = "AccessToken=" + accessToken + "; AccessTokenSameSite=" + accessToken + "; RefreshToken=" + refToken.Token + "; RefreshTokenSameSite=" + refToken.Token;
                 requestMessage.Headers.Add("Cookie", cookie);
 
