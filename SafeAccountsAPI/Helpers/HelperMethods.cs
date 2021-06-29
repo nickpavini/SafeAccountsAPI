@@ -327,20 +327,20 @@ namespace SafeAccountsAPI.Helpers
         {
             ReturnableRefreshToken retToken = new ReturnableRefreshToken(refToken); // decrypt the token
 
-            // append cookies after login
-            Response.Cookies.Append("AccessToken", tokenString, HelperMethods.GetCookieOptions(false));
-            Response.Cookies.Append("RefreshToken", retToken.Token, HelperMethods.GetCookieOptions(false));
-            Response.Cookies.Append("AccessTokenSameSite", tokenString, HelperMethods.GetCookieOptions(true));
-            Response.Cookies.Append("RefreshTokenSameSite", retToken.Token, HelperMethods.GetCookieOptions(true));
+            // append cookies after login.. we use the refresh tokens expiration on cookies, because the user has to give back the expired access to get a new one
+            Response.Cookies.Append("AccessToken", tokenString, HelperMethods.GetCookieOptions(DateTime.Parse(retToken.Expiration), false));
+            Response.Cookies.Append("RefreshToken", retToken.Token, HelperMethods.GetCookieOptions(DateTime.Parse(retToken.Expiration), false));
+            Response.Cookies.Append("AccessTokenSameSite", tokenString, HelperMethods.GetCookieOptions(DateTime.Parse(retToken.Expiration), true));
+            Response.Cookies.Append("RefreshTokenSameSite", retToken.Token, HelperMethods.GetCookieOptions(DateTime.Parse(retToken.Expiration), true));
         }
 
-        public static CookieOptions GetCookieOptions(bool sameSite = false)
+        public static CookieOptions GetCookieOptions(DateTime expiration, bool sameSite = false)
         {
             CookieOptions options = new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true,
-                Expires = DateTime.UtcNow.AddDays(1) // set cookie to expire in 1 day
+                Expires = expiration // set cookie to expire in 1 day
             };
             if (sameSite) options.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.None; // for cross site requests
             return options;
