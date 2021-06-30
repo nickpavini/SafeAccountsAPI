@@ -899,6 +899,14 @@ namespace SafeAccountsAPI.Controllers
             if (newParentID == 0)
                 newParentID = null;
 
+            // get child reference and make sure we are assigning a new parent
+            Folder child = _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == folder_id);
+            if(child.ParentID == newParentID)
+            {
+                ErrorMessage error = new ErrorMessage("Invalid folder", "Current folder already is set to have this parent.");
+                return new BadRequestObjectResult(error);
+            }
+
             // validate ownership of parent
             if (newParentID != null && !_context.Users.Single(a => a.ID == id).Folders.Exists(b => b.ID == newParentID))
             {
@@ -916,11 +924,8 @@ namespace SafeAccountsAPI.Controllers
                 return new BadRequestObjectResult(error);
             }
 
-            // get reference to child old parent
-            Folder child = _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == folder_id);
+            // get reference to child old parent, set the childs new parentID, and set new parent to have a child
             Folder oldParent = child.ParentID != null ? _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == child.ParentID) : null;
-
-            // set the childs new parentID, and set new parent to have a child
             child.ParentID = newParentID;
             if (newParentID != null)
                 _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == newParentID).HasChild = true;
