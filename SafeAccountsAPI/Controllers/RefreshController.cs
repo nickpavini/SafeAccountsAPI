@@ -34,6 +34,20 @@ namespace SafeAccountsAPI.Controllers
         [ApiExceptionFilter("Error refreshing access.")]
         public IActionResult Refresh()
         {
+            // check for access token
+            if (Request.Cookies["AccessTokenSameSite"] == null && Request.Cookies["AccessToken"] == null)
+            {
+                ErrorMessage error = new ErrorMessage("Failed to refresh access", "User does not have the access token in their cookies.");
+                return new BadRequestObjectResult(error);
+            }
+
+            // check for refresh token
+            if (Request.Cookies["RefreshTokenSameSite"] == null && Request.Cookies["RefreshToken"] == null)
+            {
+                ErrorMessage error = new ErrorMessage("Failed to refresh access", "User does not have the refresh token in their cookies.");
+                return new BadRequestObjectResult(error);
+            }
+
             // attempt getting user from claims
             User user = HelperMethods.GetUserFromAccessToken(Request.Cookies["AccessTokenSameSite"] ?? Request.Cookies["AccessToken"], _context, _configuration.GetValue<string>("UserJwtTokenKey"));
 
