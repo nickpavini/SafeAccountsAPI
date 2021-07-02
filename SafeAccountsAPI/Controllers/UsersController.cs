@@ -219,6 +219,68 @@ namespace SafeAccountsAPI.Controllers
             return Ok();
         }
 
+        // this endpoint allows a user to reset their password by email if they cannot login
+        [HttpGet("password/reset"), AllowAnonymous]
+        [ApiExceptionFilter("Error sending reset password email.")]
+        public IActionResult User_PasswordReset(string email)
+        {
+            byte[] encryptedEmail = HelperMethods.EncryptStringToBytes_Aes(email, _keyAndIV);
+            User userToReset = _context.Users.SingleOrDefault(a => a.Email.SequenceEqual(encryptedEmail));
+
+            if (userToReset == null)
+            {
+                ErrorMessage error = new ErrorMessage("Failed to reset password", "User Email does not exist.");
+                return new BadRequestObjectResult(error);
+            }
+
+            // check if email is already verified
+            if (!userToReset.EmailVerified)
+            {
+                ErrorMessage error = new ErrorMessage("Failed to reset password", "Please confirm email adress first.");
+                return new BadRequestObjectResult(error);
+            }
+
+            SendPasswordResetEmail(new ReturnableUser(userToReset, _keyAndIV));
+            return Ok();
+        }
+
+        private void SendPasswordResetEmail(ReturnableUser retUser)
+        {
+            // generate token
+            string token = HelperMethods.GeneratePasswordResetToken(retUser.ID, _configuration.GetValue<string>("PasswordResetTokenKey"));
+
+            // handle to our smtp client
+            var smtpClient = new SmtpClient(_configuration.GetValue<string>("Smtp:Host"))
+            {
+                Port = int.Parse(_configuration.GetValue<string>("Smtp:Port")),
+                Credentials = new NetworkCredential(_configuration.GetValue<string>("Smtp:Username"), _configuration.GetValue<string>("Smtp:Password")),
+                EnableSsl = true,
+            };
+
+            // format the body of the message
+            string body = "Hello " + retUser.First_Name + ",\n\n";
+            body += "We have recieved a request to reset your password.\n\n";
+            body += "To reset your password, click the link below:\n\n";
+            body += _configuration.GetValue<string>("WebsiteUrl") + "passwordreset/?token=" + token + "&email=" + retUser.Email;
+            body += "\n\nThis should appear as a blue link which you can just click on. If that doesn't work,";
+            body += "then cut and paste the address into the address line at the top of your web browser window.\n\n";
+            body += "If you need help, please contact the site administrator.\n\n";
+            body += "SafeAccounts Administrator,\n";
+            body += _configuration.GetValue<string>("Smtp:Username");
+
+            // handle to our message settings
+            var mailMessage = new MailMessage
+            {
+                From = new MailAddress(_configuration.GetValue<string>("Smtp:Username")),
+                Subject = "Reset Your SafeAccounts Password",
+                Body = body,
+                IsBodyHtml = false,
+            };
+            mailMessage.To.Add(retUser.Email);
+
+            // send message
+            smtpClient.Send(mailMessage);
+        }
 
         // <summary>
         /// Get all available users.. might change later as it might not make sense to grab all accounts if there are tons
