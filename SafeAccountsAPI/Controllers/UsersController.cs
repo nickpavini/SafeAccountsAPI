@@ -282,6 +282,31 @@ namespace SafeAccountsAPI.Controllers
             smtpClient.Send(mailMessage);
         }
 
+        [HttpPut("password/reset"), AllowAnonymous] //working
+        [ApiExceptionFilter("Error resetting password")]
+        public IActionResult User_ConfirmPasswordReset(string token, string email, [FromBody] string new_password)
+        {
+            byte[] encryptedEmail = HelperMethods.EncryptStringToBytes_Aes(email, _keyAndIV);
+            User user = _context.Users.SingleOrDefault(a => a.Email.SequenceEqual(encryptedEmail));
+
+            // verify that the email provided matches the email from the user.
+            if (!encryptedEmail.SequenceEqual(HelperMethods.GetUserFromAccessToken(token, _context, _configuration.GetValue<string>("PasswordResetTokenKey")).Email))
+            {
+                ErrorMessage error = new ErrorMessage("Failed to confirm email", "Token is invalid.");
+                return new BadRequestObjectResult(error);
+            }
+
+            /*
+             * eventually we may want to do some logic to validate that this is a new password... 
+             */
+
+            // ok now we save the users email as verified
+            user.Password = HelperMethods.ConcatenatedSaltAndSaltedHash(new_password);
+            _context.Users.Update(user);
+            _context.SaveChanges();
+            return Ok();
+        }
+
         // <summary>
         /// Get all available users.. might change later as it might not make sense to grab all accounts if there are tons
         /// </summary>
