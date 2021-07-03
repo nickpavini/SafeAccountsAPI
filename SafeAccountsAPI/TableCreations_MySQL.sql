@@ -1,10 +1,10 @@
 /*Create database safeaccountsapi_db;*/
 Use safeaccountsapi_db;
 
-drop table accounts;
-drop table refreshtokens;
-drop table folders;
-drop table users;
+drop table if exists accounts;
+drop table if exists refreshtokens;
+drop table if exists folders;
+drop table if exists users;
 
 Create Table Users
 (
@@ -57,3 +57,5 @@ Create Table RefreshTokens
     CONSTRAINT FK_RefTokens_UserID FOREIGN KEY (UserID)
     REFERENCES Users(ID)
 );
+
+SELECT "table creation successful!";
