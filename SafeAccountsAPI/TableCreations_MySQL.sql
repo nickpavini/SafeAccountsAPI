@@ -57,3 +57,5 @@ Create Table RefreshTokens
     CONSTRAINT FK_RefTokens_UserID FOREIGN KEY (UserID)
     REFERENCES Users(ID)
 );
+
+SELECT "table creation successful!";
