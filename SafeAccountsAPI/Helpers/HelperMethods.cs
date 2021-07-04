@@ -36,22 +36,6 @@ namespace SafeAccountsAPI.Helpers
             return new JwtSecurityTokenHandler().WriteToken(tokeOptions);
         }
 
-        public static string GeneratePasswordResetToken(int id, string token_key)
-        {
-            SymmetricSecurityKey secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(token_key));
-            SigningCredentials signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
-
-            JwtSecurityToken tokeOptions = new JwtSecurityToken(
-                issuer: "http://localhost:5000",
-                audience: "http://localhost:5000",
-                claims: new List<Claim> { new Claim(ClaimTypes.Actor, id.ToString()) },
-                expires: DateTime.Now.AddMinutes(60), // 1 hour to reset password
-                signingCredentials: signinCredentials
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(tokeOptions);
-        }
-
         public static string GenerateJWTAccessToken(int id, string token_key)
         {
             SymmetricSecurityKey secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(token_key));
