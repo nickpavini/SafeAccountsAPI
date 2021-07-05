@@ -17,7 +17,6 @@ namespace SafeAccountsAPI.Helpers
 {
     public static class HelperMethods
     {
-        public static string keys_file = "keys.txt"; // file for securely storing user keys and ivs
         public static int salt_length = 16; // length of salts for password storage
 
         // might want to combine JWT generation to a single function over time
@@ -91,14 +90,14 @@ namespace SafeAccountsAPI.Helpers
         }
 
         // generate our refresh token with expiration
-        public static RefreshToken GenerateRefreshToken(User user, APIContext context)
+        public static RefreshToken GenerateRefreshToken(User user, APIContext context, string[] keyAndIv)
         {
             // Create the refresh token
             RefreshToken refreshToken = new RefreshToken()
             {
                 UserID = user.ID,
-                Token = HelperMethods.EncryptStringToBytes_Aes(GenerateRefreshToken(), HelperMethods.GetUserKeyAndIV(user.ID)),
-                Expiration = HelperMethods.EncryptStringToBytes_Aes(DateTime.UtcNow.AddDays(200).ToString(), HelperMethods.GetUserKeyAndIV(user.ID)) // 200 days for reresh tokens
+                Token = HelperMethods.EncryptStringToBytes_Aes(GenerateRefreshToken(), keyAndIv),
+                Expiration = HelperMethods.EncryptStringToBytes_Aes(DateTime.UtcNow.AddDays(200).ToString(), keyAndIv) // 200 days for reresh tokens
             };
 
             // Add it to the list of of refresh tokens for the user
@@ -122,15 +121,15 @@ namespace SafeAccountsAPI.Helpers
         }
 
         // make sure the refresh token is valid
-        public static bool ValidateRefreshToken(User user, string refreshToken)
+        public static bool ValidateRefreshToken(User user, string refreshToken, string[] keyAndIv)
         {
-            if (user == null || !user.RefreshTokens.Exists(rt => rt.Token.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes(refreshToken, HelperMethods.GetUserKeyAndIV(user.ID)))))
+            if (user == null || !user.RefreshTokens.Exists(rt => rt.Token.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes(refreshToken, keyAndIv))))
                 return false;
 
-            RefreshToken storedRefreshToken = user.RefreshTokens.Find(rt => rt.Token.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes(refreshToken, HelperMethods.GetUserKeyAndIV(user.ID))));
+            RefreshToken storedRefreshToken = user.RefreshTokens.Find(rt => rt.Token.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes(refreshToken, keyAndIv)));
 
             // Ensure that the refresh token that we got from storage is not yet expired.
-            if (DateTime.UtcNow > DateTime.Parse(HelperMethods.DecryptStringFromBytes_Aes(storedRefreshToken.Expiration, HelperMethods.GetUserKeyAndIV(storedRefreshToken.UserID))))
+            if (DateTime.UtcNow > DateTime.Parse(HelperMethods.DecryptStringFromBytes_Aes(storedRefreshToken.Expiration, keyAndIv)))
                 return false;
 
             return true;
@@ -197,53 +196,6 @@ namespace SafeAccountsAPI.Helpers
             Buffer.BlockCopy(password, 0, concatenated, salt.Length, password.Length);
 
             return concatenated;
-        }
-
-        // get the key associated to the specific user that is used to secure the user's saved passwords
-        // password to the actual user's account isnt encrypted because it is hashed for matching.. might later want to encrypt to add extra layer against theft
-        public static string[] GetUserKeyAndIV(int uid)
-        {
-            if (!File.Exists(keys_file))
-                throw new Exception("File for keys does not exist.");
-
-            string[] keyAndIv = null;
-            foreach (string line in File.ReadAllLines(keys_file))
-            {
-                string[] line_split = line.Split(" "); // id key iv
-                if (uid.ToString() == line_split[0])
-                { // found matching id
-                    keyAndIv = new string[2];
-                    keyAndIv[0] = line_split[1]; // key
-                    keyAndIv[1] = line_split[2]; // iv
-                }
-            }
-
-            // return empty string if we never found the user
-            if (keyAndIv == null)
-                return keyAndIv;
-
-            return keyAndIv;
-        }
-
-        // created when a new user signs up. This is their unique key and iv for securing the items in their safe
-        public static string CreateUserKeyandIV(int uid)
-        {
-            if (!File.Exists(keys_file))
-                using (File.Create(keys_file)) { }; // simply create the file and dispose of the file stream
-
-            // if there is a key already we simply return the key
-            if (GetUserKeyAndIV(uid) != null)
-                throw new Exception("Key for user id already exists.");
-
-            string key, iv;
-            using (Aes myAes = Aes.Create())
-            {
-                key = Convert.ToBase64String(myAes.Key);
-                iv = Convert.ToBase64String(myAes.IV);
-            }
-
-            File.AppendAllText(keys_file, uid.ToString() + " " + key + " " + iv + "\n"); // id key iv
-            return key + "+" + iv;
         }
 
         public static byte[] EncryptStringToBytes_Aes(string plainText, string[] keyAndIv)
@@ -314,9 +266,22 @@ namespace SafeAccountsAPI.Helpers
             return plaintext;
         }
 
-        public static void SetCookies(HttpResponse Response, string tokenString, RefreshToken refToken)
+        public static byte[] HexStringToByteArray(String hex)
         {
-            ReturnableRefreshToken retToken = new ReturnableRefreshToken(refToken); // decrypt the token
+            int NumberChars = hex.Length;
+
+            if (NumberChars % 2 != 0)
+                throw new Exception("Not a hex string");
+
+            byte[] bytes = new byte[NumberChars / 2];
+            for (int i = 0; i < NumberChars; i += 2)
+                bytes[i / 2] = Convert.ToByte(hex.Substring(i, 2), 16);
+            return bytes;
+        }
+
+        public static void SetCookies(HttpResponse Response, string tokenString, RefreshToken refToken, string[] keyAndIv)
+        {
+            ReturnableRefreshToken retToken = new ReturnableRefreshToken(refToken, keyAndIv); // decrypt the token
 
             // append cookies after login.. we use the refresh tokens expiration on cookies, because the user has to give back the expired access to get a new one
             Response.Cookies.Append("AccessToken", tokenString, HelperMethods.GetCookieOptions(DateTime.Parse(retToken.Expiration), false));
