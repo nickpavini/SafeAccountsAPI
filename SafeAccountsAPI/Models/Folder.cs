@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using System;
+using Newtonsoft.Json;
 using SafeAccountsAPI.Helpers;
 
 namespace SafeAccountsAPI.Models
@@ -18,7 +19,7 @@ namespace SafeAccountsAPI.Models
         // constructor to easily set from NewFolder type
         public Folder(NewFolder newFolder, int uid)
         {
-            FolderName = HelperMethods.EncryptStringToBytes_Aes(newFolder.Folder_Name, HelperMethods.GetUserKeyAndIV(uid));
+            FolderName = HelperMethods.HexStringToByteArray(newFolder.Folder_Name);
             UserID = uid;
             ParentID = newFolder.Parent_ID;
             HasChild = false;
@@ -36,7 +37,7 @@ namespace SafeAccountsAPI.Models
         public ReturnableFolder(Folder fold)
         {
             ID = fold.ID;
-            FolderName = HelperMethods.DecryptStringFromBytes_Aes(fold.FolderName, HelperMethods.GetUserKeyAndIV(fold.UserID));
+            FolderName = BitConverter.ToString(fold.FolderName).Replace("-", "");
             HasChild = fold.HasChild;
 
             if (fold.ParentID != null)

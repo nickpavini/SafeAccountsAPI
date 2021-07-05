@@ -40,7 +40,7 @@ Create Table Accounts
 	Password varbinary(48),
     Url varbinary(192),
 	Description varbinary(592),
-    LastModified varbinary(200),
+    LastModified nvarchar(50), /*simple date string*/
     IsFavorite bool not null,
     CONSTRAINT FK_Accounts_UserID FOREIGN KEY (UserID)
     REFERENCES Users(ID),
