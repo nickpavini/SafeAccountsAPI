@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Models;
 using SafeAccountsAPI.Logging;
+using Konscious.Security.Cryptography;
 
 namespace SafeAccountsAPI.Helpers
 {
@@ -177,23 +178,13 @@ namespace SafeAccountsAPI.Helpers
 
         public static byte[] GenerateSaltedHash(byte[] plainText, byte[] salt)
         {
-            HashAlgorithm algorithm = new SHA256Managed();
+            Argon2id hash = new Argon2id(plainText);
+            hash.Salt = salt;
+            hash.DegreeOfParallelism = 8;
+            hash.Iterations = 4;
+            hash.MemorySize = 1024 * 1024; // 1 GB
 
-
-            byte[] plainTextWithSaltBytes =
-              new byte[plainText.Length + salt.Length];
-
-            // prepend salt
-            for (int i = 0; i < salt.Length; i++)
-            {
-                plainTextWithSaltBytes[plainText.Length + i] = salt[i];
-            }
-            for (int i = 0; i < plainText.Length; i++)
-            {
-                plainTextWithSaltBytes[i] = plainText[i];
-            }
-
-            return algorithm.ComputeHash(plainTextWithSaltBytes);
+            return hash.GetBytes(32); // 32 bytes == 256 bits .. 
         }
 
         public static byte[] ConcatenatedSaltAndSaltedHash(string passwordStr)
