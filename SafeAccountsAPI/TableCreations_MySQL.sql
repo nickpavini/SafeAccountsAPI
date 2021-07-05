@@ -23,7 +23,7 @@ Create Table Folders
     UserID int not null,
     ParentID int,
     HasChild bool not null,
-    FolderName varbinary(200),
+    FolderName varbinary(32), /*n-1 chars can be saved aes encrypted*/
     Constraint FK_Folders_UserID foreign key (UserID)
     references Users(ID),
     Constraint FK_Folders_ParentID foreign key (ParentID)
@@ -35,11 +35,11 @@ Create Table Accounts
 	ID int primary key auto_increment,
 	UserID int not null,
     FolderID int,
-	Title varbinary(200),
-	Login varbinary(200),
-	Password varbinary(200),
-    Url varbinary(200),
-	Description varbinary(600),
+	Title varbinary(64), /*n-1 chars can be saved aes encrypted*/
+	Login varbinary(48),
+	Password varbinary(48),
+    Url varbinary(192),
+	Description varbinary(592),
     LastModified varbinary(200),
     IsFavorite bool not null,
     CONSTRAINT FK_Accounts_UserID FOREIGN KEY (UserID)
