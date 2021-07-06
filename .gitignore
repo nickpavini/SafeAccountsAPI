@@ -356,3 +356,5 @@ MigrationBackup/
 # VSCode debug support files
 launch.json
 tasks.json
+nuget.config
+omnisharp.json
