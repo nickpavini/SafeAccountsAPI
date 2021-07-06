@@ -10,16 +10,17 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Tokens;
 using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Models;
+using SafeAccountsAPI.Logging;
 
-namespace SafeAccountsAPI.Controllers
+namespace SafeAccountsAPI.Helpers
 {
     public static class HelperMethods
     {
-        private static readonly string keys_file = "keys.txt"; // file for securely storing user keys and ivs
+        public static string keys_file = "keys.txt"; // file for securely storing user keys and ivs
         public static int salt_length = 16; // length of salts for password storage
 
         // might want to combine JWT generation to a single function over time
-        public static string GenerateJWTEmailConfirmationToken(string email, string token_key)
+        public static string GenerateJWTEmailConfirmationToken(int id, string token_key)
         {
             SymmetricSecurityKey secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(token_key));
             SigningCredentials signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
@@ -27,7 +28,7 @@ namespace SafeAccountsAPI.Controllers
             JwtSecurityToken tokeOptions = new JwtSecurityToken(
                 issuer: "http://localhost:5000",
                 audience: "http://localhost:5000",
-                claims: new List<Claim> { new Claim(ClaimTypes.Email, email) },
+                claims: new List<Claim> { new Claim(ClaimTypes.Actor, id.ToString()) },
                 expires: DateTime.Now.AddDays(7), // 1 week to confirm
                 signingCredentials: signinCredentials
             );
@@ -35,7 +36,7 @@ namespace SafeAccountsAPI.Controllers
             return new JwtSecurityTokenHandler().WriteToken(tokeOptions);
         }
 
-        public static string GenerateJWTAccessToken(string role, string email, string token_key)
+        public static string GenerateJWTAccessToken(int id, string token_key)
         {
             SymmetricSecurityKey secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(token_key));
             SigningCredentials signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
@@ -43,8 +44,8 @@ namespace SafeAccountsAPI.Controllers
             JwtSecurityToken tokeOptions = new JwtSecurityToken(
                 issuer: "http://localhost:5000",
                 audience: "http://localhost:5000",
-                claims: new List<Claim> { new Claim(ClaimTypes.Role, role), new Claim(ClaimTypes.Email, email), new Claim(ClaimTypes.Name, "access_token") },
-                expires: DateTime.Now.AddMinutes(15),
+                claims: new List<Claim> { new Claim(ClaimTypes.Actor, id.ToString()), new Claim(ClaimTypes.Name, "access_token") },
+                expires: DateTime.Now.AddMinutes(15), // these reset regularly
                 signingCredentials: signinCredentials
             );
 
@@ -77,14 +78,14 @@ namespace SafeAccountsAPI.Controllers
                 throw new SecurityTokenException("Invalid token!");
             }
 
-            // get the email from the token
-            string email = principal.FindFirst(ClaimTypes.Email)?.Value;
-            if (string.IsNullOrEmpty(email))
+            // get the id from the token
+            string id = principal.FindFirst(ClaimTypes.Actor)?.Value;
+            if (string.IsNullOrEmpty(id))
             {
-                throw new SecurityTokenException($"Missing claim: {ClaimTypes.Email}!");
+                throw new SecurityTokenException($"Missing claim: {ClaimTypes.Actor}!");
             }
 
-            User user = _context.Users.Single(a => a.Email == email);
+            User user = _context.Users.Single(a => a.ID == int.Parse(id));
             return user;
         }
 
@@ -95,8 +96,8 @@ namespace SafeAccountsAPI.Controllers
             RefreshToken refreshToken = new RefreshToken()
             {
                 UserID = user.ID,
-                Token = GenerateRefreshToken(),
-                Expiration = DateTime.UtcNow.AddDays(1).ToString() // 1 day for reresh tokens
+                Token = HelperMethods.EncryptStringToBytes_Aes(GenerateRefreshToken(), HelperMethods.GetUserKeyAndIV(user.ID)),
+                Expiration = HelperMethods.EncryptStringToBytes_Aes(DateTime.UtcNow.AddDays(200).ToString(), HelperMethods.GetUserKeyAndIV(user.ID)) // 200 days for reresh tokens
             };
 
             // Add it to the list of of refresh tokens for the user
@@ -122,46 +123,43 @@ namespace SafeAccountsAPI.Controllers
         // make sure the refresh token is valid
         public static bool ValidateRefreshToken(User user, string refreshToken)
         {
-            if (user == null || !user.RefreshTokens.Exists(rt => rt.Token == refreshToken))
+            if (user == null || !user.RefreshTokens.Exists(rt => rt.Token.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes(refreshToken, HelperMethods.GetUserKeyAndIV(user.ID)))))
                 return false;
 
-            RefreshToken storedRefreshToken = user.RefreshTokens.Find(rt => rt.Token == refreshToken);
+            RefreshToken storedRefreshToken = user.RefreshTokens.Find(rt => rt.Token.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes(refreshToken, HelperMethods.GetUserKeyAndIV(user.ID))));
 
             // Ensure that the refresh token that we got from storage is not yet expired.
-            if (DateTime.UtcNow > DateTime.Parse(storedRefreshToken.Expiration))
+            if (DateTime.UtcNow > DateTime.Parse(HelperMethods.DecryptStringFromBytes_Aes(storedRefreshToken.Expiration, HelperMethods.GetUserKeyAndIV(storedRefreshToken.UserID))))
                 return false;
 
             return true;
         }
 
         // make sure this user is either admin or trying to access something they own
-        public static bool ValidateIsUserOrAdmin(IHttpContextAccessor httpContextAccessor, APIContext context, int id)
+        public static bool ValidateIsUserOrAdmin(IHttpContextAccessor httpContextAccessor, APIContext context, int id, string[] keyAndIV)
         {
             // verify that the user is either admin or is requesting their own data
-            if (ValidateIsUser(httpContextAccessor, context, id) || ValidateIsAdmin(httpContextAccessor))
+            if (ValidateIsUser(httpContextAccessor, id) || ValidateIsAdmin(context, id, keyAndIV))
                 return true;
             else
                 return false;
         }
 
-        // validate that this use is an Admin
-        public static bool ValidateIsAdmin(IHttpContextAccessor httpContextAccessor)
+        /* validate that this use is an Admin... here we dont check the token.
+         * I think it is better to use the db because if the token is compromised, they still would have to have the id
+         * of someone who is forsure an admin to get through this
+         */
+        public static bool ValidateIsAdmin(APIContext context, int id, string[] keyAndIV)
         {
-            string callerRole = httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Role).Value;
-            if (callerRole == UserRoles.Admin)
-                return true;
-            else
-                return false;
+            string callerRole = DecryptStringFromBytes_Aes(context.Users.Single(a => a.ID == id).Role, keyAndIV);
+            return (callerRole == UserRoles.Admin) ? true : false;
         }
 
         // validate that the user trying to be accessed is the same as the user making the call
-        public static bool ValidateIsUser(IHttpContextAccessor httpContextAccessor, APIContext context, int id)
+        public static bool ValidateIsUser(IHttpContextAccessor httpContextAccessor, int id)
         {
-            string callerEmail = httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Email).Value;
-            if (callerEmail == context.Users.Single(a => a.ID == id).Email)
-                return true;
-            else
-                return false;
+            int idFromToken = int.Parse(httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.Actor).Value);
+            return (idFromToken == id) ? true : false;
         }
 
         // create a salt for hashing
@@ -327,23 +325,61 @@ namespace SafeAccountsAPI.Controllers
 
         public static void SetCookies(HttpResponse Response, string tokenString, RefreshToken refToken)
         {
-            // append cookies after login
-            Response.Cookies.Append("AccessToken", tokenString, HelperMethods.GetCookieOptions(false));
-            Response.Cookies.Append("RefreshToken", refToken.Token, HelperMethods.GetCookieOptions(false));
-            Response.Cookies.Append("AccessTokenSameSite", tokenString, HelperMethods.GetCookieOptions(true));
-            Response.Cookies.Append("RefreshTokenSameSite", refToken.Token, HelperMethods.GetCookieOptions(true));
+            ReturnableRefreshToken retToken = new ReturnableRefreshToken(refToken); // decrypt the token
+
+            // append cookies after login.. we use the refresh tokens expiration on cookies, because the user has to give back the expired access to get a new one
+            Response.Cookies.Append("AccessToken", tokenString, HelperMethods.GetCookieOptions(DateTime.Parse(retToken.Expiration), false));
+            Response.Cookies.Append("RefreshToken", retToken.Token, HelperMethods.GetCookieOptions(DateTime.Parse(retToken.Expiration), false));
+            Response.Cookies.Append("AccessTokenSameSite", tokenString, HelperMethods.GetCookieOptions(DateTime.Parse(retToken.Expiration), true));
+            Response.Cookies.Append("RefreshTokenSameSite", retToken.Token, HelperMethods.GetCookieOptions(DateTime.Parse(retToken.Expiration), true));
         }
 
-        public static CookieOptions GetCookieOptions(bool sameSite = false)
+        public static CookieOptions GetCookieOptions(DateTime expiration, bool sameSite = false)
         {
             CookieOptions options = new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true,
-                Expires = DateTime.UtcNow.AddDays(1) // set cookie to expire in 1 day
+                Expires = expiration // set cookie to expire in 1 day
             };
             if (sameSite) options.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.None; // for cross site requests
             return options;
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="ex"></param>
+        /// <returns></returns>
+        /// <remarks>Add more fields for better analysis</remarks>
+        public static LoggingInfo GetLoggingInfo(Exception ex, Guid correlationID) =>
+            new LoggingInfo()
+            {
+                Exception = ex,
+                HostName = Environment.MachineName,
+                CorrelationID = correlationID
+            };
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="operation"></param>
+        /// <param name="routeValues"></param>
+        /// <returns></returns>
+        public static LoggingInfo GetLoggingInfo(string operation, IDictionary<string, object> routeValues)
+        {
+            var additionalInfo = new Dictionary<string, object>();
+            foreach (var item in routeValues)
+            {
+                additionalInfo.Add(item.Key, item.Value);
+            }
+            return new LoggingInfo()
+            {
+                Operation = operation,
+                HostName = Environment.MachineName,
+                AdditionalInfo = additionalInfo
+            };
+        }
+
     }
 }

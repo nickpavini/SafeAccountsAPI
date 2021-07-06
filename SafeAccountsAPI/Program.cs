@@ -61,7 +61,8 @@ namespace SafeAccountsAPI
                 try
                 {
                     var context = services.GetRequiredService<APIContext>();
-                    DbInitializer.Initialize(context);
+                    var config = services.GetRequiredService<IConfiguration>();
+                    DbInitializer.Initialize(context, config);
                 }
                 catch (Exception ex)
                 {

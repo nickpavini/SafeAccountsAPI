@@ -1,18 +1,17 @@
 ﻿using System.Collections.Generic;
 using Newtonsoft.Json;
-using SafeAccountsAPI.Controllers;
+using SafeAccountsAPI.Helpers;
 
 namespace SafeAccountsAPI.Models
 {
     public class User
     {
         public int ID { get; set; }
-        public string First_Name { get; set; }
-        public string Last_Name { get; set; }
-        public string Email { get; set; }
+        public byte[] First_Name { get; set; }
+        public byte[] Last_Name { get; set; }
+        public byte[] Email { get; set; }
         public byte[] Password { get; set; }
-        public int NumAccs { get; set; }
-        public string Role { get; set; }
+        public byte[] Role { get; set; }
         public bool EmailVerified { get; set; }
         public virtual List<Account> Accounts { get; set; }
         public virtual List<RefreshToken> RefreshTokens { get; set; }
@@ -21,14 +20,13 @@ namespace SafeAccountsAPI.Models
         public User() { } // blank constructor needed for db initializer
 
         // constructor to easily set from NewUser type
-        public User(NewUser newUser)
+        public User(NewUser newUser, string[] keyAndIV)
         {
-            First_Name = newUser.First_Name;
-            Last_Name = newUser.Last_Name;
-            Email = newUser.Email;
+            First_Name = HelperMethods.EncryptStringToBytes_Aes(newUser.First_Name, keyAndIV);
+            Last_Name = HelperMethods.EncryptStringToBytes_Aes(newUser.Last_Name, keyAndIV);
+            Email = HelperMethods.EncryptStringToBytes_Aes(newUser.Email, keyAndIV);
             Password = HelperMethods.ConcatenatedSaltAndSaltedHash(newUser.Password);
-            NumAccs = 0;
-            Role = UserRoles.User;
+            Role = HelperMethods.EncryptStringToBytes_Aes(UserRoles.User, keyAndIV);
             EmailVerified = false;
         }
     }
@@ -40,20 +38,18 @@ namespace SafeAccountsAPI.Models
         public string First_Name { get; set; }
         public string Last_Name { get; set; }
         public string Email { get; set; }
-        public int NumAccs { get; set; }
         public string Role { get; set; }
 
         public ReturnableUser() { }
 
         // constructor create a safe returnable user
-        public ReturnableUser(User user)
+        public ReturnableUser(User user, string[] keyAndIV)
         {
             ID = user.ID;
-            First_Name = user.First_Name;
-            Last_Name = user.Last_Name;
-            Email = user.Email;
-            NumAccs = user.NumAccs;
-            Role = user.Role;
+            First_Name = HelperMethods.DecryptStringFromBytes_Aes(user.First_Name, keyAndIV);
+            Last_Name = HelperMethods.DecryptStringFromBytes_Aes(user.Last_Name, keyAndIV);
+            Email = HelperMethods.DecryptStringFromBytes_Aes(user.Email, keyAndIV);
+            Role = HelperMethods.DecryptStringFromBytes_Aes(user.Role, keyAndIV);
         }
     }
 

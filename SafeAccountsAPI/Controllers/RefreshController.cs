@@ -8,6 +8,7 @@ using Microsoft.Win32.SafeHandles;
 using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Helpers;
 using SafeAccountsAPI.Models;
+using SafeAccountsAPI.Filters;
 
 namespace SafeAccountsAPI.Controllers
 {
@@ -30,33 +31,40 @@ namespace SafeAccountsAPI.Controllers
 
         // GET: api/RefreshToken
         [HttpPost]
+        [ApiExceptionFilter("Error refreshing access.")]
         public IActionResult Refresh()
         {
-            try
+            // check for access token
+            if (Request.Cookies["AccessTokenSameSite"] == null && Request.Cookies["AccessToken"] == null)
             {
-                // attempt getting user from claims
-                User user = HelperMethods.GetUserFromAccessToken(Request.Cookies["AccessTokenSameSite"] ?? Request.Cookies["AccessToken"], _context, _configuration.GetValue<string>("UserJwtTokenKey"));
-
-                // make sure this is a valid token for the user
-                if (!HelperMethods.ValidateRefreshToken(user, Request.Cookies["RefreshTokenSameSite"] ?? Request.Cookies["RefreshToken"]))
-                {
-                    ErrorMessage error = new ErrorMessage("Invalid refresh token", "Refrsh token could not be validated.");
-                    return new BadRequestObjectResult(error);
-                }
-
-                string newTokenStr = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email, _configuration.GetValue<string>("UserJwtTokenKey"));
-                RefreshToken newRefToken = HelperMethods.GenerateRefreshToken(user, _context);
-                LoginResponse rtrn = new LoginResponse { ID = user.ID, AccessToken = newTokenStr, RefreshToken = new ReturnableRefreshToken(newRefToken) };
-
-                // append cookies after refresh
-                HelperMethods.SetCookies(Response, newTokenStr, newRefToken);
-                return new OkObjectResult(rtrn);
+                ErrorMessage error = new ErrorMessage("Failed to refresh access", "User does not have the access token in their cookies.");
+                return new BadRequestObjectResult(error);
             }
-            catch (Exception ex)
+
+            // check for refresh token
+            if (Request.Cookies["RefreshTokenSameSite"] == null && Request.Cookies["RefreshToken"] == null)
             {
-                ErrorMessage error = new ErrorMessage("Error refreshing access.", ex.Message);
-                return new InternalServerErrorResult(error);
+                ErrorMessage error = new ErrorMessage("Failed to refresh access", "User does not have the refresh token in their cookies.");
+                return new BadRequestObjectResult(error);
             }
+
+            // attempt getting user from claims
+            User user = HelperMethods.GetUserFromAccessToken(Request.Cookies["AccessTokenSameSite"] ?? Request.Cookies["AccessToken"], _context, _configuration.GetValue<string>("UserJwtTokenKey"));
+
+            // make sure this is a valid token for the user
+            if (!HelperMethods.ValidateRefreshToken(user, Request.Cookies["RefreshTokenSameSite"] ?? Request.Cookies["RefreshToken"]))
+            {
+                ErrorMessage error = new ErrorMessage("Invalid refresh token", "Refrsh token could not be validated.");
+                return new BadRequestObjectResult(error);
+            }
+
+            string newTokenStr = HelperMethods.GenerateJWTAccessToken(user.ID, _configuration.GetValue<string>("UserJwtTokenKey"));
+            RefreshToken newRefToken = HelperMethods.GenerateRefreshToken(user, _context);
+            LoginResponse rtrn = new LoginResponse { ID = user.ID, AccessToken = newTokenStr, RefreshToken = new ReturnableRefreshToken(newRefToken) };
+
+            // append cookies after refresh
+            HelperMethods.SetCookies(Response, newTokenStr, newRefToken);
+            return new OkObjectResult(rtrn);
         }
     }
 }

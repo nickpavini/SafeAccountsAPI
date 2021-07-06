@@ -7,11 +7,12 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
-using SafeAccountsAPI.Controllers;
+using SafeAccountsAPI.Helpers;
 using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Models;
 using SafeAccountsAPI.UnitTests.Helpers;
 using Xunit;
+using System.IO;
 
 namespace SafeAccountsAPI.UnitTests
 {
@@ -24,6 +25,14 @@ namespace SafeAccountsAPI.UnitTests
 
             // set default header for our api_key... Development key only, doesnt work with online api
             _client.DefaultRequestHeaders.Add("ApiKey", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYXBpX2tleSIsImV4cCI6MTY1MzkxODQyNiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiYXVkIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIn0.ZBagEGyp7dJBozJ7HoQ8nZVNpK-h-rzjXL9SmEvIYgA");
+
+            // if we dont have the keys file, lets copy it over for testing
+            if (!File.Exists(HelperMethods.keys_file))
+            {
+                // Use static Path methods to extract only the file name from the path.
+                string destFile = System.IO.Path.Combine(Directory.GetCurrentDirectory(), HelperMethods.keys_file);
+                System.IO.File.Copy("../../../../SafeAccountsAPI/" + HelperMethods.keys_file, destFile, true);
+            }
         }
 
         [Fact]
@@ -42,9 +51,10 @@ namespace SafeAccountsAPI.UnitTests
             APIContext context = new APIContext(options, config);
 
             // generate an access token and valid refresh token
-            User user = context.Users.Single(a => a.Email == "john@doe.com");
-            string accessToken = HelperMethods.GenerateJWTAccessToken(user.Role, user.Email, config["UserJwtTokenKey"]);
-            RefreshToken refToken = HelperMethods.GenerateRefreshToken(user, context);
+            string[] keyAndIV = { config.GetValue<string>("UserEncryptionKey"), config.GetValue<string>("UserEncryptionIV") }; // for user encryption there is a single key
+            User user = context.Users.Single(a => a.Email.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes("john@doe.com", keyAndIV)));
+            string accessToken = HelperMethods.GenerateJWTAccessToken(user.ID, config["UserJwtTokenKey"]);
+            ReturnableRefreshToken refToken = new ReturnableRefreshToken(HelperMethods.GenerateRefreshToken(user, context));
 
             // set cookies in header
             string cookie = "AccessToken=" + accessToken + "; RefreshToken=" + refToken.Token;
@@ -71,7 +81,7 @@ namespace SafeAccountsAPI.UnitTests
 
             // and the last thing we need is to validate that the refresh token was stored in the DB
             context.Dispose(); // close old connection
-            user = new APIContext(options, config).Users.Single(a => a.Email == "john@doe.com"); // get fresh handle of user from the DB
+            user = new APIContext(options, config).Users.Single(a => a.Email.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes("john@doe.com", keyAndIV))); // get fresh handle of user from the DB
             Assert.True(HelperMethods.ValidateRefreshToken(user, new_cookies.Single(a => a.Key == "RefreshTokenSameSite").Value));
         }
     }
