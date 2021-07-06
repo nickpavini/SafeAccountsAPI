@@ -54,8 +54,7 @@ namespace SafeAccountsAPI.Controllers
             _context.Users.Add(userToRegister);
             _context.SaveChanges();
 
-            // after we save changes, we need to create unique key and iv, then send the confirmation email
-            HelperMethods.CreateUserKeyandIV(userToRegister.ID);
+            // send the confirmation email
             SendConfirmationEmail(userToRegister);
             return Ok();
         }
@@ -153,12 +152,12 @@ namespace SafeAccountsAPI.Controllers
             if (ValidatePassword(login.Password, user.Password))
             {
                 string tokenString = HelperMethods.GenerateJWTAccessToken(user.ID, _configuration.GetValue<string>("UserJwtTokenKey"));
-                RefreshToken refToken = HelperMethods.GenerateRefreshToken(user, _context);
-                LoginResponse rtrn = new LoginResponse { ID = user.ID, AccessToken = tokenString, RefreshToken = new ReturnableRefreshToken(refToken) };
+                RefreshToken refToken = HelperMethods.GenerateRefreshToken(user, _context, _keyAndIV);
+                LoginResponse rtrn = new LoginResponse { ID = user.ID, AccessToken = tokenString, RefreshToken = new ReturnableRefreshToken(refToken, _keyAndIV) };
                 _context.SaveChanges(); // always last on db to make sure nothing breaks and db has new info
 
                 // append cookies to response after login
-                HelperMethods.SetCookies(Response, tokenString, refToken);
+                HelperMethods.SetCookies(Response, tokenString, refToken, _keyAndIV);
                 return new OkObjectResult(rtrn);
             }
             else
@@ -400,7 +399,7 @@ namespace SafeAccountsAPI.Controllers
 
             // create new account and save it
             Account new_account = new Account(accToAdd, id);
-            new_account.LastModified = HelperMethods.EncryptStringToBytes_Aes(DateTime.Now.ToString(), HelperMethods.GetUserKeyAndIV(id));
+            new_account.LastModified = DateTime.Now.ToString();
             _context.Accounts.Add(new_account);
             _context.SaveChanges();
 
@@ -429,12 +428,12 @@ namespace SafeAccountsAPI.Controllers
 
             // get account and modify
             Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == acc_id);
-            accToEdit.Title = HelperMethods.EncryptStringToBytes_Aes(acc.Title, HelperMethods.GetUserKeyAndIV(id));
-            accToEdit.Login = HelperMethods.EncryptStringToBytes_Aes(acc.Login, HelperMethods.GetUserKeyAndIV(id));
-            accToEdit.Password = HelperMethods.EncryptStringToBytes_Aes(acc.Password, HelperMethods.GetUserKeyAndIV(id));
-            accToEdit.Url = HelperMethods.EncryptStringToBytes_Aes(acc.Url, HelperMethods.GetUserKeyAndIV(id));
-            accToEdit.Description = HelperMethods.EncryptStringToBytes_Aes(acc.Description, HelperMethods.GetUserKeyAndIV(id));
-            accToEdit.LastModified = HelperMethods.EncryptStringToBytes_Aes(DateTime.Now.ToString(), HelperMethods.GetUserKeyAndIV(id));
+            accToEdit.Title = HelperMethods.HexStringToByteArray(acc.Title);
+            accToEdit.Login = HelperMethods.HexStringToByteArray(acc.Login);
+            accToEdit.Password = HelperMethods.HexStringToByteArray(acc.Password);
+            accToEdit.Url = HelperMethods.HexStringToByteArray(acc.Url);
+            accToEdit.Description = HelperMethods.HexStringToByteArray(acc.Description);
+            accToEdit.LastModified = DateTime.Now.ToString();
             _context.SaveChanges();
 
             // return the new object to easily update on frontend without making another api call
@@ -565,8 +564,8 @@ namespace SafeAccountsAPI.Controllers
 
             // get account and modify
             Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
-            accToEdit.Title = HelperMethods.EncryptStringToBytes_Aes(title, HelperMethods.GetUserKeyAndIV(id)); ;
-            accToEdit.LastModified = HelperMethods.EncryptStringToBytes_Aes(DateTime.Now.ToString(), HelperMethods.GetUserKeyAndIV(id));
+            accToEdit.Title = HelperMethods.HexStringToByteArray(title);
+            accToEdit.LastModified = DateTime.Now.ToString();
             _context.SaveChanges();
             return Ok();
         }
@@ -594,8 +593,8 @@ namespace SafeAccountsAPI.Controllers
 
             // get account and modify
             Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
-            accToEdit.Login = HelperMethods.EncryptStringToBytes_Aes(login, HelperMethods.GetUserKeyAndIV(id)); ;
-            accToEdit.LastModified = HelperMethods.EncryptStringToBytes_Aes(DateTime.Now.ToString(), HelperMethods.GetUserKeyAndIV(id));
+            accToEdit.Login = HelperMethods.HexStringToByteArray(login);
+            accToEdit.LastModified = DateTime.Now.ToString();
             _context.SaveChanges();
             return Ok();
         }
@@ -623,8 +622,8 @@ namespace SafeAccountsAPI.Controllers
 
             // get account and modify
             Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
-            accToEdit.Password = HelperMethods.EncryptStringToBytes_Aes(password, HelperMethods.GetUserKeyAndIV(id)); ;
-            accToEdit.LastModified = HelperMethods.EncryptStringToBytes_Aes(DateTime.Now.ToString(), HelperMethods.GetUserKeyAndIV(id));
+            accToEdit.Password = HelperMethods.HexStringToByteArray(password);
+            accToEdit.LastModified = DateTime.Now.ToString();
             _context.SaveChanges();
             return Ok();
         }
@@ -651,8 +650,8 @@ namespace SafeAccountsAPI.Controllers
 
             // get account and modify
             Account accToEdit = _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == account_id);
-            accToEdit.Description = HelperMethods.EncryptStringToBytes_Aes(description, HelperMethods.GetUserKeyAndIV(id)); ;
-            accToEdit.LastModified = HelperMethods.EncryptStringToBytes_Aes(DateTime.Now.ToString(), HelperMethods.GetUserKeyAndIV(id));
+            accToEdit.Description = HelperMethods.HexStringToByteArray(description);
+            accToEdit.LastModified = DateTime.Now.ToString();
             _context.SaveChanges();
 
             return Ok();
@@ -871,7 +870,7 @@ namespace SafeAccountsAPI.Controllers
             }
 
             // modify
-            _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == folder_id).FolderName = HelperMethods.EncryptStringToBytes_Aes(name, HelperMethods.GetUserKeyAndIV(id));
+            _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == folder_id).FolderName = HelperMethods.HexStringToByteArray(name);
             _context.SaveChanges();
             return Ok();
         }
