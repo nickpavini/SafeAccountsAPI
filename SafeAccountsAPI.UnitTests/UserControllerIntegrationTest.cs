@@ -26,6 +26,7 @@ namespace SafeAccountsAPI.UnitTests
         public APIContext _context { get; set; } // if we are updating things this might need to be disposed are reset
         User _testUser { get; set; } // this is our user for testing... also may be updated during testing
         ReturnableUser _retTestUser { get; set; } // decrypted user
+        public string[] _keyAndIv { get; set; }
 
         public UserControllerIntegrationTest(WebApplicationFactory<SafeAccountsAPI.Startup> fixture)
         {
@@ -40,17 +41,9 @@ namespace SafeAccountsAPI.UnitTests
             _client.DefaultRequestHeaders.Add("ApiKey", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYXBpX2tleSIsImV4cCI6MTY1MzkxODQyNiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiYXVkIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIn0.ZBagEGyp7dJBozJ7HoQ8nZVNpK-h-rzjXL9SmEvIYgA");
 
             // set reference to our user for testing
-            string[] keyAndIV = { _config.GetValue<string>("UserEncryptionKey"), _config.GetValue<string>("UserEncryptionIV") }; // for user encryption there is a single key
-            _testUser = _context.Users.Single(a => a.Email.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes("john@doe.com", keyAndIV)));
-            _retTestUser = new ReturnableUser(_testUser, keyAndIV);
-
-            // if we dont have the keys file, lets copy it over for testing
-            if (!File.Exists(HelperMethods.keys_file))
-            {
-                // Use static Path methods to extract only the file name from the path.
-                string destFile = System.IO.Path.Combine(Directory.GetCurrentDirectory(), HelperMethods.keys_file);
-                System.IO.File.Copy("../../../../SafeAccountsAPI/" + HelperMethods.keys_file, destFile, true);
-            }
+            _keyAndIv = new string[] { _config.GetValue<string>("UserEncryptionKey"), _config.GetValue<string>("UserEncryptionIV") }; // for user encryption there is a single key
+            _testUser = _context.Users.Single(a => a.Email.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes("john@doe.com", _keyAndIv)));
+            _retTestUser = new ReturnableUser(_testUser, _keyAndIv);
         }
 
         [Fact]
@@ -124,7 +117,7 @@ namespace SafeAccountsAPI.UnitTests
                 // expected and returned users
                 ReturnableUser returnedUser = JsonConvert.DeserializeObject<ReturnableUser>(response.Content.ReadAsStringAsync().Result);
 
-                // check that the returned user is the user we were expecting
+                // check that the returned user is the user we were expecting.. checking for the correct hex strings
                 Assert.Equal(_retTestUser.ID, returnedUser.ID);
                 Assert.Equal(_retTestUser.Email, returnedUser.Email);
                 Assert.Equal(_retTestUser.Role, returnedUser.Role);
@@ -145,7 +138,7 @@ namespace SafeAccountsAPI.UnitTests
             {
                 // generate access code and set header
                 string accessToken = HelperMethods.GenerateJWTAccessToken(_testUser.ID, _config["UserJwtTokenKey"]);
-                ReturnableRefreshToken refToken = new ReturnableRefreshToken(HelperMethods.GenerateRefreshToken(_testUser, _context));
+                ReturnableRefreshToken refToken = new ReturnableRefreshToken(HelperMethods.GenerateRefreshToken(_testUser, _context, _keyAndIv), _keyAndIv);
                 string cookie = "AccessToken=" + accessToken + "; AccessTokenSameSite=" + accessToken + "; RefreshToken=" + refToken.Token + "; RefreshTokenSameSite=" + refToken.Token;
                 requestMessage.Headers.Add("Cookie", cookie);
 
