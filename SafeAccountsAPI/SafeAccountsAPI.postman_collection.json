@@ -39,7 +39,7 @@
 												"header": [],
 												"body": {
 													"mode": "raw",
-													"raw": "\"alsouseless\"",
+													"raw": "\"616c736f7573656c657373\"",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -60,7 +60,8 @@
 														"4",
 														"password"
 													]
-												}
+												},
+												"description": "New Password: alsouseless\n\n* Note: value is a hex string"
 											},
 											"response": []
 										},
@@ -94,7 +95,7 @@
 													}
 												},
 												"url": {
-													"raw": "https://localhost:44366/users/1/accounts/4/folder",
+													"raw": "https://localhost:44366/users/1/accounts/28/folder",
 													"protocol": "https",
 													"host": [
 														"localhost"
@@ -104,7 +105,7 @@
 														"users",
 														"1",
 														"accounts",
-														"4",
+														"28",
 														"folder"
 													]
 												}
@@ -133,7 +134,7 @@
 												"header": [],
 												"body": {
 													"mode": "raw",
-													"raw": "\"new description\"",
+													"raw": "\"6e6577206465736372697074696f6e\"",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -154,7 +155,8 @@
 														"4",
 														"description"
 													]
-												}
+												},
+												"description": "New Description: new description\n\n* Note: value is a hex string"
 											},
 											"response": []
 										},
@@ -180,7 +182,7 @@
 												"header": [],
 												"body": {
 													"mode": "raw",
-													"raw": "\"new title\"",
+													"raw": "\"6e6577207469746c65\"",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -201,7 +203,8 @@
 														"4",
 														"title"
 													]
-												}
+												},
+												"description": "New Title: New Title\n\n* Note: value is a hex string"
 											},
 											"response": []
 										},
@@ -227,7 +230,7 @@
 												"header": [],
 												"body": {
 													"mode": "raw",
-													"raw": "\"new login\"",
+													"raw": "\"6e657720757365726e616d65\"",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -235,7 +238,7 @@
 													}
 												},
 												"url": {
-													"raw": "https://localhost:44366/users/1/accounts/5/login",
+													"raw": "https://localhost:44366/users/1/accounts/4/login",
 													"protocol": "https",
 													"host": [
 														"localhost"
@@ -245,10 +248,11 @@
 														"users",
 														"1",
 														"accounts",
-														"5",
+														"4",
 														"login"
 													]
-												}
+												},
+												"description": "New Login: new username\n\n* Note: value is a hex string"
 											},
 											"response": []
 										},
@@ -325,6 +329,53 @@
 												}
 											},
 											"response": []
+										},
+										{
+											"name": "favorite",
+											"request": {
+												"auth": {
+													"type": "apikey",
+													"apikey": [
+														{
+															"key": "value",
+															"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYXBpX2tleSIsImV4cCI6MTY1MzkxODQyNiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiYXVkIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIn0.ZBagEGyp7dJBozJ7HoQ8nZVNpK-h-rzjXL9SmEvIYgA",
+															"type": "string"
+														},
+														{
+															"key": "key",
+															"value": "ApiKey",
+															"type": "string"
+														}
+													]
+												},
+												"method": "PUT",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "true",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "https://localhost:44366/users/1/accounts/5/favorite",
+													"protocol": "https",
+													"host": [
+														"localhost"
+													],
+													"port": "44366",
+													"path": [
+														"users",
+														"1",
+														"accounts",
+														"5",
+														"favorite"
+													]
+												}
+											},
+											"response": []
 										}
 									]
 								},
@@ -389,7 +440,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\"title\":\"title2\", \"login\":\"login\", \"password\":\"useless\", \"url\":\"testurl.com\", \"description\":\"description\", \"folderid\": 5}",
+											"raw": "{\r\n    \"title\":\"446973636f7264\", \r\n    \"login\":\"757365726e616d65\", \r\n    \"password\":\"7573656c657373\", \r\n    \"url\":\"68747470733a2f2f646973636f72642e636f6d\", \r\n    \"description\":\"6465736372697074696f6e2e2e2e\"\r\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -456,6 +507,53 @@
 										}
 									},
 									"response": []
+								},
+								{
+									"name": "{accounts}",
+									"request": {
+										"auth": {
+											"type": "apikey",
+											"apikey": [
+												{
+													"key": "value",
+													"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYXBpX2tleSIsImV4cCI6MTY1MzkxODQyNiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiYXVkIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIn0.ZBagEGyp7dJBozJ7HoQ8nZVNpK-h-rzjXL9SmEvIYgA",
+													"type": "string"
+												},
+												{
+													"key": "key",
+													"value": "ApiKey",
+													"type": "string"
+												}
+											]
+										},
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"title\":\"446973636f7264\", \r\n    \"login\":\"757365726e616d65\", \r\n    \"password\":\"7573656c6573736572\",\r\n    \"url\":\"68747470733a2f2f646973636f72642e636f6d\", \r\n    \"description\":\"6465736372697074696f6e2e2e2e\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://localhost:44366/users/1/accounts/4",
+											"protocol": "https",
+											"host": [
+												"localhost"
+											],
+											"port": "44366",
+											"path": [
+												"users",
+												"1",
+												"accounts",
+												"4"
+											]
+										},
+										"description": "new password: uselesser\n\n*Note: all hex string values"
+									},
+									"response": []
 								}
 							]
 						},
@@ -468,10 +566,25 @@
 										{
 											"name": "{id}",
 											"request": {
+												"auth": {
+													"type": "apikey",
+													"apikey": [
+														{
+															"key": "value",
+															"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYXBpX2tleSIsImV4cCI6MTY1MzkxODQyNiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiYXVkIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIn0.ZBagEGyp7dJBozJ7HoQ8nZVNpK-h-rzjXL9SmEvIYgA",
+															"type": "string"
+														},
+														{
+															"key": "key",
+															"value": "ApiKey",
+															"type": "string"
+														}
+													]
+												},
 												"method": "DELETE",
 												"header": [],
 												"url": {
-													"raw": "https://localhost:44366/users/1/folders/10",
+													"raw": "https://localhost:44366/users/1/folders/11",
 													"protocol": "https",
 													"host": [
 														"localhost"
@@ -481,7 +594,101 @@
 														"users",
 														"1",
 														"folders",
-														"10"
+														"11"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "parent",
+											"request": {
+												"auth": {
+													"type": "apikey",
+													"apikey": [
+														{
+															"key": "value",
+															"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYXBpX2tleSIsImV4cCI6MTY1MzkxODQyNiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiYXVkIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIn0.ZBagEGyp7dJBozJ7HoQ8nZVNpK-h-rzjXL9SmEvIYgA",
+															"type": "string"
+														},
+														{
+															"key": "key",
+															"value": "ApiKey",
+															"type": "string"
+														}
+													]
+												},
+												"method": "PUT",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "12",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "https://localhost:44366/users/1/folders/5/parent",
+													"protocol": "https",
+													"host": [
+														"localhost"
+													],
+													"port": "44366",
+													"path": [
+														"users",
+														"1",
+														"folders",
+														"5",
+														"parent"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "name",
+											"request": {
+												"auth": {
+													"type": "apikey",
+													"apikey": [
+														{
+															"key": "value",
+															"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYXBpX2tleSIsImV4cCI6MTY1MzkxODQyNiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiYXVkIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIn0.ZBagEGyp7dJBozJ7HoQ8nZVNpK-h-rzjXL9SmEvIYgA",
+															"type": "string"
+														},
+														{
+															"key": "key",
+															"value": "ApiKey",
+															"type": "string"
+														}
+													]
+												},
+												"method": "PUT",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "\"4e657720466f6c646572\"",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "https://localhost:44366/users/1/folders/5/name",
+													"protocol": "https",
+													"host": [
+														"localhost"
+													],
+													"port": "44366",
+													"path": [
+														"users",
+														"1",
+														"folders",
+														"5",
+														"name"
 													]
 												}
 											},
@@ -492,6 +699,21 @@
 								{
 									"name": "{folders}",
 									"request": {
+										"auth": {
+											"type": "apikey",
+											"apikey": [
+												{
+													"key": "value",
+													"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYXBpX2tleSIsImV4cCI6MTY1MzkxODQyNiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiYXVkIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIn0.ZBagEGyp7dJBozJ7HoQ8nZVNpK-h-rzjXL9SmEvIYgA",
+													"type": "string"
+												},
+												{
+													"key": "key",
+													"value": "ApiKey",
+													"type": "string"
+												}
+											]
+										},
 										"method": "GET",
 										"header": [],
 										"url": {
@@ -513,9 +735,45 @@
 								{
 									"name": "{folders}",
 									"request": {
+										"auth": {
+											"type": "apikey",
+											"apikey": [
+												{
+													"key": "value",
+													"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYXBpX2tleSIsImV4cCI6MTY1MzkxODQyNiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiYXVkIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIn0.ZBagEGyp7dJBozJ7HoQ8nZVNpK-h-rzjXL9SmEvIYgA",
+													"type": "string"
+												},
+												{
+													"key": "key",
+													"value": "ApiKey",
+													"type": "string"
+												}
+											]
+										},
 										"method": "POST",
 										"header": [],
-										"url": null
+										"body": {
+											"mode": "raw",
+											"raw": "{\"folder_name\": \"4e657720466f6c646572\", \"parentId\": null}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://localhost:44366/users/1/folders",
+											"protocol": "https",
+											"host": [
+												"localhost"
+											],
+											"port": "44366",
+											"path": [
+												"users",
+												"1",
+												"folders"
+											]
+										}
 									},
 									"response": []
 								}
@@ -586,54 +844,6 @@
 									"path": [
 										"users",
 										"7"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "firstname",
-							"protocolProfileBehavior": {
-								"disableBodyPruning": true
-							},
-							"request": {
-								"auth": {
-									"type": "apikey",
-									"apikey": [
-										{
-											"key": "value",
-											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYXBpX2tleSIsImV4cCI6MTY1MzkxODQyNiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiYXVkIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIn0.ZBagEGyp7dJBozJ7HoQ8nZVNpK-h-rzjXL9SmEvIYgA",
-											"type": "string"
-										},
-										{
-											"key": "key",
-											"value": "ApiKey",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "\"john\"",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "https://localhost:44366/users/1/firstname",
-									"protocol": "https",
-									"host": [
-										"localhost"
-									],
-									"port": "44366",
-									"path": [
-										"users",
-										"1",
-										"firstname"
 									]
 								}
 							},
@@ -885,14 +1095,13 @@
 						"method": "POST",
 						"header": [],
 						"url": {
-							"raw": "https://localhost:44305/api/users/logout",
+							"raw": "https://localhost:44366/users/logout",
 							"protocol": "https",
 							"host": [
 								"localhost"
 							],
-							"port": "44305",
+							"port": "44366",
 							"path": [
-								"api",
 								"users",
 								"logout"
 							]

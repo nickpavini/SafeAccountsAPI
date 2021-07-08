@@ -16,10 +16,10 @@ namespace SafeAccountsAPI.Models
         public string Token { get; set; }
         public string Expiration { get; set; }
 
-        public ReturnableRefreshToken(RefreshToken rt)
+        public ReturnableRefreshToken(RefreshToken rt, string[] keyAndIv)
         {
-            Token = HelperMethods.DecryptStringFromBytes_Aes(rt.Token, HelperMethods.GetUserKeyAndIV(rt.UserID));
-            Expiration = HelperMethods.DecryptStringFromBytes_Aes(rt.Expiration, HelperMethods.GetUserKeyAndIV(rt.UserID));
+            Token = HelperMethods.DecryptStringFromBytes_Aes(rt.Token, keyAndIv);
+            Expiration = HelperMethods.DecryptStringFromBytes_Aes(rt.Expiration, keyAndIv);
         }
     }
 }

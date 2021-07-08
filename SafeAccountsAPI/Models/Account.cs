@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using System;
+using Newtonsoft.Json;
 using SafeAccountsAPI.Helpers;
 
 namespace SafeAccountsAPI.Models
@@ -15,7 +16,7 @@ namespace SafeAccountsAPI.Models
         public byte[] Password { get; set; }
         public byte[] Url { get; set; }
         public byte[] Description { get; set; }
-        public byte[] LastModified { get; set; }
+        public string LastModified { get; set; }
         public bool IsFavorite { get; set; }
 
         public Account() { } // blank constructor needed for db initializer
@@ -24,11 +25,11 @@ namespace SafeAccountsAPI.Models
         public Account(NewAccount newAcc, int uid)
         {
             UserID = uid;
-            Title = HelperMethods.EncryptStringToBytes_Aes(newAcc.Title, HelperMethods.GetUserKeyAndIV(uid));
-            Login = HelperMethods.EncryptStringToBytes_Aes(newAcc.Login, HelperMethods.GetUserKeyAndIV(uid));
-            Password = HelperMethods.EncryptStringToBytes_Aes(newAcc.Password, HelperMethods.GetUserKeyAndIV(uid));
-            Url = HelperMethods.EncryptStringToBytes_Aes(newAcc.Url, HelperMethods.GetUserKeyAndIV(uid));
-            Description = HelperMethods.EncryptStringToBytes_Aes(newAcc.Description, HelperMethods.GetUserKeyAndIV(uid));
+            Title = HelperMethods.HexStringToByteArray(newAcc.Title);
+            Login = HelperMethods.HexStringToByteArray(newAcc.Login);
+            Password = HelperMethods.HexStringToByteArray(newAcc.Password);
+            Url = HelperMethods.HexStringToByteArray(newAcc.Url);
+            Description = HelperMethods.HexStringToByteArray(newAcc.Description);
             FolderID = newAcc.FolderID;
             IsFavorite = false;
         }
@@ -49,12 +50,12 @@ namespace SafeAccountsAPI.Models
         public ReturnableAccount(Account acc)
         {
             ID = acc.ID;
-            Title = HelperMethods.DecryptStringFromBytes_Aes(acc.Title, HelperMethods.GetUserKeyAndIV(acc.UserID));
-            Login = HelperMethods.DecryptStringFromBytes_Aes(acc.Login, HelperMethods.GetUserKeyAndIV(acc.UserID));
-            Password = HelperMethods.DecryptStringFromBytes_Aes(acc.Password, HelperMethods.GetUserKeyAndIV(acc.UserID));
-            Url = HelperMethods.DecryptStringFromBytes_Aes(acc.Url, HelperMethods.GetUserKeyAndIV(acc.UserID));
-            Description = HelperMethods.DecryptStringFromBytes_Aes(acc.Description, HelperMethods.GetUserKeyAndIV(acc.UserID));
-            LastModified = HelperMethods.DecryptStringFromBytes_Aes(acc.LastModified, HelperMethods.GetUserKeyAndIV(acc.UserID));
+            Title = BitConverter.ToString(acc.Title).Replace("-", "");
+            Login = BitConverter.ToString(acc.Login).Replace("-", "");
+            Password = BitConverter.ToString(acc.Password).Replace("-", "");
+            Url = BitConverter.ToString(acc.Url).Replace("-", "");
+            Description = BitConverter.ToString(acc.Description).Replace("-", "");
+            LastModified = acc.LastModified;
             IsFavorite = acc.IsFavorite;
 
             if (acc.FolderID != null)
