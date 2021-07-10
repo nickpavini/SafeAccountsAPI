@@ -754,7 +754,7 @@ namespace SafeAccountsAPI.Controllers
                 _context.Users.Single(a => a.ID == id).Folders.Single(b => b.ID == new_folder.ParentID).HasChild = true;// set parent to having child
 
             _context.SaveChanges();
-            return Ok();
+            return new OkObjectResult(new ReturnableFolder(new_folder));
 
 
         }
