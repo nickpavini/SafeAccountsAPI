@@ -14,6 +14,7 @@ using SafeAccountsAPI.Helpers;
 using SafeAccountsAPI.Models;
 using SafeAccountsAPI.Filters;
 using System.Security.Claims;
+using Newtonsoft.Json.Linq;
 
 namespace SafeAccountsAPI.Controllers
 {
@@ -463,6 +464,49 @@ namespace SafeAccountsAPI.Controllers
 
                 _context.Accounts.Remove(_context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == acc_id)); // fist match user id to ensure ownership
             }
+            _context.SaveChanges();
+            return Ok();
+        }
+
+        // endpoint for setting multiple accounts to the same folder
+        [HttpPut("{id:int}/accounts/folder")]
+        [ApiExceptionFilter("Error settings accounts folder.")]
+        public IActionResult User_SetMultipleAccountsFolder(int id, [FromBody] JObject data)
+        {
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
+            {
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
+            }
+
+            // get the accounts and the folder we want to set them to
+            List<int> account_ids = data["account_ids"].ToObject<List<int>>();
+            int? folder_id = data["folder_id"].ToObject<int>();
+
+            // use zero to mean null since body paramter must be present
+            if (folder_id == 0)
+                folder_id = null;
+
+            // if this user does not own the folder we are adding to, then error
+            if (folder_id != null && !_context.Users.Single(a => a.ID == id).Folders.Exists(b => b.ID == folder_id))
+            {
+                ErrorMessage error = new ErrorMessage("Failed to create new account", "User does not have a folder matching that ID.");
+                return new BadRequestObjectResult(error);
+            }
+
+            foreach (int acc_id in account_ids)
+            {
+                // validate ownership of said account
+                if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == acc_id))
+                {
+                    ErrorMessage error = new ErrorMessage("Failed to delete accounts", "User does not have an account matching ID: " + acc_id);
+                    return new BadRequestObjectResult(error);
+                }
+
+                _context.Users.Single(a => a.ID == id).Accounts.Single(b => b.ID == acc_id).FolderID = folder_id;
+            }
+
             _context.SaveChanges();
             return Ok();
         }

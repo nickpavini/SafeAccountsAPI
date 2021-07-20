@@ -28,7 +28,7 @@ namespace SafeAccountsAPI
         public void ConfigureServices(IServiceCollection services)
         {
             // probaby add exception logging somewhere here
-            services.AddControllers();
+            services.AddControllers().AddNewtonsoftJson();
             services.AddDbContext<APIContext>(options =>
                 options.UseMySql(Configuration.GetValue<string>("ConnectionStrings:DefaultConnection"), ServerVersion.AutoDetect(Configuration.GetValue<string>("ConnectionStrings:DefaultConnection"))));
 
