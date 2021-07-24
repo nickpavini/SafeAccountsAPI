@@ -410,7 +410,7 @@ namespace SafeAccountsAPI.Controllers
 
         // use this to edit a whole account with a single api call
         [HttpPut("{id:int}/accounts/{acc_id:int}")] // working
-        [ApiExceptionFilter("Error deleting accounts.")]
+        [ApiExceptionFilter("Error edtting account.")]
         public IActionResult User_EditAccount(int id, int acc_id, [FromBody] NewAccount acc)
         {
             // verify that the user is either admin or is requesting their own data
@@ -423,7 +423,7 @@ namespace SafeAccountsAPI.Controllers
             // validate ownership of said account
             if (!_context.Users.Single(a => a.ID == id).Accounts.Exists(b => b.ID == acc_id))
             {
-                ErrorMessage error = new ErrorMessage("Failed to delete account", "User does not have an account matching that ID.");
+                ErrorMessage error = new ErrorMessage("Failed to edit account", "User does not have an account matching that ID.");
                 return new BadRequestObjectResult(error);
             }
 
