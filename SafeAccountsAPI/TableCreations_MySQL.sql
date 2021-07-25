@@ -1,4 +1,4 @@
-/*Create database safeaccountsapi_db;*/
+Create database if not exists safeaccountsapi_db;
 Use safeaccountsapi_db;
 
 drop table if exists accounts;
