@@ -194,20 +194,43 @@ namespace SafeAccountsAPI.UnitTests
                 // parse account from response, and also request the data from the database directly for comparison
                 ReturnableAccount returnedAcc = JsonConvert.DeserializeObject<ReturnableAccount>(response.Content.ReadAsStringAsync().Result);
                 ReturnableAccount accInDatabase = new ReturnableAccount(_context.Accounts.SingleOrDefault(acc => acc.ID == returnedAcc.ID));
+                TestingHelpingMethods.IntegrationTest_CompareAccounts(accToAdd, returnedAcc, accInDatabase); // make sure all are equal
+                Assert.Null(returnedAcc.FolderID); // check for null folderid indicating no parent
+            }
+        }
 
-                // validate that the database had the account and that the data is equal
-                Assert.NotNull(accInDatabase);
-                Assert.True(returnedAcc.Title == accInDatabase.Title && returnedAcc.Title == accToAdd.Title);
-                Assert.True(returnedAcc.Login == accInDatabase.Login && returnedAcc.Login == accToAdd.Login);
-                Assert.True(returnedAcc.Password == accInDatabase.Password && returnedAcc.Password == accToAdd.Password);
-                Assert.True(returnedAcc.Url == accInDatabase.Url && returnedAcc.Url == accToAdd.Url);
-                Assert.True(returnedAcc.Description == accInDatabase.Description && returnedAcc.Description == accToAdd.Description);
-                Assert.Equal(returnedAcc.LastModified, accInDatabase.LastModified);
-                Assert.Equal(returnedAcc.IsFavorite, accInDatabase.IsFavorite);
+        [Fact]
+        public async Task PUT_EditAccount()
+        {
+            /*
+             * HttpPut("users/{id}/accounts/{acc_id}")
+             * Edits one of the users saved accounts in the database
+             */
 
-                // check for null folderid indicating no parent
-                Assert.Null(returnedAcc.FolderID);
-                Assert.Equal(returnedAcc.FolderID, accInDatabase.FolderID);
+            int accId = 4; // user John Doe always has an account with id of 4 from the db initializer
+            using (HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Put, _client.BaseAddress + "users/" + _testUser.ID.ToString() + "/accounts/" + accId.ToString()))
+            {
+                // construct body with an encrypted account edit..
+                // so we send an encrypted account and receive an encrypted account
+                NewAccount accToEdit = new NewAccount
+                {
+                    Title = BitConverter.ToString(HelperMethods.EncryptStringToBytes_Aes("changed", _uniqueUserEncryptionKeyAndIv)).Replace("-", ""),
+                    Login = BitConverter.ToString(HelperMethods.EncryptStringToBytes_Aes("changed", _uniqueUserEncryptionKeyAndIv)).Replace("-", ""),
+                    Password = BitConverter.ToString(HelperMethods.EncryptStringToBytes_Aes("changed", _uniqueUserEncryptionKeyAndIv)).Replace("-", ""),
+                    Url = BitConverter.ToString(HelperMethods.EncryptStringToBytes_Aes("https://changed.com", _uniqueUserEncryptionKeyAndIv)).Replace("-", ""),
+                    Description = BitConverter.ToString(HelperMethods.EncryptStringToBytes_Aes("changed...", _uniqueUserEncryptionKeyAndIv)).Replace("-", "")
+                };
+                requestMessage.Content = new StringContent(JsonConvert.SerializeObject(accToEdit), Encoding.UTF8, "application/json");
+
+                // Add cookie, make request and validate status code
+                requestMessage.Headers.Add("Cookie", _cookie);
+                HttpResponseMessage response = await _client.SendAsync(requestMessage);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                // parse account from response, and also request the data from the database directly for comparison
+                ReturnableAccount returnedAcc = JsonConvert.DeserializeObject<ReturnableAccount>(response.Content.ReadAsStringAsync().Result);
+                ReturnableAccount accInDatabase = new ReturnableAccount(_context.Accounts.SingleOrDefault(acc => acc.ID == returnedAcc.ID));
+                TestingHelpingMethods.IntegrationTest_CompareAccounts(accToEdit, returnedAcc, accInDatabase); // make sure all are equal
             }
         }
     }
