@@ -187,11 +187,11 @@ namespace SafeAccountsAPI.UnitTests
 
                 // validate that the database had the account and that the data is equal
                 Assert.NotNull(accInDatabase);
-                Assert.Equal(returnedAcc.Title, accInDatabase.Title);
-                Assert.Equal(returnedAcc.Login, accInDatabase.Login);
-                Assert.Equal(returnedAcc.Password, accInDatabase.Password);
-                Assert.Equal(returnedAcc.Url, accInDatabase.Url);
-                Assert.Equal(returnedAcc.Description, accInDatabase.Description);
+                Assert.True(returnedAcc.Title == accInDatabase.Title && returnedAcc.Title == accToAdd.Title);
+                Assert.True(returnedAcc.Login == accInDatabase.Login && returnedAcc.Login == accToAdd.Login);
+                Assert.True(returnedAcc.Password == accInDatabase.Password && returnedAcc.Password == accToAdd.Password);
+                Assert.True(returnedAcc.Url == accInDatabase.Url && returnedAcc.Url == accToAdd.Url);
+                Assert.True(returnedAcc.Description == accInDatabase.Description && returnedAcc.Description == accToAdd.Description);
                 Assert.Equal(returnedAcc.LastModified, accInDatabase.LastModified);
                 Assert.Equal(returnedAcc.IsFavorite, accInDatabase.IsFavorite);
 
