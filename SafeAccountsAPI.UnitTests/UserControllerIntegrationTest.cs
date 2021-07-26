@@ -22,11 +22,21 @@ namespace SafeAccountsAPI.UnitTests
     {
         public HttpClient _client { get; }
         public string _cookie { get; } // global cookie with a valid access and refresh token
+
         public IConfigurationRoot _config { get; }
         public APIContext _context { get; set; } // if we are updating things this might need to be disposed are reset
+
         User _testUser { get; set; } // this is our user for testing... also may be updated during testing
         ReturnableUser _retTestUser { get; set; } // decrypted user
-        public string[] _keyAndIv { get; set; }
+
+        // key and iv for encrypting/decrypting john doe's stored data based on his password of 'useless'
+        public string[] _uniqueUserEncryptionKeyAndIv = new string[]
+        {
+            "MTZhNDFkOWNlMTE0ZGI5NjdiNGU0NGY1MGMwMGE4ODk=", // the is the password 'useless' sha256 encrypted then base 64 encoded to simulate client side encryption
+            "MTIzNDU2Nzg5MDAwMDAwMA==" // client side encryption iv base 64 encoded
+        };
+
+        public string[] _keyAndIv { get; set; } // encryption key and iv used for all users base data,, this key cannot unluck user stored passwords/accounts
 
         public UserControllerIntegrationTest(WebApplicationFactory<SafeAccountsAPI.Startup> fixture)
         {
@@ -164,15 +174,15 @@ namespace SafeAccountsAPI.UnitTests
 
             using (HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, _client.BaseAddress + "users/" + _testUser.ID.ToString() + "/accounts"))
             {
-                // construct body with a new account to add..
-                // we are using non encrypted hex strings for testing, but UI would send them encrypted
+                // construct body with a new account to add.. using same techniques as client side encryption
+                // so we send an encrypted account and receive an encrypted account
                 NewAccount accToAdd = new NewAccount
                 {
-                    Title = "446973636f7264", // Discord
-                    Login = "757365726e616d65", // username
-                    Password = "7573656c657373", // useless
-                    Url = "68747470733a2f2f646973636f72642e636f6d", // https://discord.com
-                    Description = "6465736372697074696f6e2e2e2e" // description...
+                    Title = BitConverter.ToString(HelperMethods.EncryptStringToBytes_Aes("Discord", _uniqueUserEncryptionKeyAndIv)).Replace("-", ""),
+                    Login = BitConverter.ToString(HelperMethods.EncryptStringToBytes_Aes("username", _uniqueUserEncryptionKeyAndIv)).Replace("-", ""),
+                    Password = BitConverter.ToString(HelperMethods.EncryptStringToBytes_Aes("useless", _uniqueUserEncryptionKeyAndIv)).Replace("-", ""),
+                    Url = BitConverter.ToString(HelperMethods.EncryptStringToBytes_Aes("https://discord.com", _uniqueUserEncryptionKeyAndIv)).Replace("-", ""),
+                    Description = BitConverter.ToString(HelperMethods.EncryptStringToBytes_Aes("description...", _uniqueUserEncryptionKeyAndIv)).Replace("-", "")
                 };
                 requestMessage.Content = new StringContent(JsonConvert.SerializeObject(accToAdd), Encoding.UTF8, "application/json");
 
