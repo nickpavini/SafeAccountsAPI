@@ -15,13 +15,13 @@ using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Models;
 using SafeAccountsAPI.UnitTests.Helpers;
 using Xunit;
-using System.IO;
 
 namespace SafeAccountsAPI.UnitTests
 {
     public class UserControllerIntegrationTest : IClassFixture<WebApplicationFactory<SafeAccountsAPI.Startup>>
     {
         public HttpClient _client { get; }
+        public string _cookie { get; } // global cookie with a valid access and refresh token
         public IConfigurationRoot _config { get; }
         public APIContext _context { get; set; } // if we are updating things this might need to be disposed are reset
         User _testUser { get; set; } // this is our user for testing... also may be updated during testing
@@ -42,8 +42,13 @@ namespace SafeAccountsAPI.UnitTests
 
             // set reference to our user for testing
             _keyAndIv = new string[] { _config.GetValue<string>("UserEncryptionKey"), _config.GetValue<string>("UserEncryptionIV") }; // for user encryption there is a single key
-            _testUser = _context.Users.Single(a => a.Email.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes("john@doe.com", _keyAndIv)));
-            _retTestUser = new ReturnableUser(_testUser, _keyAndIv);
+            _testUser = _context.Users.Single(a => a.Email.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes("john@doe.com", _keyAndIv))); // encrypted user
+            _retTestUser = new ReturnableUser(_testUser, _keyAndIv); // decrypted user
+
+            // generate access code and refresh token for use with endpoints that need to be logged in
+            string accessToken = HelperMethods.GenerateJWTAccessToken(_testUser.ID, _config["UserJwtTokenKey"]);
+            ReturnableRefreshToken refToken = new ReturnableRefreshToken(HelperMethods.GenerateRefreshToken(_testUser, _context, _keyAndIv), _keyAndIv);
+            _cookie = "AccessToken=" + accessToken + "; AccessTokenSameSite=" + accessToken + "; RefreshToken=" + refToken.Token + "; RefreshTokenSameSite=" + refToken.Token;
         }
 
         [Fact]
@@ -105,12 +110,8 @@ namespace SafeAccountsAPI.UnitTests
 
             using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, _client.BaseAddress + "users/" + _testUser.ID))
             {
-                // generate access code and set header
-                string accessToken = HelperMethods.GenerateJWTAccessToken(_testUser.ID, _config["UserJwtTokenKey"]);
-                string cookie = "AccessToken=" + accessToken;
-                requestMessage.Headers.Add("Cookie", cookie);
-
-                // make request and validate status code
+                // add cookie, make request and validate status code
+                requestMessage.Headers.Add("Cookie", _cookie);
                 var response = await _client.SendAsync(requestMessage);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -136,13 +137,8 @@ namespace SafeAccountsAPI.UnitTests
 
             using (var requestMessage = new HttpRequestMessage(HttpMethod.Post, _client.BaseAddress + "users/logout"))
             {
-                // generate access code and set header
-                string accessToken = HelperMethods.GenerateJWTAccessToken(_testUser.ID, _config["UserJwtTokenKey"]);
-                ReturnableRefreshToken refToken = new ReturnableRefreshToken(HelperMethods.GenerateRefreshToken(_testUser, _context, _keyAndIv), _keyAndIv);
-                string cookie = "AccessToken=" + accessToken + "; AccessTokenSameSite=" + accessToken + "; RefreshToken=" + refToken.Token + "; RefreshTokenSameSite=" + refToken.Token;
-                requestMessage.Headers.Add("Cookie", cookie);
-
-                // make request and validate status code
+                // Add cookie, make request and validate status code
+                requestMessage.Headers.Add("Cookie", _cookie);
                 var response = await _client.SendAsync(requestMessage);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
