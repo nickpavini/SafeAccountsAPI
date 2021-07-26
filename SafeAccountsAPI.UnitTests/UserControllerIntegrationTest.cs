@@ -153,5 +153,51 @@ namespace SafeAccountsAPI.UnitTests
                 }
             }
         }
+
+        [Fact]
+        public async Task POST_AddNewAccount()
+        {
+            /*
+             * HttpPost("users/{id}/accounts")
+             * Add a new saved password account to the users data collection.
+             */
+
+            using (HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, _client.BaseAddress + "users/" + _testUser.ID.ToString() + "/accounts"))
+            {
+                // construct body with a new account to add
+                NewAccount accToAdd = new NewAccount
+                {
+                    Title = "446973636f7264",
+                    Login = "757365726e616d65",
+                    Password = "7573656c657373",
+                    Url = "68747470733a2f2f646973636f72642e636f6d",
+                    Description = "6465736372697074696f6e2e2e2e"
+                };
+                requestMessage.Content = new StringContent(JsonConvert.SerializeObject(accToAdd), Encoding.UTF8, "application/json");
+
+                // Add cookie, make request and validate status code
+                requestMessage.Headers.Add("Cookie", _cookie);
+                HttpResponseMessage response = await _client.SendAsync(requestMessage);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                // parse account from response, and also request the data from the database directly for comparison
+                ReturnableAccount returnedAcc = JsonConvert.DeserializeObject<ReturnableAccount>(response.Content.ReadAsStringAsync().Result);
+                ReturnableAccount accInDatabase = new ReturnableAccount(_context.Accounts.SingleOrDefault(acc => acc.ID == returnedAcc.ID));
+
+                // validate that the database had the account and that the data is equal
+                Assert.NotNull(accInDatabase);
+                Assert.Equal(returnedAcc.Title, accInDatabase.Title);
+                Assert.Equal(returnedAcc.Login, accInDatabase.Login);
+                Assert.Equal(returnedAcc.Password, accInDatabase.Password);
+                Assert.Equal(returnedAcc.Url, accInDatabase.Url);
+                Assert.Equal(returnedAcc.Description, accInDatabase.Description);
+                Assert.Equal(returnedAcc.LastModified, accInDatabase.LastModified);
+                Assert.Equal(returnedAcc.IsFavorite, accInDatabase.IsFavorite);
+
+                // check for null folderid indicating no parent
+                Assert.Null(returnedAcc.FolderID);
+                Assert.Equal(returnedAcc.FolderID, accInDatabase.FolderID);
+            }
+        }
     }
 }

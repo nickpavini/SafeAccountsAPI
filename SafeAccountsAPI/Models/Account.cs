@@ -47,6 +47,8 @@ namespace SafeAccountsAPI.Models
         public int? FolderID { get; set; }
         public bool IsFavorite { get; set; }
 
+        public ReturnableAccount() { } // blank constructor needed for unit tests
+
         public ReturnableAccount(Account acc)
         {
             ID = acc.ID;
@@ -77,5 +79,7 @@ namespace SafeAccountsAPI.Models
         public string Description { get; set; }
         [JsonProperty]
         public int? FolderID { get; set; }
+
+        public NewAccount() { } // blank constructor needed for unit tests
     }
 }
