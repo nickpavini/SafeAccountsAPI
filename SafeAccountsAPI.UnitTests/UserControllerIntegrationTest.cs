@@ -164,14 +164,15 @@ namespace SafeAccountsAPI.UnitTests
 
             using (HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, _client.BaseAddress + "users/" + _testUser.ID.ToString() + "/accounts"))
             {
-                // construct body with a new account to add
+                // construct body with a new account to add..
+                // we are using non encrypted hex strings for testing, but UI would send them encrypted
                 NewAccount accToAdd = new NewAccount
                 {
-                    Title = "446973636f7264",
-                    Login = "757365726e616d65",
-                    Password = "7573656c657373",
-                    Url = "68747470733a2f2f646973636f72642e636f6d",
-                    Description = "6465736372697074696f6e2e2e2e"
+                    Title = "446973636f7264", // Discord
+                    Login = "757365726e616d65", // username
+                    Password = "7573656c657373", // useless
+                    Url = "68747470733a2f2f646973636f72642e636f6d", // https://discord.com
+                    Description = "6465736372697074696f6e2e2e2e" // description...
                 };
                 requestMessage.Content = new StringContent(JsonConvert.SerializeObject(accToAdd), Encoding.UTF8, "application/json");
 
