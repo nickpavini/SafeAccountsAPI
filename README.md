@@ -1,5 +1,5 @@
 # SafeAccountsAPI (In Development)
-![example workflow](https://github.com/nickpavini/safeaccountsapi/actions/workflows/master_safeaccounts.yml/badge.svg) <br />
+![example workflow](https://github.com/nickpavini/safeaccountsapi/actions/workflows/master_safeaccounts-api.yml/badge.svg) <br />
 
 The Open Source password manager API in the cloud. (RESTful implementation).<br />
 Message me if your interested in creating a UI for mobile or contributing to the in progress website <br />
