@@ -122,7 +122,7 @@ namespace SafeAccountsAPI
             // We need this because once the api is locked down, we need to be able to still test locally
             app.UseCors(options =>
             {
-                options.WithOrigins("https://localhost:44325").AllowCredentials().AllowAnyHeader().AllowAnyMethod();
+                options.WithOrigins(new string[] { "https://localhost:44325", "https://safeaccounts.azurewebsites.net" }).AllowCredentials().AllowAnyHeader().AllowAnyMethod();
             });
 
             app.UseAuthentication();
