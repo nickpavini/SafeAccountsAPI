@@ -179,9 +179,9 @@ namespace SafeAccountsAPI.Helpers
         {
             Argon2id hash = new Argon2id(plainText);
             hash.Salt = salt;
-            hash.DegreeOfParallelism = 4;
-            hash.Iterations = 8;
-            hash.MemorySize = 25000; // 1 GB
+            hash.DegreeOfParallelism = 1;
+            hash.Iterations = 2;
+            hash.MemorySize = 16000; // 1 GB
 
             return hash.GetBytes(32); // 32 bytes == 256 bits .. 
         }
