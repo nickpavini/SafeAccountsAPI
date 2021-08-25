@@ -318,37 +318,6 @@ namespace SafeAccountsAPI.Controllers
 
         }
 
-        [HttpPut("{id:int}/password")]
-        [ApiExceptionFilter("Failed to update with new password")]
-        public IActionResult User_EditPassword(int id, [FromBody] PasswordReset psw_reset)
-        {
-
-            // verify that the user is either admin or is requesting their own data
-            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
-            {
-                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
-                return new UnauthorizedObjectResult(error);
-            }
-
-            // get user from db
-            User user = _context.Users.Single(a => a.ID == id);
-
-            // if password is valid then we change it and update db
-            if (ValidatePassword(psw_reset.Current_Password, user.Password))
-            {
-                user.Password = HelperMethods.ConcatenatedSaltAndSaltedHash(psw_reset.New_Password);
-                _context.Update(user);
-                _context.SaveChanges();
-                return Ok();
-            }
-            else
-            {
-                ErrorMessage error = new ErrorMessage("Invalid Password", "Your current password does not match.");
-                return new BadRequestObjectResult(error);
-            }
-
-        }
-
         // get all of the user's accounts
         [HttpGet("{id:int}/accounts")] // working
         [ApiExceptionFilter("Error retrieving accounts.")]

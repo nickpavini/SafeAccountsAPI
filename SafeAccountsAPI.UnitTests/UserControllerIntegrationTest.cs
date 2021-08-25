@@ -15,18 +15,28 @@ using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Models;
 using SafeAccountsAPI.UnitTests.Helpers;
 using Xunit;
-using System.IO;
 
 namespace SafeAccountsAPI.UnitTests
 {
     public class UserControllerIntegrationTest : IClassFixture<WebApplicationFactory<SafeAccountsAPI.Startup>>
     {
         public HttpClient _client { get; }
+        public string _cookie { get; } // global cookie with a valid access and refresh token
+
         public IConfigurationRoot _config { get; }
         public APIContext _context { get; set; } // if we are updating things this might need to be disposed are reset
+
         User _testUser { get; set; } // this is our user for testing... also may be updated during testing
         ReturnableUser _retTestUser { get; set; } // decrypted user
-        public string[] _keyAndIv { get; set; }
+
+        // key and iv for encrypting/decrypting john doe's stored data based on his password of 'useless'
+        public string[] _uniqueUserEncryptionKeyAndIv = new string[]
+        {
+            "MTZhNDFkOWNlMTE0ZGI5NjdiNGU0NGY1MGMwMGE4ODk=", // the is the password 'useless' sha256 encrypted then base 64 encoded to simulate client side encryption
+            "MTIzNDU2Nzg5MDAwMDAwMA==" // client side encryption iv base 64 encoded
+        };
+
+        public string[] _keyAndIv { get; set; } // encryption key and iv used for all users base data,, this key cannot unluck user stored passwords/accounts
 
         public UserControllerIntegrationTest(WebApplicationFactory<SafeAccountsAPI.Startup> fixture)
         {
@@ -42,8 +52,13 @@ namespace SafeAccountsAPI.UnitTests
 
             // set reference to our user for testing
             _keyAndIv = new string[] { _config.GetValue<string>("UserEncryptionKey"), _config.GetValue<string>("UserEncryptionIV") }; // for user encryption there is a single key
-            _testUser = _context.Users.Single(a => a.Email.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes("john@doe.com", _keyAndIv)));
-            _retTestUser = new ReturnableUser(_testUser, _keyAndIv);
+            _testUser = _context.Users.Single(a => a.Email.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes("john@doe.com", _keyAndIv))); // encrypted user
+            _retTestUser = new ReturnableUser(_testUser, _keyAndIv); // decrypted user
+
+            // generate access code and refresh token for use with endpoints that need to be logged in
+            string accessToken = HelperMethods.GenerateJWTAccessToken(_testUser.ID, _config["UserJwtTokenKey"]);
+            ReturnableRefreshToken refToken = new ReturnableRefreshToken(HelperMethods.GenerateRefreshToken(_testUser, _context, _keyAndIv), _keyAndIv);
+            _cookie = "AccessToken=" + accessToken + "; AccessTokenSameSite=" + accessToken + "; RefreshToken=" + refToken.Token + "; RefreshTokenSameSite=" + refToken.Token;
         }
 
         [Fact]
@@ -105,12 +120,8 @@ namespace SafeAccountsAPI.UnitTests
 
             using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, _client.BaseAddress + "users/" + _testUser.ID))
             {
-                // generate access code and set header
-                string accessToken = HelperMethods.GenerateJWTAccessToken(_testUser.ID, _config["UserJwtTokenKey"]);
-                string cookie = "AccessToken=" + accessToken;
-                requestMessage.Headers.Add("Cookie", cookie);
-
-                // make request and validate status code
+                // add cookie, make request and validate status code
+                requestMessage.Headers.Add("Cookie", _cookie);
                 var response = await _client.SendAsync(requestMessage);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -136,13 +147,8 @@ namespace SafeAccountsAPI.UnitTests
 
             using (var requestMessage = new HttpRequestMessage(HttpMethod.Post, _client.BaseAddress + "users/logout"))
             {
-                // generate access code and set header
-                string accessToken = HelperMethods.GenerateJWTAccessToken(_testUser.ID, _config["UserJwtTokenKey"]);
-                ReturnableRefreshToken refToken = new ReturnableRefreshToken(HelperMethods.GenerateRefreshToken(_testUser, _context, _keyAndIv), _keyAndIv);
-                string cookie = "AccessToken=" + accessToken + "; AccessTokenSameSite=" + accessToken + "; RefreshToken=" + refToken.Token + "; RefreshTokenSameSite=" + refToken.Token;
-                requestMessage.Headers.Add("Cookie", cookie);
-
-                // make request and validate status code
+                // Add cookie, make request and validate status code
+                requestMessage.Headers.Add("Cookie", _cookie);
                 var response = await _client.SendAsync(requestMessage);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -155,6 +161,76 @@ namespace SafeAccountsAPI.UnitTests
                     Assert.True(DateTime.Now > expiringDate); // make sure expired
                     Assert.Equal("", cookiesToDelete[delete_cookie.Split(';')[0].Split('=')[0]]); // make sure each is empty
                 }
+            }
+        }
+
+        [Fact]
+        public async Task POST_AddNewAccount()
+        {
+            /*
+             * HttpPost("users/{id}/accounts")
+             * Add a new saved password account to the users data collection.
+             */
+
+            using (HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, _client.BaseAddress + "users/" + _testUser.ID.ToString() + "/accounts"))
+            {
+                // construct body with a new account to add.. using same techniques as client side encryption
+                // so we send an encrypted account and receive an encrypted account
+                NewAccount accToAdd = new NewAccount
+                {
+                    Title = BitConverter.ToString(HelperMethods.EncryptStringToBytes_Aes("Discord", _uniqueUserEncryptionKeyAndIv)).Replace("-", ""),
+                    Login = BitConverter.ToString(HelperMethods.EncryptStringToBytes_Aes("username", _uniqueUserEncryptionKeyAndIv)).Replace("-", ""),
+                    Password = BitConverter.ToString(HelperMethods.EncryptStringToBytes_Aes("useless", _uniqueUserEncryptionKeyAndIv)).Replace("-", ""),
+                    Url = BitConverter.ToString(HelperMethods.EncryptStringToBytes_Aes("https://discord.com", _uniqueUserEncryptionKeyAndIv)).Replace("-", ""),
+                    Description = BitConverter.ToString(HelperMethods.EncryptStringToBytes_Aes("description...", _uniqueUserEncryptionKeyAndIv)).Replace("-", "")
+                };
+                requestMessage.Content = new StringContent(JsonConvert.SerializeObject(accToAdd), Encoding.UTF8, "application/json");
+
+                // Add cookie, make request and validate status code
+                requestMessage.Headers.Add("Cookie", _cookie);
+                HttpResponseMessage response = await _client.SendAsync(requestMessage);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                // parse account from response, and also request the data from the database directly for comparison
+                ReturnableAccount returnedAcc = JsonConvert.DeserializeObject<ReturnableAccount>(response.Content.ReadAsStringAsync().Result);
+                ReturnableAccount accInDatabase = new ReturnableAccount(_context.Accounts.SingleOrDefault(acc => acc.ID == returnedAcc.ID));
+                TestingHelpingMethods.IntegrationTest_CompareAccounts(accToAdd, returnedAcc, accInDatabase); // make sure all are equal
+                Assert.Null(returnedAcc.FolderID); // check for null folderid indicating no parent
+            }
+        }
+
+        [Fact]
+        public async Task PUT_EditAccount()
+        {
+            /*
+             * HttpPut("users/{id}/accounts/{acc_id}")
+             * Edits one of the users saved accounts in the database
+             */
+
+            int accId = 4; // user John Doe always has an account with id of 4 from the db initializer
+            using (HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Put, _client.BaseAddress + "users/" + _testUser.ID.ToString() + "/accounts/" + accId.ToString()))
+            {
+                // construct body with an encrypted account edit..
+                // so we send an encrypted account and receive an encrypted account
+                NewAccount accToEdit = new NewAccount
+                {
+                    Title = BitConverter.ToString(HelperMethods.EncryptStringToBytes_Aes("changed", _uniqueUserEncryptionKeyAndIv)).Replace("-", ""),
+                    Login = BitConverter.ToString(HelperMethods.EncryptStringToBytes_Aes("changed", _uniqueUserEncryptionKeyAndIv)).Replace("-", ""),
+                    Password = BitConverter.ToString(HelperMethods.EncryptStringToBytes_Aes("changed", _uniqueUserEncryptionKeyAndIv)).Replace("-", ""),
+                    Url = BitConverter.ToString(HelperMethods.EncryptStringToBytes_Aes("https://changed.com", _uniqueUserEncryptionKeyAndIv)).Replace("-", ""),
+                    Description = BitConverter.ToString(HelperMethods.EncryptStringToBytes_Aes("changed...", _uniqueUserEncryptionKeyAndIv)).Replace("-", "")
+                };
+                requestMessage.Content = new StringContent(JsonConvert.SerializeObject(accToEdit), Encoding.UTF8, "application/json");
+
+                // Add cookie, make request and validate status code
+                requestMessage.Headers.Add("Cookie", _cookie);
+                HttpResponseMessage response = await _client.SendAsync(requestMessage);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                // parse account from response, and also request the data from the database directly for comparison
+                ReturnableAccount returnedAcc = JsonConvert.DeserializeObject<ReturnableAccount>(response.Content.ReadAsStringAsync().Result);
+                ReturnableAccount accInDatabase = new ReturnableAccount(_context.Accounts.SingleOrDefault(acc => acc.ID == returnedAcc.ID));
+                TestingHelpingMethods.IntegrationTest_CompareAccounts(accToEdit, returnedAcc, accInDatabase); // make sure all are equal
             }
         }
     }
