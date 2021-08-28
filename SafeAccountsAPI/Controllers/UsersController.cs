@@ -157,8 +157,6 @@ namespace SafeAccountsAPI.Controllers
                 LoginResponse rtrn = new LoginResponse { ID = user.ID, AccessToken = tokenString, RefreshToken = new ReturnableRefreshToken(refToken, _keyAndIV) };
                 _context.SaveChanges(); // always last on db to make sure nothing breaks and db has new info
 
-                // append cookies to response after login
-                HelperMethods.SetCookies(Response, tokenString, refToken, _keyAndIV);
                 return new OkObjectResult(rtrn);
             }
             else
@@ -188,35 +186,6 @@ namespace SafeAccountsAPI.Controllers
                 return true;
             else
                 return false;
-        }
-
-        // logout and reset cookies.. I dont think here the ID of the user matters because we just delete all the associated cookies.
-        [HttpPost("logout")] //working
-        [ApiExceptionFilter("Error removing users cookies.")]
-        public IActionResult User_Logout()
-        {
-            // delete cookies
-            foreach (var cookie in Request.Cookies)
-            {
-                if (cookie.Key.Contains("SameSite"))
-                {
-                    Response.Cookies.Delete(cookie.Key, new CookieOptions
-                    {
-                        HttpOnly = true,
-                        Secure = true,
-                        SameSite = Microsoft.AspNetCore.Http.SameSiteMode.None
-                    });
-                }
-                else
-                {
-                    Response.Cookies.Delete(cookie.Key, new CookieOptions
-                    {
-                        HttpOnly = true,
-                        Secure = true
-                    });
-                }
-            }
-            return Ok();
         }
 
 

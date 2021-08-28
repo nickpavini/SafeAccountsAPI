@@ -37,24 +37,24 @@ namespace SafeAccountsAPI.Controllers
         public IActionResult Refresh()
         {
             // check for access token
-            if (Request.Cookies["AccessTokenSameSite"] == null && Request.Cookies["AccessToken"] == null)
+            if (!Request.Headers.ContainsKey("AccessToken"))
             {
-                ErrorMessage error = new ErrorMessage("Failed to refresh access", "User does not have the access token in their cookies.");
+                ErrorMessage error = new ErrorMessage("Failed to refresh access", "User does not have the access token.");
                 return new BadRequestObjectResult(error);
             }
 
             // check for refresh token
-            if (Request.Cookies["RefreshTokenSameSite"] == null && Request.Cookies["RefreshToken"] == null)
+            if (!Request.Headers.ContainsKey("RefreshToken"))
             {
-                ErrorMessage error = new ErrorMessage("Failed to refresh access", "User does not have the refresh token in their cookies.");
+                ErrorMessage error = new ErrorMessage("Failed to refresh access", "User does not have the refresh token.");
                 return new BadRequestObjectResult(error);
             }
 
             // attempt getting user from claims
-            User user = HelperMethods.GetUserFromAccessToken(Request.Cookies["AccessTokenSameSite"] ?? Request.Cookies["AccessToken"], _context, _configuration.GetValue<string>("UserJwtTokenKey"));
+            User user = HelperMethods.GetUserFromAccessToken(Request.Headers["AccessToken"].ToString(), _context, _configuration.GetValue<string>("UserJwtTokenKey"));
 
             // make sure this is a valid token for the user
-            if (!HelperMethods.ValidateRefreshToken(user, Request.Cookies["RefreshTokenSameSite"] ?? Request.Cookies["RefreshToken"], _keyAndIV))
+            if (!HelperMethods.ValidateRefreshToken(user, Request.Headers["RefreshToken"].ToString(), _keyAndIV))
             {
                 ErrorMessage error = new ErrorMessage("Invalid refresh token", "Refrsh token could not be validated.");
                 return new BadRequestObjectResult(error);
@@ -64,8 +64,6 @@ namespace SafeAccountsAPI.Controllers
             RefreshToken newRefToken = HelperMethods.GenerateRefreshToken(user, _context, _keyAndIV);
             LoginResponse rtrn = new LoginResponse { ID = user.ID, AccessToken = newTokenStr, RefreshToken = new ReturnableRefreshToken(newRefToken, _keyAndIV) };
 
-            // append cookies after refresh
-            HelperMethods.SetCookies(Response, newTokenStr, newRefToken, _keyAndIV);
             return new OkObjectResult(rtrn);
         }
     }
