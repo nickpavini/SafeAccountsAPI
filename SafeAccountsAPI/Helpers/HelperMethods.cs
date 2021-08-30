@@ -279,17 +279,6 @@ namespace SafeAccountsAPI.Helpers
             return bytes;
         }
 
-        public static void SetCookies(HttpResponse Response, string tokenString, RefreshToken refToken, string[] keyAndIv)
-        {
-            ReturnableRefreshToken retToken = new ReturnableRefreshToken(refToken, keyAndIv); // decrypt the token
-
-            // append cookies after login.. we use the refresh tokens expiration on cookies, because the user has to give back the expired access to get a new one
-            Response.Cookies.Append("AccessToken", tokenString, HelperMethods.GetCookieOptions(DateTime.Parse(retToken.Expiration), false));
-            Response.Cookies.Append("RefreshToken", retToken.Token, HelperMethods.GetCookieOptions(DateTime.Parse(retToken.Expiration), false));
-            Response.Cookies.Append("AccessTokenSameSite", tokenString, HelperMethods.GetCookieOptions(DateTime.Parse(retToken.Expiration), true));
-            Response.Cookies.Append("RefreshTokenSameSite", retToken.Token, HelperMethods.GetCookieOptions(DateTime.Parse(retToken.Expiration), true));
-        }
-
         public static CookieOptions GetCookieOptions(DateTime expiration, bool sameSite = false)
         {
             CookieOptions options = new CookieOptions

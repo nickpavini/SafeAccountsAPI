@@ -64,7 +64,7 @@ namespace SafeAccountsAPI
                         },
                     };
                 })
-                .AddJwtBearer("UserJwtFromCookie", options =>
+                .AddJwtBearer("UserJwt", options =>
                 {
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
@@ -82,7 +82,9 @@ namespace SafeAccountsAPI
                     {
                         OnMessageReceived = context =>
                         {
-                            context.Token = context.Request.Cookies["AccessTokenSameSite"] ?? context.Request.Cookies["AccessToken"]; // get this token from cookies
+                            context.Token = context.Request.Headers.ContainsKey("AccessToken")
+                                                ? context.Request.Headers["AccessToken"].ToString()
+                                                : null;
                             return Task.CompletedTask;
                         },
                     };
@@ -95,7 +97,7 @@ namespace SafeAccountsAPI
                 options.AddPolicy("ApiJwtToken", new AuthorizationPolicyBuilder()
                     .RequireAuthenticatedUser()
                     // NOTE: Without this added claim, this policy always succeeds because the user is authenticated from the LoggedIn policy
-                    // this makes us use the other jwt bearer option and check the claims in that token using the signing key for api_keys rather than for user jwt cookies
+                    // this makes us use the other jwt bearer option and check the claims in that token using the signing key for api_keys rather than for user jwt token
                     .RequireClaim(ClaimTypes.Name, "api_key")
                     .AddAuthenticationSchemes("ApiJwtToken")
                     .Build());
@@ -104,7 +106,7 @@ namespace SafeAccountsAPI
                 options.AddPolicy("LoggedIn", new AuthorizationPolicyBuilder()
                     .RequireAuthenticatedUser()
                     .RequireClaim(ClaimTypes.Name, "access_token")
-                    .AddAuthenticationSchemes("UserJwtFromCookie")
+                    .AddAuthenticationSchemes("UserJwt")
                     .Build());
             });
 
