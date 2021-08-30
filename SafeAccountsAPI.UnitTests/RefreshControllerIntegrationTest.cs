@@ -48,24 +48,20 @@ namespace SafeAccountsAPI.UnitTests
             string accessToken = HelperMethods.GenerateJWTAccessToken(user.ID, config["UserJwtTokenKey"]);
             ReturnableRefreshToken refToken = new ReturnableRefreshToken(HelperMethods.GenerateRefreshToken(user, context, keyAndIV), keyAndIV);
 
-            // set cookies in header
-            string cookie = "AccessToken=" + accessToken + "; RefreshToken=" + refToken.Token;
-            _client.DefaultRequestHeaders.Add("Cookie", cookie);
+            // set access and refresh in header
+            _client.DefaultRequestHeaders.Add("AccessToken", accessToken);
+            _client.DefaultRequestHeaders.Add("RefreshToken", refToken.Token);
 
             // send request to refresh and assert request is ok and new cookies are present
             var response = await _client.PostAsync("refresh", null);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-            // valid cookies presence and retrieve
-            Dictionary<string, string> new_cookies = TestingHelpingMethods.CheckForCookies(response);
-
             // check that we recieved a valid login response
             JObject responseBody = await TestingHelpingMethods.CheckForLoginResponse(response);
 
             // set new access token in cookies
-            _client.DefaultRequestHeaders.Remove("Cookie");
-            cookie = "AccessTokenSameSite=" + new_cookies.Single(a => a.Key == "AccessTokenSameSite").Value;
-            _client.DefaultRequestHeaders.Add("Cookie", cookie);
+            _client.DefaultRequestHeaders.Remove("AccessToken");
+            _client.DefaultRequestHeaders.Add("AccessToken", responseBody["accessToken"].ToString());
 
             // make a call to the api to make sure we recieved a valid access token
             response = await _client.GetAsync("users/" + responseBody["id"].ToString());
@@ -74,7 +70,7 @@ namespace SafeAccountsAPI.UnitTests
             // and the last thing we need is to validate that the refresh token was stored in the DB
             context.Dispose(); // close old connection
             user = new APIContext(options, config).Users.Single(a => a.Email.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes("john@doe.com", keyAndIV))); // get fresh handle of user from the DB
-            Assert.True(HelperMethods.ValidateRefreshToken(user, new_cookies.Single(a => a.Key == "RefreshTokenSameSite").Value, keyAndIV));
+            Assert.True(HelperMethods.ValidateRefreshToken(user, responseBody["refreshToken"]["token"].ToString(), keyAndIV));
         }
     }
 }

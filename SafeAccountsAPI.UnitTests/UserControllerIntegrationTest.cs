@@ -21,7 +21,8 @@ namespace SafeAccountsAPI.UnitTests
     public class UserControllerIntegrationTest : IClassFixture<WebApplicationFactory<SafeAccountsAPI.Startup>>
     {
         public HttpClient _client { get; }
-        public string _cookie { get; } // global cookie with a valid access and refresh token
+        public string _accessToken { get; }
+        public string _refreshToken { get; }
 
         public IConfigurationRoot _config { get; }
         public APIContext _context { get; set; } // if we are updating things this might need to be disposed are reset
@@ -56,9 +57,8 @@ namespace SafeAccountsAPI.UnitTests
             _retTestUser = new ReturnableUser(_testUser, _keyAndIv); // decrypted user
 
             // generate access code and refresh token for use with endpoints that need to be logged in
-            string accessToken = HelperMethods.GenerateJWTAccessToken(_testUser.ID, _config["UserJwtTokenKey"]);
-            ReturnableRefreshToken refToken = new ReturnableRefreshToken(HelperMethods.GenerateRefreshToken(_testUser, _context, _keyAndIv), _keyAndIv);
-            _cookie = "AccessToken=" + accessToken + "; AccessTokenSameSite=" + accessToken + "; RefreshToken=" + refToken.Token + "; RefreshTokenSameSite=" + refToken.Token;
+            _accessToken = HelperMethods.GenerateJWTAccessToken(_testUser.ID, _config["UserJwtTokenKey"]);
+            _refreshToken = new ReturnableRefreshToken(HelperMethods.GenerateRefreshToken(_testUser, _context, _keyAndIv), _keyAndIv).Token;
         }
 
         [Fact]
@@ -85,18 +85,13 @@ namespace SafeAccountsAPI.UnitTests
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }
 
-            // valid cookies presence, retrieve, and create a cookie header string
-            Dictionary<string, string> new_cookies = TestingHelpingMethods.CheckForCookies(response);
-            string cookie = "AccessTokenSameSite=" + new_cookies.Single(a => a.Key == "AccessTokenSameSite").Value
-                                    + "; RefreshTokenSameSite=" + new_cookies.Single(a => a.Key == "RefreshTokenSameSite").Value;
-
             // check that we recieved a valid login response
             JObject responseBody = await TestingHelpingMethods.CheckForLoginResponse(response);
 
             // make a call to the api to make sure we recieved a valid access token
             using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, _client.BaseAddress + "users/" + responseBody["id"].ToString()))
             {
-                requestMessage.Headers.Add("Cookie", cookie); // set new access and refresh tokens in cookies
+                requestMessage.Headers.Add("AccessToken", responseBody["accessToken"].ToString()); // set new access and refresh tokens in cookies
                 response = await _client.SendAsync(requestMessage);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }
@@ -104,7 +99,8 @@ namespace SafeAccountsAPI.UnitTests
             // make a call to refresh and check for 200 status code.. we dont need to validate refesh in anyway here
             using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, _client.BaseAddress + "users/" + responseBody["id"].ToString()))
             {
-                requestMessage.Headers.Add("Cookie", cookie); // set new access and refresh tokens in cookies
+                requestMessage.Headers.Add("AccessToken", responseBody["accessToken"].ToString()); // set new access and refresh tokens in Headers
+                requestMessage.Headers.Add("RefreshToken", responseBody["refreshToken"]["token"].ToString()); // set new access and refresh tokens in Headers
                 response = await _client.SendAsync(requestMessage);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }
@@ -121,7 +117,7 @@ namespace SafeAccountsAPI.UnitTests
             using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, _client.BaseAddress + "users/" + _testUser.ID))
             {
                 // add cookie, make request and validate status code
-                requestMessage.Headers.Add("Cookie", _cookie);
+                requestMessage.Headers.Add("AccessToken", _accessToken);
                 var response = await _client.SendAsync(requestMessage);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -134,33 +130,6 @@ namespace SafeAccountsAPI.UnitTests
                 Assert.Equal(_retTestUser.Role, returnedUser.Role);
                 Assert.Equal(_retTestUser.First_Name, returnedUser.First_Name);
                 Assert.Equal(_retTestUser.Last_Name, returnedUser.Last_Name);
-            }
-        }
-
-        [Fact]
-        public async Task POST_SignOut_Should_Return_Expired_Set_Cookie_Headers()
-        {
-            /*
-             * HttpPost("users/logout")
-             * Signout and check that we got 4 empty and expired set cookie headers
-             */
-
-            using (var requestMessage = new HttpRequestMessage(HttpMethod.Post, _client.BaseAddress + "users/logout"))
-            {
-                // Add cookie, make request and validate status code
-                requestMessage.Headers.Add("Cookie", _cookie);
-                var response = await _client.SendAsync(requestMessage);
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-                // make sure cookies exist, and then make sure all are expired and empty
-                Dictionary<string, string> cookiesToDelete = TestingHelpingMethods.CheckForCookies(response);
-                foreach (string delete_cookie in response.Headers.GetValues("Set-Cookie").ToList())
-                {
-                    string date = delete_cookie.Split(';')[1].Split('=')[1];
-                    DateTime expiringDate = DateTime.Parse(date);
-                    Assert.True(DateTime.Now > expiringDate); // make sure expired
-                    Assert.Equal("", cookiesToDelete[delete_cookie.Split(';')[0].Split('=')[0]]); // make sure each is empty
-                }
             }
         }
 
@@ -187,7 +156,7 @@ namespace SafeAccountsAPI.UnitTests
                 requestMessage.Content = new StringContent(JsonConvert.SerializeObject(accToAdd), Encoding.UTF8, "application/json");
 
                 // Add cookie, make request and validate status code
-                requestMessage.Headers.Add("Cookie", _cookie);
+                requestMessage.Headers.Add("AccessToken", _accessToken);
                 HttpResponseMessage response = await _client.SendAsync(requestMessage);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -223,7 +192,7 @@ namespace SafeAccountsAPI.UnitTests
                 requestMessage.Content = new StringContent(JsonConvert.SerializeObject(accToEdit), Encoding.UTF8, "application/json");
 
                 // Add cookie, make request and validate status code
-                requestMessage.Headers.Add("Cookie", _cookie);
+                requestMessage.Headers.Add("AccessToken", _accessToken);
                 HttpResponseMessage response = await _client.SendAsync(requestMessage);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
