@@ -1,4 +1,4 @@
-# SafeAccountsAPI (In Development)
+# SafeAccountsAPI
 ![example workflow](https://github.com/nickpavini/safeaccountsapi/actions/workflows/master_safeaccounts-api.yml/badge.svg) <br />
 
 The Open Source password manager API in the cloud. (RESTful implementation).<br />
@@ -16,15 +16,13 @@ Everyone is welcome to test pentest the software so long as the intent is non-ma
 ## Build:
 * Start MySQL locally or use the provided docker compose file by running `docker compose up`
 
-* Create a database called `safeaccountsapi_db`.
-
-* Use `SafeAccountsAPI/TableCreations_MySQL.sql` to build the tables and set relationships.
+* Use `SafeAccountsAPI/TableCreations_MySQL.sql` to build the database and set relationships.
 
 * Now that your database is setup, update the connection string in `SafeAccountsAPI/appsettings.development.json`. In case the docker-compose.yml is being used remember to update the password in the  connection string .
 
 * Finally, run the api. You will see that 5 new users have been added as well as some accounts and folders.
 
-  
+   **Note**: This project uses .Net 5.0 so make sure you have that downloaded and setup with your Visual Studio.
 
 &nbsp;
 
