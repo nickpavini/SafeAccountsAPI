@@ -14,8 +14,18 @@ namespace SafeAccountsAPI
         public static void Main(string[] args)
         {
             var host = CreateHostBuilder(args).Build();
-            CreateDbIfNotExists(host);
-            host.Run();
+            var logger = host.Services.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("Host Creation Successful.");
+            try
+            {
+                CreateDbIfNotExists(host);
+                host.Run();
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Fatal Error during running of the host");
+            }
+
         }
 
         private static void CreateDbIfNotExists(IHost host)
@@ -23,17 +33,9 @@ namespace SafeAccountsAPI
             using (var scope = host.Services.CreateScope())
             {
                 var services = scope.ServiceProvider;
-                try
-                {
-                    var context = services.GetRequiredService<APIContext>();
-                    var config = services.GetRequiredService<IConfiguration>();
-                    DbInitializer.Initialize(context, config);
-                }
-                catch (Exception ex)
-                {
-                    var logger = services.GetRequiredService<ILogger<Program>>();
-                    logger.LogError(ex, "An error occurred creating the DB.");
-                }
+                var context = services.GetRequiredService<APIContext>();
+                var config = services.GetRequiredService<IConfiguration>();
+                DbInitializer.Initialize(context, config);
             }
         }
 

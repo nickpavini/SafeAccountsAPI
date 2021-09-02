@@ -357,3 +357,4 @@ MigrationBackup/
 launch.json
 tasks.json
 omnisharp.json
+nuget.config
