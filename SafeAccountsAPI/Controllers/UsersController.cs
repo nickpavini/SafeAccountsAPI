@@ -55,8 +55,20 @@ namespace SafeAccountsAPI.Controllers
             _context.Users.Add(userToRegister);
             _context.SaveChanges();
 
-            // send the confirmation email
-            SendConfirmationEmail(userToRegister);
+            try
+            {
+                // send the confirmation email
+                SendConfirmationEmail(userToRegister);
+            }
+            catch (Exception ex)
+            {
+                // remove the user if we failed to send a confirmation email
+                // this way they can retry signing up with the same email
+                _context.Users.Remove(_context.Users.Single(a => a.ID == userToRegister.ID));
+                _context.SaveChanges();
+                throw;
+            }
+
             return Ok();
         }
 
