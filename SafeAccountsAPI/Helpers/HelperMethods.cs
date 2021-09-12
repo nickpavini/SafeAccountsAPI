@@ -20,14 +20,14 @@ namespace SafeAccountsAPI.Helpers
         public static int salt_length = 16; // length of salts for password storage
 
         // might want to combine JWT generation to a single function over time
-        public static string GenerateJWTEmailConfirmationToken(int id, string token_key)
+        public static string GenerateJWTEmailConfirmationToken(int id, string token_key, string issAndAud)
         {
             SymmetricSecurityKey secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(token_key));
             SigningCredentials signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
 
             JwtSecurityToken tokeOptions = new JwtSecurityToken(
-                issuer: "http://localhost:5000",
-                audience: "http://localhost:5000",
+                issuer: issAndAud,
+                audience: issAndAud,
                 claims: new List<Claim> { new Claim(ClaimTypes.Actor, id.ToString()) },
                 expires: DateTime.Now.AddDays(7), // 1 week to confirm
                 signingCredentials: signinCredentials
@@ -36,14 +36,14 @@ namespace SafeAccountsAPI.Helpers
             return new JwtSecurityTokenHandler().WriteToken(tokeOptions);
         }
 
-        public static string GenerateJWTAccessToken(int id, string token_key)
+        public static string GenerateJWTAccessToken(int id, string token_key, string issAndAud)
         {
             SymmetricSecurityKey secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(token_key));
             SigningCredentials signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
 
             JwtSecurityToken tokeOptions = new JwtSecurityToken(
-                issuer: "http://localhost:5000",
-                audience: "http://localhost:5000",
+                issuer: issAndAud,
+                audience: issAndAud,
                 claims: new List<Claim> { new Claim(ClaimTypes.Actor, id.ToString()), new Claim(ClaimTypes.Name, "access_token") },
                 expires: DateTime.Now.AddMinutes(15), // these reset regularly
                 signingCredentials: signinCredentials
@@ -52,7 +52,7 @@ namespace SafeAccountsAPI.Helpers
             return new JwtSecurityTokenHandler().WriteToken(tokeOptions);
         }
 
-        public static User GetUserFromAccessToken(string accessToken, APIContext _context, string token_key)
+        public static User GetUserFromAccessToken(string accessToken, APIContext _context, string token_key, string issAndAud)
         {
             // paramters for a valid token.. might want to put in static class or function at some point
             TokenValidationParameters tokenValidationParamters = new TokenValidationParameters
@@ -61,8 +61,8 @@ namespace SafeAccountsAPI.Helpers
                 ValidateAudience = true,
                 ValidateLifetime = false, // Do not validate lifetime here
 
-                ValidIssuer = "http://localhost:5000",
-                ValidAudience = "http://localhost:5000",
+                ValidIssuer = issAndAud,
+                ValidAudience = issAndAud,
                 IssuerSigningKey =
                     new SymmetricSecurityKey(
                         Encoding.ASCII.GetBytes(token_key)

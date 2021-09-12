@@ -47,8 +47,8 @@ namespace SafeAccountsAPI
                         ValidateIssuerSigningKey = true,
                         ClockSkew = TimeSpan.Zero, // use this to make time accurate when validating
 
-                        ValidIssuer = "http://localhost:5000",
-                        ValidAudience = "http://localhost:5000",
+                        ValidIssuer = Configuration.GetValue<string>("ApiUrl"),
+                        ValidAudience = Configuration.GetValue<string>("ApiUrl"),
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration.GetValue<string>("ApiJwtTokenKey"))) // different password for the the api keys
                     };
                     options.SaveToken = true;
@@ -74,8 +74,8 @@ namespace SafeAccountsAPI
                         ValidateIssuerSigningKey = true,
                         ClockSkew = TimeSpan.Zero, // use this to make time accurate when validating
 
-                        ValidIssuer = "http://localhost:5000",
-                        ValidAudience = "http://localhost:5000",
+                        ValidIssuer = Configuration.GetValue<string>("ApiUrl"),
+                        ValidAudience = Configuration.GetValue<string>("ApiUrl"),
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration.GetValue<string>("UserJwtTokenKey")))
                     };
                     options.Events = new JwtBearerEvents

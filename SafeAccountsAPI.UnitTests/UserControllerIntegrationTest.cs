@@ -49,7 +49,7 @@ namespace SafeAccountsAPI.UnitTests
             _context = new APIContext(options, _config);
 
             // set default header for our api_key... Development key only, doesnt work with online api
-            _client.DefaultRequestHeaders.Add("ApiKey", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYXBpX2tleSIsImV4cCI6MTY1MzkxODQyNiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIiwiYXVkIjoiaHR0cDovL2xvY2FsaG9zdDo1MDAwIn0.ZBagEGyp7dJBozJ7HoQ8nZVNpK-h-rzjXL9SmEvIYgA");
+            _client.DefaultRequestHeaders.Add("ApiKey", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiYXBpX2tleSIsImV4cCI6MTY2Mjk4NzA4MywiaXNzIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NDQzNjYiLCJhdWQiOiJodHRwczovL2xvY2FsaG9zdDo0NDM2NiJ9.NUf-fL3g72Z8XqihXJIuaG_z8_NEHmSwckb94VgVK3Q");
 
             // set reference to our user for testing
             _keyAndIv = new string[] { _config.GetValue<string>("UserEncryptionKey"), _config.GetValue<string>("UserEncryptionIV") }; // for user encryption there is a single key
@@ -57,7 +57,7 @@ namespace SafeAccountsAPI.UnitTests
             _retTestUser = new ReturnableUser(_testUser, _keyAndIv); // decrypted user
 
             // generate access code and refresh token for use with endpoints that need to be logged in
-            _accessToken = HelperMethods.GenerateJWTAccessToken(_testUser.ID, _config["UserJwtTokenKey"]);
+            _accessToken = HelperMethods.GenerateJWTAccessToken(_testUser.ID, _config["UserJwtTokenKey"], _config.GetValue<string>("ApiUrl"));
             _refreshToken = new ReturnableRefreshToken(HelperMethods.GenerateRefreshToken(_testUser, _context, _keyAndIv), _keyAndIv).Token;
         }
 

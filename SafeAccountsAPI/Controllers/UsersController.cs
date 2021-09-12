@@ -82,7 +82,7 @@ namespace SafeAccountsAPI.Controllers
             ReturnableUser retUser = new ReturnableUser(user, _keyAndIV); // decrypt user data
 
             // generate token
-            string token = HelperMethods.GenerateJWTEmailConfirmationToken(retUser.ID, _configuration.GetValue<string>("EmailConfirmationTokenKey"));
+            string token = HelperMethods.GenerateJWTEmailConfirmationToken(retUser.ID, _configuration.GetValue<string>("EmailConfirmationTokenKey"), _configuration.GetValue<string>("ApiUrl"));
 
             // handle to our smtp client
             var smtpClient = new SmtpClient(_configuration.GetValue<string>("Smtp:Host"))
@@ -132,7 +132,7 @@ namespace SafeAccountsAPI.Controllers
             }
 
             // verify that the email provided matches the email in the token.
-            if (!encryptedEmail.SequenceEqual(HelperMethods.GetUserFromAccessToken(token, _context, _configuration.GetValue<string>("EmailConfirmationTokenKey")).Email))
+            if (!encryptedEmail.SequenceEqual(HelperMethods.GetUserFromAccessToken(token, _context, _configuration.GetValue<string>("EmailConfirmationTokenKey"), _configuration.GetValue<string>("ApiUrl")).Email))
             {
                 ErrorMessage error = new ErrorMessage("Failed to confirm email", "Token is invalid.");
                 return new BadRequestObjectResult(error);
@@ -164,7 +164,7 @@ namespace SafeAccountsAPI.Controllers
             // successful login.. compare user hash to the hash generated from the inputted password and salt
             if (ValidatePassword(login.Password, user.Password))
             {
-                string tokenString = HelperMethods.GenerateJWTAccessToken(user.ID, _configuration.GetValue<string>("UserJwtTokenKey"));
+                string tokenString = HelperMethods.GenerateJWTAccessToken(user.ID, _configuration.GetValue<string>("UserJwtTokenKey"), _configuration.GetValue<string>("ApiUrl"));
                 RefreshToken refToken = HelperMethods.GenerateRefreshToken(user, _context, _keyAndIV);
                 LoginResponse rtrn = new LoginResponse { ID = user.ID, AccessToken = tokenString, RefreshToken = new ReturnableRefreshToken(refToken, _keyAndIV) };
                 _context.SaveChanges(); // always last on db to make sure nothing breaks and db has new info

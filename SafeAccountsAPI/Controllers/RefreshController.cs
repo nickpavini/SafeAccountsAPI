@@ -51,7 +51,7 @@ namespace SafeAccountsAPI.Controllers
             }
 
             // attempt getting user from claims
-            User user = HelperMethods.GetUserFromAccessToken(Request.Headers["AccessToken"].ToString(), _context, _configuration.GetValue<string>("UserJwtTokenKey"));
+            User user = HelperMethods.GetUserFromAccessToken(Request.Headers["AccessToken"].ToString(), _context, _configuration.GetValue<string>("UserJwtTokenKey"), _configuration.GetValue<string>("ApiUrl"));
 
             // make sure this is a valid token for the user
             if (!HelperMethods.ValidateRefreshToken(user, Request.Headers["RefreshToken"].ToString(), _keyAndIV))
@@ -60,7 +60,7 @@ namespace SafeAccountsAPI.Controllers
                 return new BadRequestObjectResult(error);
             }
 
-            string newTokenStr = HelperMethods.GenerateJWTAccessToken(user.ID, _configuration.GetValue<string>("UserJwtTokenKey"));
+            string newTokenStr = HelperMethods.GenerateJWTAccessToken(user.ID, _configuration.GetValue<string>("UserJwtTokenKey"), _configuration.GetValue<string>("ApiUrl"));
             RefreshToken newRefToken = HelperMethods.GenerateRefreshToken(user, _context, _keyAndIV);
             LoginResponse rtrn = new LoginResponse { ID = user.ID, AccessToken = newTokenStr, RefreshToken = new ReturnableRefreshToken(newRefToken, _keyAndIV) };
 
