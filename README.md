@@ -1,17 +1,9 @@
 # SafeAccountsAPI
 ![example workflow](https://github.com/nickpavini/safeaccountsapi/actions/workflows/master_safeaccounts-api.yml/badge.svg) <br />
 
-The Open Source password manager API in the cloud. (RESTful implementation).<br />
-Message me if your interested in creating a UI for mobile or contributing to the in progress website <br />
-<ins>Discord Server:</ins> https://discord.gg/9gvH9YweJe
+**Website:** https://safeaccounts.net <br/>
+**Discord Server:** https://discord.gg/9gvH9YweJe 
 
-&nbsp;
-
-<ins>**Security Comes First:**</ins> <br/>
-I take security seriously and have implemented a 3 stage system that seperates the Database from the API and the UI's.<br/>
-Everyone is welcome to test pentest the software so long as the intent is non-malicous and all bugs are reported.
-
-&nbsp;
 
 ## Build:
 * Start MySQL locally or use the provided docker compose file by running `docker compose up`
@@ -49,8 +41,6 @@ Download [Postman](https://www.postman.com/downloads/) and use SafeAccountsAPI.p
   * Put - Modify user first name. Admin or Authorized user only.
 * **/users/{id}/lastname**
   * Put - Modify user last name. Admin or Authorized user only.
-* **/users/{id}/password**
-  * Put - Change user password. Admin or Authorized user only... Requires current password authentication.
 
 &nbsp;
 
