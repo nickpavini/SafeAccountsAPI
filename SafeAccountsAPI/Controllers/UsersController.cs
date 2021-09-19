@@ -43,6 +43,7 @@ namespace SafeAccountsAPI.Controllers
         [ApiExceptionFilter("Error creating new user")]
         public IActionResult User_AddUser([FromBody] NewUser newUser)
         {
+            newUser.Email = newUser.Email.ToLower(); // make all emails lowercase
             // attempt to create new user and add to the database.
             // if there is a user with this email already then we throw bad request error
             if (_context.Users.SingleOrDefault(a => a.Email.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes(newUser.Email, _keyAndIV))) != null)
@@ -121,6 +122,7 @@ namespace SafeAccountsAPI.Controllers
         [ApiExceptionFilter("Error confirming email")]
         public ActionResult User_ConfirmEmail(string token, string email)
         {
+            email = email.ToLower();
             byte[] encryptedEmail = HelperMethods.EncryptStringToBytes_Aes(email, _keyAndIV);
             User userToConfirm = _context.Users.Single(a => a.Email.SequenceEqual(encryptedEmail));
 
@@ -151,6 +153,7 @@ namespace SafeAccountsAPI.Controllers
         [ApiExceptionFilter("Error validating credentials")]
         public ActionResult User_Login([FromBody] Login login)
         {
+            login.Email = login.Email.ToLower(); // make all login attempts lowercase
             // get users saved password hash and salt
             User user = _context.Users.Single(a => a.Email.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes(login.Email, _keyAndIV)));
 
