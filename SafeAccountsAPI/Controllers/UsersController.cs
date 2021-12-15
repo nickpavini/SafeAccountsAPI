@@ -83,7 +83,7 @@ namespace SafeAccountsAPI.Controllers
             ReturnableUser retUser = new ReturnableUser(user, _keyAndIV); // decrypt user data
 
             // generate token
-            string token = HelperMethods.GenerateJWTEmailConfirmationToken(retUser.ID, _configuration.GetValue<string>("EmailConfirmationTokenKey"), _configuration.GetValue<string>("ApiUrl"));
+            string token = HelperMethods.GenerateJWTEmailConfirmationToken(retUser.ID, retUser.Email, _configuration.GetValue<string>("EmailConfirmationTokenKey"), _configuration.GetValue<string>("ApiUrl"));
 
             // handle to our smtp client
             var smtpClient = new SmtpClient(_configuration.GetValue<string>("Smtp:Host"))
@@ -298,6 +298,78 @@ namespace SafeAccountsAPI.Controllers
 
             _context.Users.Where(a => a.ID == id).Single().Last_Name = HelperMethods.EncryptStringToBytes_Aes(lastname, _keyAndIV); ;
             _context.SaveChanges();
+            return Ok();
+
+        }
+
+        [HttpPut("{id:int}/email")]
+        [ApiExceptionFilter("Failed to send new email confirmation link.")]
+        public IActionResult User_ChangeEmail(int id, [FromBody] string newEmail)
+        {
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
+            {
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
+            }
+
+            // check if email is in use
+            if (_context.Users.SingleOrDefault(a => a.Email.SequenceEqual(HelperMethods.EncryptStringToBytes_Aes(newEmail, _keyAndIV))) != null)
+            {
+                ErrorMessage error = new ErrorMessage("Failed to change email.", "New email already in use.");
+                return new BadRequestObjectResult(error);
+            }
+
+            // get user and send the confirmation email
+            User user = _context.Users.Single(a => a.ID == id);
+            HelperMethods.SendChangeEmailConfirmation(user, newEmail, _keyAndIV, _configuration);
+
+            return Ok();
+        }
+
+        /// <summary>
+        /// Confirm a users choice to change their email address
+        /// </summary>
+        /// <param name="id">id of user email to change</param>
+        /// <param name="token">token giving permission to change email and stores new email</param>
+        /// <returns></returns>
+        /// <remarks></remarks>
+        [HttpPost("{id:int}/email")]
+        [ApiExceptionFilter("Error confirming email change")]
+        public ActionResult User_ConfirmChangeEmail(int id, string token)
+        {
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
+            {
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
+            }
+
+            // get token claims, extract new email then encrypt it
+            ClaimsPrincipal tokenClaims = HelperMethods.GetClaimsFromAccessToken(token, _configuration.GetValue<string>("EmailConfirmationTokenKey"), _configuration.GetValue<string>("ApiUrl"));
+            string newEmail = tokenClaims.FindFirst(ClaimTypes.Email).Value;
+            byte[] encryptedEmail = HelperMethods.EncryptStringToBytes_Aes(newEmail.ToLower(), _keyAndIV);
+
+            // make sure this token is associated with the logged in user... if not this could be some sort of attack
+            if (id != HelperMethods.GetUserFromAccessToken(token, _context, _configuration.GetValue<string>("EmailConfirmationTokenKey"), _configuration.GetValue<string>("ApiUrl")).ID)
+            {
+                ErrorMessage error = new ErrorMessage("Failed to change email", "Email change token does not belong to this user!!");
+                return new BadRequestObjectResult(error);
+            }
+
+            // if email already matches than nothing to do
+            User user = _context.Users.Single(a => a.ID == id);
+            if (encryptedEmail.SequenceEqual(user.Email))
+            {
+                ErrorMessage error = new ErrorMessage("Failed to change email", "New email matches current email.");
+                return new BadRequestObjectResult(error);
+            }
+
+            // ok now we save the users new email
+            user.Email = encryptedEmail;
+            _context.Users.Update(user);
+            _context.SaveChanges();
+
             return Ok();
 
         }

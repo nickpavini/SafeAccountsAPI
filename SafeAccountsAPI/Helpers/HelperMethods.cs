@@ -12,6 +12,9 @@ using SafeAccountsAPI.Data;
 using SafeAccountsAPI.Models;
 using SafeAccountsAPI.Logging;
 using Konscious.Security.Cryptography;
+using Microsoft.Extensions.Configuration;
+using System.Net;
+using System.Net.Mail;
 
 namespace SafeAccountsAPI.Helpers
 {
@@ -19,8 +22,53 @@ namespace SafeAccountsAPI.Helpers
     {
         public static int salt_length = 16; // length of salts for password storage
 
+        /// <summary>
+        /// Send email for user confirmation of email change.
+        /// </summary>
+        /// <param name="user"></param>
+        /// <remarks></remarks>
+        public static void SendChangeEmailConfirmation(User user, string newEmail, string[] _keyAndIV, IConfiguration _configuration)
+        {
+            ReturnableUser retUser = new ReturnableUser(user, _keyAndIV); // decrypt user data
+
+            // generate token using new email. There is already an email associated with the user ID so we are good there
+            string token = GenerateJWTEmailConfirmationToken(retUser.ID, newEmail, _configuration.GetValue<string>("EmailConfirmationTokenKey"), _configuration.GetValue<string>("ApiUrl"));
+
+            // handle to our smtp client
+            var smtpClient = new SmtpClient(_configuration.GetValue<string>("Smtp:Host"))
+            {
+                Port = int.Parse(_configuration.GetValue<string>("Smtp:Port")),
+                Credentials = new NetworkCredential(_configuration.GetValue<string>("Smtp:Username"), _configuration.GetValue<string>("Smtp:Password")),
+                EnableSsl = true,
+            };
+
+            // format the body of the message
+            string body = "Hello " + retUser.First_Name + ",\n\n";
+            body += "A request to change your email address associated with Safe Accounts has been submitted.\n\n";
+            body += "To confirm your new email, please go to this web address:\n\n";
+            body += _configuration.GetValue<string>("WebsiteUrl") + "emailchange/?token=" + token + "&email=" + newEmail;
+            body += "\n\nThis should appear as a blue link which you can just click on. If that doesn't work,";
+            body += "then cut and paste the address into the address line at the top of your web browser window.\n\n";
+            body += "If you need help, please contact the site administrator.\n\n";
+            body += "SafeAccounts Administrator,\n";
+            body += _configuration.GetValue<string>("Smtp:Username");
+
+            // handle to our message settings
+            var mailMessage = new MailMessage
+            {
+                From = new MailAddress(_configuration.GetValue<string>("Smtp:Username")),
+                Subject = "SafeAccounts Email Change Request",
+                Body = body,
+                IsBodyHtml = false,
+            };
+            mailMessage.To.Add(newEmail);
+
+            // send message
+            smtpClient.Send(mailMessage);
+        }
+
         // might want to combine JWT generation to a single function over time
-        public static string GenerateJWTEmailConfirmationToken(int id, string token_key, string issAndAud)
+        public static string GenerateJWTEmailConfirmationToken(int id, string email, string token_key, string issAndAud)
         {
             SymmetricSecurityKey secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(token_key));
             SigningCredentials signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
@@ -28,7 +76,7 @@ namespace SafeAccountsAPI.Helpers
             JwtSecurityToken tokeOptions = new JwtSecurityToken(
                 issuer: issAndAud,
                 audience: issAndAud,
-                claims: new List<Claim> { new Claim(ClaimTypes.Actor, id.ToString()) },
+                claims: new List<Claim> { new Claim(ClaimTypes.Actor, id.ToString()), new Claim(ClaimTypes.Email, email) },
                 expires: DateTime.Now.AddDays(7), // 1 week to confirm
                 signingCredentials: signinCredentials
             );
@@ -52,14 +100,16 @@ namespace SafeAccountsAPI.Helpers
             return new JwtSecurityTokenHandler().WriteToken(tokeOptions);
         }
 
-        public static User GetUserFromAccessToken(string accessToken, APIContext _context, string token_key, string issAndAud)
+        // helper functions to retrieve claims from a token,
+        // NOTE: THIS IS SEPERATE FROM THE AUTHORIZATION SERVICE!!
+        public static ClaimsPrincipal GetClaimsFromAccessToken(string accessToken, string token_key, string issAndAud)
         {
             // paramters for a valid token.. might want to put in static class or function at some point
             TokenValidationParameters tokenValidationParamters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
                 ValidateAudience = true,
-                ValidateLifetime = false, // Do not validate lifetime here
+                ValidateLifetime = false, // Do not validate lifetime here, we just want the claims
 
                 ValidIssuer = issAndAud,
                 ValidAudience = issAndAud,
@@ -74,9 +124,14 @@ namespace SafeAccountsAPI.Helpers
             ClaimsPrincipal principal = tokenHandler.ValidateToken(accessToken, tokenValidationParamters, out SecurityToken securityToken);
             JwtSecurityToken jwtSecurityToken = securityToken as JwtSecurityToken;
             if (jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
-            {
                 throw new SecurityTokenException("Invalid token!");
-            }
+
+            return principal; // return the claims principal
+        }
+
+        public static User GetUserFromAccessToken(string accessToken, APIContext _context, string token_key, string issAndAud)
+        {
+            ClaimsPrincipal principal = GetClaimsFromAccessToken(accessToken, token_key, issAndAud);
 
             // get the id from the token
             string id = principal.FindFirst(ClaimTypes.Actor)?.Value;
