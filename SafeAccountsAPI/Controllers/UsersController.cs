@@ -302,6 +302,24 @@ namespace SafeAccountsAPI.Controllers
 
         }
 
+        [HttpPut("{id:int}/email")] // working
+        [ApiExceptionFilter("Failed to update last name.")]
+        public IActionResult User_EditEmail(int id, [FromBody] string email)
+        {
+
+            // verify that the user is either admin or is requesting their own data
+            if (!HelperMethods.ValidateIsUserOrAdmin(_httpContextAccessor, _context, id, _keyAndIV))
+            {
+                ErrorMessage error = new ErrorMessage("Invalid User", "Caller can only access their information.");
+                return new UnauthorizedObjectResult(error);
+            }
+
+            _context.Users.Where(a => a.ID == id).Single().Email = HelperMethods.EncryptStringToBytes_Aes(email, _keyAndIV); ;
+            _context.SaveChanges();
+            return Ok();
+
+        }
+
         // get all of the user's accounts
         [HttpGet("{id:int}/accounts")] // working
         [ApiExceptionFilter("Error retrieving accounts.")]
