@@ -303,7 +303,7 @@ namespace SafeAccountsAPI.Controllers
         }
 
         [HttpPut("{id:int}/email")] // working
-        [ApiExceptionFilter("Failed to update last name.")]
+        [ApiExceptionFilter("Failed to update email.")]
         public IActionResult User_EditEmail(int id, [FromBody] string email)
         {
 
